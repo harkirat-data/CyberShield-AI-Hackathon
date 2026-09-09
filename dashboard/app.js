@@ -588,8 +588,62 @@ function updateClock() {
   $("utc-clock").textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
 }
 
+let ws;
+let reconnectTimer;
+function connectWebSocket() {
+  if (ws) {
+    ws.close();
+  }
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/dashboard`;
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    $("refresh-button").style.color = "var(--green)";
+    $("refresh-button").title = "Live Streaming";
+    if (!state.refreshing) refresh(false); // Do a baseline fetch just in case
+  };
+
+  ws.onmessage = async (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "state_update") {
+        renderStatus(data.status);
+        renderMetrics(data.metrics);
+        renderSessions(data.sessions?.sessions || []);
+        renderCanaryTokens(data.canaries?.tokens || []);
+
+        if (state.selectedSessionId) {
+          const selected = (data.sessions?.sessions || []).find(s => s.session_id === state.selectedSessionId);
+          if (selected) {
+             if (state.lastInteractions !== selected.interactions) {
+                 state.lastInteractions = selected.interactions;
+                 await loadSession(state.selectedSessionId);
+             }
+          }
+        }
+        state.errorShown = false;
+      }
+    } catch (e) {
+      console.error("WS error processing message", e);
+    }
+  };
+
+  ws.onclose = () => {
+    $("refresh-button").style.color = "var(--coral)";
+    $("refresh-button").title = "Reconnecting...";
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWebSocket, 3000);
+  };
+
+  ws.onerror = () => {
+    if (!state.errorShown) showToast("WebSocket error, reverting to reconnect...", true);
+    state.errorShown = true;
+  };
+}
+
 bindEvents();
 updateClock();
 setInterval(updateClock, 1000);
 refresh();
-setInterval(() => refresh(false), 3000);
+connectWebSocket();

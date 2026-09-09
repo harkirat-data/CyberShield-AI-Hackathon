@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.116.1",
     "google-genai>=1.25.0",
     "python-dotenv>=1.1.0",
+    "pywin32>=312",
     "pyyaml>=6.0.2",
     "rank-bm25>=0.2.2",
     "redis>=6.2.0",
