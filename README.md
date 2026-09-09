@@ -1,4 +1,4 @@
-# ARGUS — Gemini Deception Grid and SOC Analyst
+# CyberShield - AI : Gemini Deception Grid and SOC Analyst
 
 ARGUS is a defensive cyber-deception lab that combines a five-service network
 honeypot with an existing SOC investigation pipeline. It presents believable
