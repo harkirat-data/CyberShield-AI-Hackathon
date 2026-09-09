@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -248,6 +248,56 @@ def create_app(
     canary_manager = CanaryManager(store)
     app.state.canary_manager = canary_manager
 
+    class DashboardConnectionManager:
+        def __init__(self):
+            self.active_connections: List[WebSocket] = []
+            self.running = False
+            self.task: Optional[asyncio.Task] = None
+
+        async def connect(self, websocket: WebSocket):
+            await websocket.accept()
+            self.active_connections.append(websocket)
+            if not self.running:
+                self.running = True
+                self.task = asyncio.create_task(self.broadcast_loop())
+
+        def disconnect(self, websocket: WebSocket):
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+            if not self.active_connections:
+                self.running = False
+                if self.task:
+                    self.task.cancel()
+                    self.task = None
+
+        async def broadcast_loop(self):
+            while self.running:
+                if not self.active_connections:
+                    break
+                try:
+                    payload = {
+                        "type": "state_update",
+                        "status": runtime.status(),
+                        "metrics": store.metrics(),
+                        "sessions": store.list_sessions(limit=100),
+                        "canaries": canary_manager.list_tokens()
+                    }
+                    disconnected = []
+                    for connection in self.active_connections:
+                        try:
+                            await connection.send_json(payload)
+                        except Exception:
+                            disconnected.append(connection)
+                    for d in disconnected:
+                        self.disconnect(d)
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    print(f"[ws] broadcast error: {e}")
+                await asyncio.sleep(1)
+
+    ws_manager = DashboardConnectionManager()
+
     def get_orchestrator() -> Any:
         if app.state.orchestrator is None:
             from orchestrator import Orchestrator
@@ -398,6 +448,18 @@ def create_app(
     ) -> Dict[str, Any]:
         sessions = store.list_sessions(limit=limit, status=status)
         return {"count": len(sessions), "sessions": sessions}
+
+    @app.websocket("/api/v1/ws/dashboard")
+    async def websocket_dashboard(websocket: WebSocket):
+        await ws_manager.connect(websocket)
+        try:
+            while True:
+                # Keep connection alive and wait for client messages if any
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            ws_manager.disconnect(websocket)
+        except Exception:
+            ws_manager.disconnect(websocket)
 
     @app.get("/api/v1/honeypot/sessions/{session_id}")
     def honeypot_session(session_id: str) -> Dict[str, Any]:
