@@ -246,3 +246,18 @@ tbody tr.selected { box-shadow: inset 2px 0 0 var(--cyan); background: rgba(55, 
   .timeline-item:nth-child(odd) { border-right: 0; }
   .terminal-footer strong { display: none; }
 }
+
+/* Canary Tokens */
+.canary-form { display: flex; gap: 8px; align-items: center; }
+.canary-form input, .canary-form select {
+  background: var(--bg); border: 1px solid var(--line); color: var(--text);
+  padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px;
+}
+.canary-form input:focus, .canary-form select:focus { border-color: var(--cyan); outline: none; }
+.canary-form input { width: 220px; }
+.canary-url { font-family: var(--font-mono); font-size: 11px; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; transition: background 0.15s ease; }
+.canary-url:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.canary-url.copied { color: var(--green); }
+.status-toggle { background: transparent; border: 1px solid var(--line); color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-family: var(--font-sans); font-weight: 600; text-transform: uppercase; transition: all 0.2s; }
+.status-toggle.active { color: var(--green); border-color: var(--green); }
+.status-toggle:hover { background: rgba(255,255,255,0.05); }
