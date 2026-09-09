@@ -74,6 +74,21 @@ CREATE TABLE IF NOT EXISTS analyst_reports (
     session_id TEXT PRIMARY KEY REFERENCES sessions(session_id),
     report_json TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS canary_tokens (
+    token_id TEXT PRIMARY KEY,
+    secret TEXT NOT NULL UNIQUE,
+    token_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL,
+    trigger_count INTEGER NOT NULL DEFAULT 0,
+    first_triggered_at TEXT,
+    last_triggered_at TEXT,
+    last_source_ip TEXT,
+    metadata_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_canary_secret ON canary_tokens(secret);
 """
 
 
@@ -436,4 +451,82 @@ class TelemetryStore:
             except (json.JSONDecodeError, TypeError):
                 result[target] = [] if target == "mitre" else {}
                 result.pop(source, None)
+        return result
+
+    # --- Canary Token Methods ---
+    
+    def create_canary_token(self, token_data: Dict[str, Any]) -> None:
+        values = dict(token_data)
+        if "metadata_json" in values and not isinstance(values["metadata_json"], str):
+            values["metadata_json"] = json.dumps(values["metadata_json"], default=str)
+        else:
+            values["metadata_json"] = json.dumps({}, default=str)
+            
+        columns = ", ".join(values.keys())
+        placeholders = ", ".join(f":{key}" for key in values.keys())
+        with self._lock:
+            self._connection.execute(
+                f"INSERT INTO canary_tokens ({columns}) VALUES ({placeholders})", values
+            )
+            self._connection.commit()
+
+    def list_canary_tokens(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT * FROM canary_tokens ORDER BY created_at DESC"
+            ).fetchall()
+        return [self._canary_dict(row) for row in rows]
+
+    def get_canary_token(self, secret: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM canary_tokens WHERE secret = ?", (secret,)
+            ).fetchone()
+        return self._canary_dict(row) if row else None
+        
+    def get_canary_token_by_id(self, token_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM canary_tokens WHERE token_id = ?", (token_id,)
+            ).fetchone()
+        return self._canary_dict(row) if row else None
+
+    def update_canary_token_status(self, token_id: str, status: str) -> bool:
+        with self._lock:
+            cursor = self._connection.execute(
+                "UPDATE canary_tokens SET status = ? WHERE token_id = ?",
+                (status, token_id)
+            )
+            self._connection.commit()
+        return cursor.rowcount > 0
+
+    def record_canary_trigger(self, secret: str, source_ip: str, trigger_metadata: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        now = utc_now()
+        with self._lock:
+            # Atomic update
+            cursor = self._connection.execute(
+                """UPDATE canary_tokens 
+                   SET trigger_count = trigger_count + 1,
+                       first_triggered_at = COALESCE(first_triggered_at, ?),
+                       last_triggered_at = ?,
+                       last_source_ip = ?
+                   WHERE secret = ? AND status = 'active'""",
+                (now, now, source_ip, secret)
+            )
+            if cursor.rowcount == 0:
+                return None
+            self._connection.commit()
+            
+            row = self._connection.execute(
+                "SELECT * FROM canary_tokens WHERE secret = ?", (secret,)
+            ).fetchone()
+        return self._canary_dict(row) if row else None
+
+    @staticmethod
+    def _canary_dict(row: sqlite3.Row) -> Dict[str, Any]:
+        result = dict(row)
+        try:
+            result["metadata"] = json.loads(result.pop("metadata_json"))
+        except (json.JSONDecodeError, TypeError, KeyError):
+            result["metadata"] = {}
         return result

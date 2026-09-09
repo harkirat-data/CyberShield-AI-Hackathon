@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -26,6 +26,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: E402
 from honeypot.models import utc_now  # noqa: E402
+from canary import CanaryManager # noqa: E402
 
 
 DASHBOARD_ROOT = PROJECT_ROOT / "dashboard"
@@ -49,6 +50,20 @@ class RagQueryRequest(BaseModel):
 
 class BlockSourceRequest(BaseModel):
     source_ip: str = Field(min_length=1, max_length=128)
+
+
+class CanaryTokenCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    token_type: str = Field(pattern="^(url|credential|document)$")
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class CanaryTokenStatusRequest(BaseModel):
+    status: str = Field(pattern="^(active|disabled)$")
+
+
+class CanaryTestRequest(BaseModel):
+    secret: str = Field(min_length=1)
 
 
 def _string_list(value: Any, fallback: Optional[List[str]] = None) -> List[str]:
@@ -229,6 +244,9 @@ def create_app(
     app.state.rag_pipeline = None
     app.state.honeypot_store = store
     app.state.honeypot_runtime = runtime
+
+    canary_manager = CanaryManager(store)
+    app.state.canary_manager = canary_manager
 
     def get_orchestrator() -> Any:
         if app.state.orchestrator is None:
@@ -423,6 +441,95 @@ def create_app(
                 "Content-Disposition": f'attachment; filename="argus-{session_id}.json"'
             },
         )
+
+    @app.post("/api/v1/canary/tokens")
+    def create_canary_token(request: CanaryTokenCreateRequest) -> Dict[str, Any]:
+        token = canary_manager.create_token(request.name, request.token_type, request.metadata)
+        return {"ok": True, "token": token}
+
+    @app.get("/api/v1/canary/tokens")
+    def list_canary_tokens() -> Dict[str, Any]:
+        tokens = canary_manager.list_tokens()
+        return {"count": len(tokens), "tokens": tokens}
+
+    @app.get("/api/v1/canary/tokens/{token_id}")
+    def get_canary_token(token_id: str) -> Dict[str, Any]:
+        token = canary_manager.get_token_by_id(token_id)
+        if not token:
+            raise HTTPException(status_code=404, detail="Token not found")
+        return {"token": token}
+
+    @app.put("/api/v1/canary/tokens/{token_id}/status")
+    def update_canary_token_status(token_id: str, request: CanaryTokenStatusRequest) -> Dict[str, Any]:
+        if not canary_manager.update_status(token_id, request.status):
+            raise HTTPException(status_code=404, detail="Token not found")
+        return {"ok": True, "status": request.status}
+
+    def _trigger_canary(secret: str, request: Request, simulated: bool = False) -> Dict[str, Any]:
+        source_ip = getattr(request.client, "host", "127.0.0.1")
+        headers = dict(request.headers)
+        metadata = {
+            "user_agent": headers.get("user-agent", "unknown"),
+            "method": request.method,
+            "url": str(request.url),
+            "simulated": simulated,
+            "headers": {k: v[:200] for k, v in headers.items() if k.lower() not in {"authorization", "cookie"}},
+        }
+        updated = canary_manager.record_trigger(secret, source_ip, metadata)
+        if not updated:
+            # Return 404 to obscure invalid/disabled tokens
+            raise HTTPException(status_code=404, detail="Not found")
+
+        # SOC Integration
+        event = {
+            "event_id": f"canary-trig-{utc_now().replace(':', '')}-{secret[:8]}",
+            "timestamp": utc_now(),
+            "host": "argus-api",
+            "source": "canary_service",
+            "event_type": "CANARY_TOKEN_TRIGGERED",
+            "severity": "critical",
+            "actor": {
+                "source_ip": source_ip,
+                "user": None,
+            },
+            "target": {
+                "host": "argus-api",
+                "service": "canary",
+                "port": request.url.port or 80,
+            },
+            "details": {
+                "token_id": updated["token_id"],
+                "token_name": updated["name"],
+                "token_type": updated["token_type"],
+                "simulated": simulated,
+            },
+            "raw": f"Canary token '{updated['name']}' (type: {updated['token_type']}) triggered from {source_ip}",
+        }
+        try:
+            get_orchestrator().investigate(event, brute_force_detected=False)
+        except Exception as exc:
+            print(f"[canary] SOC pipeline failed: {exc}")
+
+        return {"ok": True, "message": "Trigger processed"}
+
+    @app.get("/t/{secret}", include_in_schema=False)
+    @app.post("/t/{secret}", include_in_schema=False)
+    def fast_canary_trigger(secret: str, request: Request) -> JSONResponse:
+        try:
+            _trigger_canary(secret, request, simulated=False)
+        except HTTPException:
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+        # Always return 200 OK so scanners don't see 404 if token is active
+        return JSONResponse(status_code=200, content={"status": "ok"})
+
+    @app.post("/api/v1/canary/trigger/{secret}")
+    def api_canary_trigger(secret: str, request: Request) -> Dict[str, Any]:
+        return _trigger_canary(secret, request, simulated=False)
+
+    @app.post("/api/v1/canary/test")
+    def test_canary_trigger(test_request: CanaryTestRequest, request: Request) -> Dict[str, Any]:
+        """A test endpoint to simulate a trigger safely, useful for credential/document tokens."""
+        return _trigger_canary(test_request.secret, request, simulated=True)
 
     return app
 
