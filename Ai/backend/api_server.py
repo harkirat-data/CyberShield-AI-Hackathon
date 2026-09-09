@@ -323,7 +323,7 @@ def create_app(
                     persona=request.event["target"].get("host", "unknown"),
                     risk_level=result.risk.level,
                     risk_score=result.risk.score,
-                    intent=result.risk.intent,
+                    intent="Endpoint Activity",
                 )
                 store.create_session(session)
             
