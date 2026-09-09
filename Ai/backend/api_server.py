@@ -279,8 +279,8 @@ def create_app(
                         "type": "state_update",
                         "status": runtime.status(),
                         "metrics": store.metrics(),
-                        "sessions": store.list_sessions(limit=100),
-                        "canaries": canary_manager.list_tokens()
+                        "sessions": {"sessions": store.list_sessions(limit=100)},
+                        "canaries": {"tokens": canary_manager.list_tokens()}
                     }
                     disconnected = []
                     for connection in self.active_connections:
