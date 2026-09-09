@@ -1,0 +1,27 @@
+[project]
+name = "solid-potato"
+version = "0.1.0"
+description = "ARGUS — SOC log collection, risk scoring, and alerting system"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aio-pika>=9.6.2",
+    "chromadb>=1.0.15",
+    "cryptography>=45.0.0",
+    "dotenv>=0.9.9",
+    "fastapi>=0.116.1",
+    "google-genai>=1.25.0",
+    "python-dotenv>=1.1.0",
+    "pyyaml>=6.0.2",
+    "rank-bm25>=0.2.2",
+    "redis>=6.2.0",
+    "sentence-transformers>=5.0.0",
+    "streamlit>=1.46.1",
+    "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.4.0",
+]

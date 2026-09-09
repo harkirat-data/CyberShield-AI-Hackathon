@@ -1,0 +1,21 @@
+title: Windows Event Log Cleared
+id: b7f741de-9340-496e-b17c-argus-003
+status: stable
+description: Detects clearing of Windows event logs, often used to remove forensic evidence.
+references:
+  - https://attack.mitre.org/techniques/T1070/001/
+author: ARGUS
+date: 2026/07/02
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 1102
+  condition: selection
+falsepositives:
+  - Authorized log maintenance during controlled change windows
+level: high
+tags:
+  - attack.defense-evasion
+  - attack.t1070.001

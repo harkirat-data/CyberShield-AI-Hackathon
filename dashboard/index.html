@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>ARGUS — Deception Operations</title>
+  <link rel="stylesheet" href="/dashboard/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Primary navigation">
+      <div class="brand-mark" aria-label="ARGUS">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 5v6c0 5.2-3.3 9.1-8 11-4.7-1.9-8-5.8-8-11V5l8-3Zm0 4.1L7.5 7.8v3.1c0 3.5 1.9 6.1 4.5 7.5 2.6-1.4 4.5-4 4.5-7.5V7.8L12 6.1Zm-2.1 4h4.2v4H9.9v-4Z"/></svg>
+      </div>
+      <nav class="rail-nav">
+        <button class="nav-button active" data-target="overview" aria-label="Overview" title="Overview"><span>⌁</span></button>
+        <button class="nav-button" data-target="sessions" aria-label="Sessions" title="Sessions"><span>›_</span></button>
+        <button class="nav-button" data-target="telemetry" aria-label="Telemetry" title="Telemetry"><span>⌇</span></button>
+        <button class="nav-button" data-target="analyst" aria-label="SOC analyst" title="Gemini + RAG analyst"><span>✦</span></button>
+      </nav>
+      <div class="rail-bottom">
+        <button class="nav-button" aria-label="Settings" title="Settings"><span>⚙</span></button>
+        <div class="avatar" title="Analyst">AN</div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar" id="overview">
+        <div class="topbar-title">
+          <div class="title-line">
+            <span class="live-dot" id="live-dot"></span>
+            <h1 id="grid-heading">DECEPTION GRID OFFLINE</h1>
+            <span class="badge badge-decoy">DECOY</span>
+          </div>
+          <p id="safety-message">Sandboxed simulation · real host isolated · no input execution</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="button button-secondary" id="runtime-control">Start grid</button>
+          <div class="status-chip"><span class="gemini-symbol">✦</span><span>Gemini</span><strong id="gemini-status">Checking</strong></div>
+          <time id="utc-clock">--:--:-- UTC</time>
+          <button class="icon-button" id="refresh-button" aria-label="Refresh dashboard" title="Refresh">↻</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="metrics" aria-label="Operational metrics">
+          <article class="metric-card"><div class="metric-label"><span>Active sessions</span><span class="metric-icon cyan">●</span></div><div class="metric-value" id="metric-active">0</div><div class="metric-context" id="metric-active-context">No active contacts</div></article>
+          <article class="metric-card"><div class="metric-label"><span>Attacker actions</span><span class="metric-icon violet">◆</span></div><div class="metric-value" id="metric-events">0</div><div class="metric-context" id="metric-event-context">0 telemetry events retained</div></article>
+          <article class="metric-card"><div class="metric-label"><span>Unique sources</span><span class="metric-icon amber">●</span></div><div class="metric-value" id="metric-sources">0</div><div class="metric-context" id="metric-source-context">Across all decoy services</div></article>
+          <article class="metric-card"><div class="metric-label"><span>Mean dwell time</span><span class="metric-icon green">◷</span></div><div class="metric-value" id="metric-dwell">0s</div><div class="metric-context" id="metric-critical">0 critical sessions</div></article>
+        </section>
+
+        <section class="panel port-panel" aria-labelledby="ports-heading">
+          <div class="panel-header compact">
+            <div><h2 id="ports-heading">DECOY SERVICES</h2><span class="header-note" id="ports-summary">0 / 5 LISTENING</span></div>
+            <div class="legend"><span><i class="dot green-bg"></i>Healthy</span><span><i class="dot amber-bg"></i>Engaged</span><span><i class="dot coral-bg"></i>Failed</span></div>
+          </div>
+          <div class="port-grid" id="port-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="operations-grid" id="sessions">
+          <div class="primary-column">
+            <article class="panel sessions-panel">
+              <div class="panel-header">
+                <div><h2>ATTACKER SESSIONS</h2><span class="badge badge-live" id="live-session-badge">0 LIVE</span></div>
+                <div class="header-actions"><button class="button button-ghost" id="session-filter">All sessions</button><button class="button button-ghost" id="export-button">Export selected</button></div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Source</th><th>Service</th><th>Intent</th><th>Dwell</th><th>Actions</th><th>Risk</th></tr></thead>
+                  <tbody id="session-rows"></tbody>
+                </table>
+                <div class="empty-state" id="sessions-empty"><span class="empty-symbol">⌁</span><strong>No attacker sessions captured</strong><p>Start the deception grid, then connect to one of the five local decoy ports.</p></div>
+              </div>
+            </article>
+
+            <article class="panel transcript-panel">
+              <div class="panel-header">
+                <div><span class="dot coral-bg"></span><h2 id="transcript-title">LIVE TRANSCRIPT</h2><span class="badge badge-simulated">SIMULATED HOST</span></div>
+                <span class="mono subtle" id="transcript-route">No session selected</span>
+              </div>
+              <div class="terminal" id="terminal">
+                <div class="terminal-meta"><span>Captured input · Gemini/fallback output</span><span id="recording-state">IDLE</span></div>
+                <div class="terminal-stream" id="terminal-stream">
+                  <div class="terminal-empty">Select a session to inspect the interaction transcript.</div>
+                </div>
+              </div>
+              <div class="terminal-footer"><span id="terminal-stats">0 events · 0 bytes</span><strong>NO REAL COMMANDS EXECUTED · EGRESS SHOULD BE BLOCKED</strong></div>
+            </article>
+          </div>
+
+          <aside class="panel intelligence" id="intel">
+            <div class="panel-header"><div><h2>SESSION INTELLIGENCE</h2></div><span class="mono subtle" id="session-short-id">—</span></div>
+            <div class="risk-block">
+              <div class="risk-ring" id="risk-ring"><div><strong id="risk-score">0</strong><span>RISK</span></div></div>
+              <div class="risk-copy"><strong id="risk-level">NO SIGNAL</strong><h3 id="intent-label">Waiting for telemetry</h3><div class="confidence-row"><span>Intent confidence</span><span class="mono" id="intent-confidence">0%</span></div><div class="progress"><i id="confidence-progress"></i></div></div>
+            </div>
+            <div class="intel-section"><span class="section-label">MITRE ATT&amp;CK</span><div class="technique-list" id="technique-list"><span class="placeholder-copy">No mapped techniques</span></div></div>
+            <div class="intel-section"><span class="section-label">SESSION FACTS</span><dl class="facts"><div><dt>Source</dt><dd id="fact-source">—</dd></div><div><dt>Fingerprint</dt><dd id="fact-fingerprint">—</dd></div><div><dt>Username</dt><dd id="fact-username">—</dd></div><div><dt>Bytes captured</dt><dd id="fact-bytes">0 B</dd></div><div><dt>Attacker actions</dt><dd id="fact-interactions">0</dd></div><div><dt>First seen</dt><dd id="fact-first-seen">—</dd></div></dl></div>
+            <div class="intel-section response-section"><span class="section-label">RESPONSE</span><div class="response-grid"><button class="button button-primary" id="contain-button" disabled>Contain session</button><button class="button button-danger" id="block-button" disabled>Block source</button><button class="button button-secondary" id="copy-ioc-button" disabled>Copy IOC</button><button class="button button-secondary" id="export-evidence-button" disabled>Export evidence</button></div><p class="scope-note">Blocking applies to the ARGUS runtime only; host firewall changes require operator action.</p></div>
+          </aside>
+        </section>
+
+        <section class="panel analyst-panel" id="analyst" aria-labelledby="analyst-heading">
+          <div class="panel-header analyst-header">
+            <div><span class="analyst-symbol">✦</span><h2 id="analyst-heading">SOC ANALYST · GEMINI + RAG</h2><span class="badge analyst-badge" id="analyst-status">SELECT A SESSION</span></div>
+            <div class="header-actions"><span class="mono subtle" id="analyst-generated">No report generated</span><button class="button button-primary" id="analyze-button" disabled>Analyze selected session</button></div>
+          </div>
+          <div class="analyst-empty" id="analyst-empty">Select an attacker session, then generate a grounded SOC report from its captured evidence.</div>
+          <div class="analyst-grid" id="analyst-content" hidden>
+            <article class="analyst-column analyst-summary"><span class="section-label">EXECUTIVE ASSESSMENT</span><h3 id="analyst-severity">NO REPORT</h3><p id="analyst-summary">—</p><div class="analyst-techniques" id="analyst-techniques"></div></article>
+            <article class="analyst-column"><span class="section-label">EVIDENCE-BASED FINDINGS</span><ul class="analyst-list" id="analyst-findings"></ul></article>
+            <article class="analyst-column"><span class="section-label">RECOMMENDED RESPONSE</span><div class="recommendation-groups" id="analyst-remediation"></div></article>
+            <article class="analyst-column"><span class="section-label">RAG EVIDENCE</span><div class="analyst-engine" id="analyst-engine"></div><div class="source-list" id="analyst-sources"></div></article>
+          </div>
+        </section>
+
+        <section class="lower-grid" id="telemetry">
+          <article class="panel telemetry-panel">
+            <div class="panel-header"><div><h2>TELEMETRY TIMELINE</h2></div><span class="mono subtle" id="telemetry-count">0 EVENTS</span></div>
+            <div class="timeline" id="timeline"><div class="lower-empty">Session telemetry will appear here.</div></div>
+          </article>
+          <article class="panel surface-panel">
+            <div class="panel-header"><div><h2>ATTACK SURFACE</h2></div><span class="subtle">ALL TIME</span></div>
+            <div class="surface-content"><div class="bar-chart" id="service-bars"></div><div class="distribution" id="service-distribution"><div><strong>0%</strong><span>SSH</span></div><div><strong>0%</strong><span>HTTP/S</span></div><div><strong>0%</strong><span>OTHER</span></div></div></div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/dashboard/app.js" defer></script>
+</body>
+</html>

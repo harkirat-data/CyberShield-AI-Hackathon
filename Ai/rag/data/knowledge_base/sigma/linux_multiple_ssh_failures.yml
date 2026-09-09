@@ -1,0 +1,24 @@
+title: Multiple SSH Authentication Failures From Same Source
+id: 4f5b8a48-7b2d-46a8-92e1-argus-002
+status: stable
+description: Detects repeated failed SSH authentication attempts that may indicate brute force activity.
+references:
+  - https://attack.mitre.org/techniques/T1110/
+author: ARGUS
+date: 2026/07/02
+logsource:
+  product: linux
+  service: sshd
+detection:
+  selection:
+    message|contains:
+      - 'Failed password'
+      - 'authentication failure'
+  timeframe: 5m
+  condition: selection
+falsepositives:
+  - Users entering expired or incorrect passwords repeatedly
+level: medium
+tags:
+  - attack.credential-access
+  - attack.t1110

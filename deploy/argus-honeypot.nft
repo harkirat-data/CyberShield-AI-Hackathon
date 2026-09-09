@@ -1,0 +1,17 @@
+#!/usr/sbin/nft -f
+
+# EXAMPLE ONLY — apply on a dedicated Linux honeypot host after reviewing the
+# interface, source-network, and management-access requirements. ARGUS never
+# installs these rules automatically.
+
+table inet argus_honeypot {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+
+        tcp dport 22 redirect to :2222
+        tcp dport 23 redirect to :2323
+        tcp dport 80 redirect to :8088
+        tcp dport 443 redirect to :8443
+        tcp dport 3306 redirect to :33060
+    }
+}

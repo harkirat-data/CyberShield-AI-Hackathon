@@ -1,0 +1,29 @@
+title: Suspicious Encoded PowerShell Command
+id: 7d6d6eab-5f0f-4fd9-9e54-argus-001
+status: experimental
+description: Detects PowerShell launched with encoded command arguments commonly used for obfuscation and defense evasion.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1027/
+author: ARGUS
+date: 2026/07/02
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    CommandLine|contains:
+      - ' -enc '
+      - ' -encodedcommand '
+  condition: selection
+falsepositives:
+  - Administrative automation that intentionally uses encoded PowerShell
+level: high
+tags:
+  - attack.execution
+  - attack.defense-evasion
+  - attack.t1059.001
+  - attack.t1027

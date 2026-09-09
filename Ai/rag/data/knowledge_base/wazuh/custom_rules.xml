@@ -1,0 +1,21 @@
+<group name="argus,local,windows,linux,">
+  <rule id="100500" level="10">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.commandLine">(?i).*(-enc|-encodedcommand).*</field>
+    <description>PowerShell executed with encoded command</description>
+    <mitre>T1059.001</mitre>
+    <mitre>T1027</mitre>
+  </rule>
+
+  <rule id="100501" level="8">
+    <match>Failed password</match>
+    <description>Repeated SSH authentication failures may indicate brute force attempts</description>
+    <mitre>T1110</mitre>
+  </rule>
+
+  <rule id="100502" level="12">
+    <field name="win.system.eventID">1102</field>
+    <description>Windows Security Event Log was cleared</description>
+    <mitre>T1070.001</mitre>
+  </rule>
+</group>
