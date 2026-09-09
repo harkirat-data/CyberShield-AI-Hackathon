@@ -1,8 +1,12 @@
-from dataclasses import replace
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "Ai" / "backend"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from dataclasses import replace
 from fastapi.testclient import TestClient
 
-from Ai.backend.api_server import create_app
+from api_server import create_app
 from honeypot.config import HoneypotSettings, default_services
 from honeypot.models import DecoySession, TelemetryEvent
 from honeypot.runtime import HoneypotRuntime
