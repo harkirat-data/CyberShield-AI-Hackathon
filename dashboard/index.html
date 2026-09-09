@@ -17,6 +17,7 @@
         <button class="nav-button active" data-target="overview" aria-label="Overview" title="Overview"><span>⌁</span></button>
         <button class="nav-button" data-target="sessions" aria-label="Sessions" title="Sessions"><span>›_</span></button>
         <button class="nav-button" data-target="telemetry" aria-label="Telemetry" title="Telemetry"><span>⌇</span></button>
+        <button class="nav-button" data-target="canary" aria-label="Canary Tokens" title="Canary Tokens"><span>🪤</span></button>
         <button class="nav-button" data-target="analyst" aria-label="SOC analyst" title="Gemini + RAG analyst"><span>✦</span></button>
       </nav>
       <div class="rail-bottom">
@@ -125,6 +126,30 @@
             <div class="panel-header"><div><h2>ATTACK SURFACE</h2></div><span class="subtle">ALL TIME</span></div>
             <div class="surface-content"><div class="bar-chart" id="service-bars"></div><div class="distribution" id="service-distribution"><div><strong>0%</strong><span>SSH</span></div><div><strong>0%</strong><span>HTTP/S</span></div><div><strong>0%</strong><span>OTHER</span></div></div></div>
           </article>
+        </section>
+
+        <section class="panel canary-panel" id="canary" aria-labelledby="canary-heading">
+          <div class="panel-header">
+            <div><h2 id="canary-heading">CANARY TOKENS</h2><span class="badge badge-simulated" id="canary-count">0 ACTIVE</span></div>
+            <div class="header-actions">
+              <form id="canary-form" class="canary-form">
+                <input type="text" id="canary-name" placeholder="Token name (e.g. Secret Wiki)" required maxlength="128" />
+                <select id="canary-type" required>
+                  <option value="url">URL</option>
+                  <option value="credential">Credential</option>
+                  <option value="document">Document</option>
+                </select>
+                <button type="submit" class="button button-primary" id="canary-create-btn">Create Token</button>
+              </form>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name / Type</th><th>Trigger Secret</th><th>Triggers</th><th>Created</th><th>Status</th></tr></thead>
+              <tbody id="canary-rows"></tbody>
+            </table>
+            <div class="empty-state" id="canary-empty" hidden><span class="empty-symbol">🪤</span><strong>No canary tokens created</strong><p>Generate a tripwire token to deploy on your network or endpoints.</p></div>
+          </div>
         </section>
       </div>
     </main>
