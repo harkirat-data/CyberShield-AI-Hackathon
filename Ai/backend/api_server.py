@@ -307,6 +307,36 @@ def create_app(
                 request.event,
                 brute_force_detected=request.brute_force_detected,
             )
+            
+            # Map external Event into Honeypot models for dashboard UI
+            from honeypot.models import DecoySession, TelemetryEvent
+            session_id = f"ext_{request.event['actor'].get('source_ip', 'unknown').replace('.', '_')}"
+            
+            if not store.get_session(session_id):
+                session = DecoySession(
+                    session_id=session_id,
+                    source_ip=request.event["actor"].get("source_ip", "0.0.0.0"),
+                    source_port=0,
+                    destination_port=0,
+                    service=request.event["target"].get("service", "endpoint"),
+                    protocol=request.event.get("source", "log"),
+                    persona=request.event["target"].get("host", "unknown"),
+                    risk_level=result.risk.level,
+                    risk_score=result.risk.score,
+                    intent=result.risk.intent,
+                )
+                store.create_session(session)
+            
+            tel_event = TelemetryEvent(
+                session_id=session_id,
+                event_type=request.event.get("event_type", "LOG"),
+                severity=result.risk.level,
+                direction="inbound",
+                content=request.event.get("raw", ""),
+                metadata={"external_event": True, "details": request.event.get("details", {})}
+            )
+            store.record_event(tel_event)
+
             return result.to_dict()
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
