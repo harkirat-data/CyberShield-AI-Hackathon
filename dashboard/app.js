@@ -10,6 +10,7 @@ const state = {
   analyzing: false,
   errorShown: false,
   lastGeminiError: null,
+  canaryTokens: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -362,19 +363,105 @@ function renderTimeline(events) {
   }).join("") : '<div class="lower-empty">Session telemetry will appear here.</div>';
 }
 
+function renderCanaryTokens(tokens) {
+  state.canaryTokens = tokens || [];
+  $("canary-empty").hidden = state.canaryTokens.length > 0;
+  const activeCount = state.canaryTokens.filter(t => t.status === "active").length;
+  $("canary-count").textContent = `${activeCount} ACTIVE`;
+
+  $("canary-rows").innerHTML = state.canaryTokens.map(token => {
+    const isUrl = token.token_type === "url";
+    let triggerSecretCopy = escapeHtml(token.secret);
+    if (isUrl) {
+      const url = `${window.location.origin}/t/${token.secret}`;
+      triggerSecretCopy = `<span class="canary-url" data-copy="${escapeHtml(url)}" title="Click to copy trigger URL">🔗 ${escapeHtml(token.secret)}</span>`;
+    } else {
+      triggerSecretCopy = `<span class="mono subtle">${escapeHtml(token.secret)}</span>`;
+    }
+    
+    const statusText = escapeHtml(token.status);
+    const toggleClass = token.status === "active" ? "active" : "";
+
+    return `<tr>
+      <td><span class="cell-primary">${escapeHtml(token.name)}</span><span class="cell-secondary">${escapeHtml(token.token_type)}</span></td>
+      <td>${triggerSecretCopy}</td>
+      <td>${formatNumber(token.trigger_count || 0)}</td>
+      <td>${timeOnly(token.created_at)}</td>
+      <td><button class="status-toggle ${toggleClass}" data-token-id="${escapeHtml(token.token_id)}" data-current="${escapeHtml(token.status)}">${statusText}</button></td>
+    </tr>`;
+  }).join("");
+
+  // Attach copy listeners
+  $("canary-rows").querySelectorAll(".canary-url").forEach(el => {
+    el.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(el.dataset.copy);
+        el.classList.add("copied");
+        setTimeout(() => el.classList.remove("copied"), 2000);
+        showToast("Trigger URL copied to clipboard");
+      } catch (err) {
+        showToast("Clipboard access denied", true);
+      }
+    });
+  });
+
+  // Attach toggle listeners
+  $("canary-rows").querySelectorAll(".status-toggle").forEach(btn => {
+    btn.addEventListener("click", () => toggleCanaryStatus(btn.dataset.tokenId, btn.dataset.current));
+  });
+}
+
+async function createCanaryToken(event) {
+  event.preventDefault();
+  const name = $("canary-name").value.trim();
+  const type = $("canary-type").value;
+  if (!name) return;
+  
+  $("canary-create-btn").disabled = true;
+  try {
+    await api("/api/v1/canary/tokens", {
+      method: "POST",
+      body: JSON.stringify({ name, token_type: type })
+    });
+    $("canary-name").value = "";
+    showToast(`Canary token '${name}' created`);
+    await refresh();
+  } catch (err) {
+    showToast(`Could not create token: ${err.message}`, true);
+  } finally {
+    $("canary-create-btn").disabled = false;
+  }
+}
+
+async function toggleCanaryStatus(tokenId, currentStatus) {
+  const newStatus = currentStatus === "active" ? "disabled" : "active";
+  try {
+    await api(`/api/v1/canary/tokens/${encodeURIComponent(tokenId)}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status: newStatus })
+    });
+    showToast(`Token status updated to ${newStatus}`);
+    await refresh();
+  } catch (err) {
+    showToast(`Could not update token: ${err.message}`, true);
+  }
+}
+
 async function refresh(showSuccess = false) {
   if (state.refreshing) return;
   state.refreshing = true;
   $("refresh-button").disabled = true;
   try {
-    const [status, metrics, sessionData] = await Promise.all([
+    const [status, metrics, sessionData, canaryData] = await Promise.all([
       api("/api/v1/honeypot/status"),
       api("/api/v1/honeypot/metrics"),
       api("/api/v1/honeypot/sessions?limit=100"),
+      api("/api/v1/canary/tokens")
     ]);
     renderStatus(status);
     renderMetrics(metrics);
     renderSessions(sessionData.sessions || []);
+    renderCanaryTokens(canaryData.tokens || []);
     if (state.selectedSessionId) await loadSession(state.selectedSessionId);
     else renderSessionDetail(null, []);
     if (showSuccess) showToast("Dashboard telemetry refreshed");
@@ -482,6 +569,7 @@ function bindEvents() {
   $("copy-ioc-button").addEventListener("click", copyIoc);
   $("export-evidence-button").addEventListener("click", exportEvidence);
   $("export-button").addEventListener("click", exportEvidence);
+  $("canary-form").addEventListener("submit", createCanaryToken);
   $("session-filter").addEventListener("click", () => {
     state.filter = state.filter === "all" ? "active" : "all";
     $("session-filter").textContent = state.filter === "all" ? "All sessions" : "Live only";
