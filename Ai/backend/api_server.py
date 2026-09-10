@@ -26,6 +26,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: E402
 from honeypot.models import utc_now  # noqa: E402
 from canary import CanaryManager # noqa: E402
+from agents.alerter import get_alert_manager, SecurityAlert  # noqa: E402
+
 
 
 DASHBOARD_ROOT = PROJECT_ROOT / "dashboard"
@@ -279,7 +281,8 @@ def create_app(
                         "status": runtime.status(),
                         "metrics": store.metrics(),
                         "sessions": {"sessions": store.list_sessions(limit=100)},
-                        "canaries": {"tokens": canary_manager.list_tokens()}
+                        "canaries": {"tokens": canary_manager.list_tokens()},
+                        "alerts": get_alert_manager().get_status(),
                     }
                     disconnected = []
                     for connection in self.active_connections:
@@ -621,6 +624,40 @@ def create_app(
     def test_canary_trigger(test_request: CanaryTestRequest, request: Request) -> Dict[str, Any]:
         """A test endpoint to simulate a trigger safely, useful for credential/document tokens."""
         return _trigger_canary(test_request.secret, request, simulated=True)
+
+    @app.get("/api/v1/alerts/status")
+    def get_alerts_status() -> Dict[str, Any]:
+        return get_alert_manager().get_status()
+
+    @app.post("/api/v1/alerts/test")
+    def test_alert_dispatch(payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        test_alert = SecurityAlert(
+            event_id=f"test-alert-{utc_now().replace(':', '').replace('-', '')[:15]}",
+            timestamp=utc_now(),
+            severity="critical",
+            risk_score=95,
+            source_ip="127.0.0.1",
+            host="cybershield-soc",
+            service="alerts-test",
+            event_type="TEST_SECURITY_INCIDENT",
+            intent="Operator Diagnostics",
+            mitre_techniques=["T1003", "T1078"],
+            mitre_tactics=["Execution", "Initial Access"],
+            ai_summary="Diagnostic test alert initiated from CyberShield AI Operator Dashboard.",
+            recommended_remediation=[
+                "Confirm receipt in configured channels (Slack, Discord, Email)",
+                "Verify alert notification delivery and formatting",
+            ],
+            details={"manual_test": True},
+        )
+        results = mgr.send_alert(test_alert, sync=True)
+        return {
+            "ok": True,
+            "alert_id": test_alert.event_id,
+            "results": results or {},
+            "active_channels_count": mgr.get_status()["active_channels_count"],
+        }
 
     return app
 

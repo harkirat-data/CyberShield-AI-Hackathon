@@ -18,6 +18,7 @@
         <button class="nav-button" data-target="sessions" aria-label="Sessions" title="Sessions"><span>›_</span></button>
         <button class="nav-button" data-target="telemetry" aria-label="Telemetry" title="Telemetry"><span>⌇</span></button>
         <button class="nav-button" data-target="canary" aria-label="Canary Tokens" title="Canary Tokens"><span>🪤</span></button>
+        <button class="nav-button" data-target="alerts" aria-label="Security Alerts" title="Security Alerts"><span>🔔</span></button>
         <button class="nav-button" data-target="analyst" aria-label="SOC analyst" title="Gemini + RAG analyst"><span>✦</span></button>
       </nav>
       <div class="rail-bottom">
@@ -149,6 +150,67 @@
               <tbody id="canary-rows"></tbody>
             </table>
             <div class="empty-state" id="canary-empty" hidden><span class="empty-symbol">🪤</span><strong>No canary tokens created</strong><p>Generate a tripwire token to deploy on your network or endpoints.</p></div>
+          </div>
+        </section>
+
+        <section class="panel alerts-panel" id="alerts" aria-labelledby="alerts-heading">
+          <div class="panel-header">
+            <div>
+              <span class="dot coral-bg"></span>
+              <h2 id="alerts-heading">SECURITY ALERTS &amp; INTEGRATIONS</h2>
+              <span class="badge badge-simulated" id="alerts-channel-count">0 / 3 CHANNELS CONFIGURED</span>
+            </div>
+            <div class="header-actions">
+              <button class="button button-primary" id="test-alert-btn">Send Test Alert</button>
+            </div>
+          </div>
+          
+          <div class="alerts-body">
+            <div class="alerts-channels-grid">
+              <div class="channel-card" id="card-slack">
+                <div class="channel-top">
+                  <span class="channel-title">Slack</span>
+                  <span class="channel-status" id="slack-status-badge">Checking...</span>
+                </div>
+                <div class="channel-info" id="slack-status-text">Webhook: Not configured</div>
+              </div>
+
+              <div class="channel-card" id="card-discord">
+                <div class="channel-top">
+                  <span class="channel-title">Discord</span>
+                  <span class="channel-status" id="discord-status-badge">Checking...</span>
+                </div>
+                <div class="channel-info" id="discord-status-text">Webhook: Not configured</div>
+              </div>
+
+              <div class="channel-card" id="card-email">
+                <div class="channel-top">
+                  <span class="channel-title">Email (SMTP)</span>
+                  <span class="channel-status" id="email-status-badge">Checking...</span>
+                </div>
+                <div class="channel-info" id="email-status-text">SMTP: Not configured</div>
+              </div>
+
+              <div class="channel-card policy-card" id="card-policy">
+                <div class="channel-top">
+                  <span class="channel-title">Notification Policy</span>
+                  <span class="channel-status active">ENFORCING</span>
+                </div>
+                <div class="channel-info" id="policy-status-text">Threshold: Score &ge; 80 or High/Critical &bull; Cooldown: 300s</div>
+              </div>
+            </div>
+
+            <div class="table-wrap alerts-table-wrap">
+              <table>
+                <thead><tr><th>Timestamp</th><th>Incident / Event</th><th>Severity</th><th>Risk Score</th><th>Source IP &rarr; Host</th><th>Channels Delivered</th></tr></thead>
+                <tbody id="alerts-rows"></tbody>
+              </table>
+              <div class="empty-state" id="alerts-empty">
+                <span class="empty-symbol">🔔</span>
+                <strong>No incident notifications dispatched</strong>
+                <p>High-risk events and critical canary triggers will automatically notify configured Slack, Discord, and Email channels.</p>
+              </div>
+            </div>
           </div>
         </section>
       </div>

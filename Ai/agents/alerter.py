@@ -525,6 +525,7 @@ class AlertManager:
 
         # In-memory deduplication cache: {key: timestamp}
         self._cache: Dict[str, float] = {}
+        self._history: List[Dict[str, Any]] = []
         self._lock = threading.Lock()
 
     def _dedup_key(self, alert: SecurityAlert) -> str:
@@ -575,13 +576,64 @@ class AlertManager:
         return True
 
     def _dispatch_all(self, alert: SecurityAlert) -> Dict[str, bool]:
-        """Directly invokes all configured alerters."""
+        """Directly invokes all configured alerters and records to history."""
         results = {
             "slack": self.slack.send(alert),
             "discord": self.discord.send(alert),
             "email": self.email.send(alert),
         }
+        with self._lock:
+            self._history.insert(0, {
+                "event_id": alert.event_id,
+                "timestamp": alert.timestamp,
+                "event_type": alert.event_type,
+                "severity": alert.severity,
+                "risk_score": alert.risk_score,
+                "source_ip": alert.source_ip,
+                "host": alert.host,
+                "service": alert.service,
+                "ai_summary": alert.ai_summary,
+                "results": results,
+            })
+            if len(self._history) > 50:
+                self._history = self._history[:50]
         return results
+
+    def get_status(self) -> Dict[str, Any]:
+        """Return status of all alert channels, policy settings, and recent history."""
+        active_count = sum([
+            1 if self.slack.is_configured else 0,
+            1 if self.discord.is_configured else 0,
+            1 if self.email.is_configured else 0,
+        ])
+        with self._lock:
+            history = list(self._history)
+
+        return {
+            "active_channels_count": active_count,
+            "channels": {
+                "slack": {
+                    "configured": self.slack.is_configured,
+                    "name": "Slack",
+                },
+                "discord": {
+                    "configured": self.discord.is_configured,
+                    "name": "Discord",
+                },
+                "email": {
+                    "configured": self.email.is_configured,
+                    "name": "Email (SMTP)",
+                    "host": self.email.host if self.email.is_configured else "",
+                    "to": self.email.to_email if self.email.is_configured else "",
+                },
+            },
+            "policy": {
+                "min_risk_score": self.min_risk_score,
+                "min_severity": self.min_severity,
+                "dedup_window_seconds": self.dedup_window,
+            },
+            "history": history,
+        }
 
     def send_alert(self, alert: SecurityAlert, sync: bool = False) -> Optional[Dict[str, bool]]:
         """

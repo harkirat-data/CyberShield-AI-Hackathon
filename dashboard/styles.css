@@ -261,3 +261,28 @@ tbody tr.selected { box-shadow: inset 2px 0 0 var(--cyan); background: rgba(55, 
 .status-toggle { background: transparent; border: 1px solid var(--line); color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-family: var(--font-sans); font-weight: 600; text-transform: uppercase; transition: all 0.2s; }
 .status-toggle.active { color: var(--green); border-color: var(--green); }
 .status-toggle:hover { background: rgba(255,255,255,0.05); }
+
+/* Security Alerts & Integrations */
+.alerts-panel { margin-top: 10px; }
+.alerts-body { padding: 14px; display: grid; gap: 14px; }
+.alerts-channels-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.channel-card { border: 1px solid var(--line); border-radius: 6px; background: var(--lifted); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.channel-card.connected { border-color: rgba(69, 212, 131, .35); background: rgba(69, 212, 131, .04); }
+.channel-top { display: flex; align-items: center; justify-content: space-between; }
+.channel-title { font-weight: 600; font-size: 12px; color: var(--copy); }
+.channel-status { font: 600 9px var(--mono); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--secondary); background: rgba(255,255,255,.03); text-transform: uppercase; }
+.channel-status.active { color: var(--green); border-color: rgba(69, 212, 131, .4); background: rgba(69, 212, 131, .1); }
+.channel-info { font-size: 10px; color: var(--secondary); line-height: 1.4; word-break: break-all; }
+.policy-card { border-color: rgba(55, 200, 213, .35); background: rgba(55, 200, 213, .04); }
+.channel-pill { display: inline-flex; align-items: center; gap: 3px; font: 600 9px var(--mono); padding: 2px 6px; border-radius: 3px; margin-right: 4px; text-transform: uppercase; }
+.channel-pill.ok { color: var(--green); background: rgba(69, 212, 131, .15); }
+.channel-pill.fail { color: var(--coral); background: rgba(255, 98, 95, .15); }
+.channel-pill.off { color: var(--muted); background: rgba(255, 255, 255, .05); }
+
+@media (max-width: 1024px) {
+  .alerts-channels-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .alerts-channels-grid { grid-template-columns: 1fr; }
+}
+
