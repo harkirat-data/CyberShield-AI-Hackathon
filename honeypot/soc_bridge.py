@@ -21,6 +21,8 @@ from agents import (  # noqa: E402
     map_mitre,
     score_risk,
     threat_intel_check,
+    get_alert_manager,
+    SecurityAlert,
 )
 from schema import Event  # noqa: E402
 
@@ -125,4 +127,29 @@ class SocBridge:
             rationale=risk.rationale,
             investigation=result,
         )
+
+        try:
+            sec_alert = SecurityAlert(
+                event_id=telemetry.event_id,
+                timestamp=telemetry.timestamp,
+                severity=risk.level,
+                risk_score=risk.score,
+                source_ip=str(session.get("source_ip", "unknown")),
+                host=str(session.get("persona", "cybershield-decoy")),
+                service=str(session.get("service", "honeypot")),
+                event_type=event_type,
+                intent=intent.label,
+                mitre_techniques=list(mitre.techniques),
+                mitre_tactics=list(mitre.tactics),
+                ai_summary=f"Honeypot Decoy: {intent.label} ({intent.confidence:.0%}) detected on service '{session.get('service')}'. {risk.rationale}",
+                recommended_remediation=[
+                    f"Block source IP {session.get('source_ip')} on boundary firewall",
+                    f"Inspect correlated honeypot activity for session {telemetry.session_id}",
+                ],
+                details={"session_id": telemetry.session_id, "command": telemetry.content[:500]},
+            )
+            get_alert_manager().process_security_alert(sec_alert)
+        except Exception:
+            pass
+
         return result

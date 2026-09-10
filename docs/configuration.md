@@ -58,3 +58,25 @@ dashboard bind separate; `--host 127.0.0.1` prevents publishing the operator UI.
 the original CyberShield AI pipeline. The honeypot and dashboard remain usable when those
 optional services are unavailable.
 
+## Security Alerting Integrations
+
+CyberShield AI dispatches real-time incident notifications to Slack, Discord, and Email when high-risk or critical security incidents occur.
+
+| Variable | Default | Description |
+|---|---|---|
+| `SLACK_WEBHOOK_URL` | *(empty)* | Slack incoming webhook URL |
+| `DISCORD_WEBHOOK_URL` | *(empty)* | Discord webhook URL (uses rich embeds) |
+| `SMTP_HOST` | *(empty)* | SMTP server hostname |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_USERNAME` | *(empty)* | SMTP username / authentication account |
+| `SMTP_PASSWORD` | *(empty)* | SMTP password / app-specific password |
+| `SMTP_USE_TLS` | `true` | Enable STARTTLS encryption |
+| `ALERT_EMAIL_TO` | *(empty)* | Comma-separated list of incident recipient emails |
+| `ALERT_EMAIL_FROM` | `alerts@cybershield.ai` | Sender address for security alerts |
+| `ALERT_MIN_RISK_SCORE` | `80` | Minimum risk score (0–100) to trigger notifications |
+| `ALERT_MIN_SEVERITY` | `high` | Minimum severity level (`critical`, `high`, `medium`, `low`, `info`) |
+| `ALERT_DEDUPLICATION_WINDOW_SECONDS` | `300` | Cooldown window in seconds to prevent alert storms |
+
+If a provider's webhook or SMTP host is unset, that channel is disabled gracefully without errors.
+
+
