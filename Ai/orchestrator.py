@@ -16,6 +16,7 @@ from agents import (
     map_mitre,
     merge_mitre_with_rag,
     score_risk,
+    get_alert_manager,
 )
 from rag.core.pipeline import RAGPipeline
 
@@ -31,6 +32,7 @@ class Orchestrator:
         self,
         event_dict: Dict,
         brute_force_detected: bool = False,
+        dispatch_alerts: bool = True,
     ) -> Investigation:
         """
         Run full investigation on a single event.
@@ -123,6 +125,12 @@ class Orchestrator:
             latency_ms=latency,
             model_version="gemini-1.5-flash" if self.use_llm else "rules-only",
         )
+
+        if dispatch_alerts:
+            try:
+                get_alert_manager().process_investigation(inv)
+            except Exception as alert_err:
+                print(f"[orchestrator] alert dispatch failed: {alert_err}")
 
         print(f"[orchestrator] complete: severity={inv.final_severity}, latency={latency}ms")
         return inv
