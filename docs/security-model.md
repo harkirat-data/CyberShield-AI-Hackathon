@@ -1,6 +1,6 @@
 # Security Model
 
-ARGUS assumes every network byte and every model response is untrusted.
+CyberShield AI assumes every network byte and every model response is untrusted.
 
 ## Enforced application controls
 
@@ -11,7 +11,7 @@ ARGUS assumes every network byte and every model response is untrusted.
 - HTTP bodies receive field-level secret redaction plus size and SHA-256 metadata.
 - Gemini has no tools and receives a fictional system context.
 - Model output is length-limited and protocol-normalized before transmission.
-- Runtime source blocking changes only ARGUS process state.
+- Runtime source blocking changes only CyberShield AI process state.
 
 ## Controls required from the operator
 

@@ -1,4 +1,4 @@
-"""Normalize honeypot activity into the existing ARGUS SOC analysis layer."""
+"""Normalize honeypot activity into the existing CyberShield AI SOC analysis layer."""
 
 from __future__ import annotations
 
@@ -53,8 +53,8 @@ class SocBridge:
             {
                 "event_id": telemetry.event_id,
                 "timestamp": telemetry.timestamp,
-                "host": session.get("persona", "argus-decoy"),
-                "source": "argus_honeypot",
+                "host": session.get("persona", "cybershield-decoy"),
+                "source": "cybershield_honeypot",
                 "event_type": event_type,
                 "severity": telemetry.severity or intent.severity,
                 "actor": {
@@ -63,7 +63,7 @@ class SocBridge:
                     "user": username or session.get("username"),
                 },
                 "target": {
-                    "host": "argus-decoy",
+                    "host": "cybershield-decoy",
                     "service": session.get("service"),
                     "port": session.get("destination_port"),
                 },

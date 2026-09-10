@@ -1,12 +1,12 @@
-# CyberShield - AI : Gemini Deception Grid and SOC Analyst.......
+# CyberShield AI — Gemini Deception Grid and SOC Analyst
 
-ARGUS is a defensive cyber-deception lab that combines a five-service network
+CyberShield AI is a defensive cyber-deception lab that combines a five-service network
 honeypot with an existing SOC investigation pipeline. It presents believable
 decoy services to scanners and interactive operators, uses Gemini to generate
 fictional service responses, and records normalized evidence for review in a
 live dashboard.
 
-> **Defensive use only.** Run ARGUS on systems you own or are explicitly
+> **Defensive use only.** Run CyberShield AI on systems you own or are explicitly
 > authorized to test. The default configuration is local-only. Never attach a
 > honeypot to production secrets, trusted internal networks, or unrestricted
 > outbound internet access.
@@ -89,7 +89,7 @@ HONEYPOT_BIND_HOST=127.0.0.1
 HONEYPOT_AUTOSTART=true
 ```
 
-Start ARGUS:
+Start CyberShield AI:
 
 ```powershell
 uv run uvicorn Ai.backend.api_server:app --host 127.0.0.1 --port 8000 --reload
@@ -114,7 +114,7 @@ HONEYPOT_BIND_HOST=0.0.0.0
 ```
 
 Keep Uvicorn bound to `127.0.0.1` so the dashboard is not published. Restart
-ARGUS, then obtain the Windows host address inside Ubuntu:
+CyberShield AI, then obtain the Windows host address inside Ubuntu:
 
 ```bash
 TARGET=$(ip route show | awk '/default/ {print $3; exit}')
@@ -134,7 +134,7 @@ expected results, and dashboard detections are documented in
 
 ## PowerShell demonstration
 
-Use these only against your own ARGUS listener. In Windows PowerShell, `curl` is
+Use these only against your own CyberShield AI listener. In Windows PowerShell, `curl` is
 often an alias for `Invoke-WebRequest`, so the native commands below avoid shell
 differences:
 
@@ -146,7 +146,7 @@ cd D:\CyberSheild
 The guarded script accepts only localhost or private lab IPv4 addresses and
 prints response bodies even when the believable decoy status is `401` or `403`.
 That matters because `Invoke-WebRequest` in Windows PowerShell normally throws
-on non-success HTTP status codes, which can otherwise make a successful ARGUS
+on non-success HTTP status codes, which can otherwise make a successful CyberShield AI
 interaction look like a failed request.
 
 Equivalent individual requests are:
@@ -186,7 +186,7 @@ machine-wide certificate validation.
 
 ## Response pacing
 
-ARGUS adds random response jitter after Gemini completes so the decoy does not
+CyberShield AI adds random response jitter after Gemini completes so the decoy does not
 reply with machine-perfect timing:
 
 ```dotenv
@@ -233,7 +233,7 @@ the dashboard displays **Fallback** and exposes a redacted diagnostic message.
    sources, Gemini model, and retrieval status. Reports are saved with the session;
    new attacker actions mark an older report as **Report outdated** until regenerated.
 6. Use **Contain** to close a live connection or **Block source** to deny new
-   sessions inside the running ARGUS process.
+   sessions inside the running CyberShield AI process.
 7. Export a session as JSON for evidence review, including its saved report.
 
 The dashboard refreshes every three seconds. The fast deterministic SOC triage
@@ -251,7 +251,7 @@ uv run python Ai/rag/vectorstore/build_index.py
 
 ## Telemetry
 
-ARGUS records:
+CyberShield AI records:
 
 - Source address and port, destination port, timestamps, duration, and byte counts
 - Service/client fingerprints, HTTP metadata, request paths, and TLS usage
@@ -264,10 +264,10 @@ ARGUS records:
 `Attacker actions` and `telemetry events` are deliberately different counters.
 An attacker action is one inbound request, command, login attempt, query, or
 client hello. Telemetry also includes every decoy banner/reply and system/SOC
-annotation, so its number will be higher. Restarting ARGUS recalculates older
+annotation, so its number will be higher. Restarting CyberShield AI recalculates older
 session counters using the same inbound-only definition.
 
-Telemetry is stored at `logs/argus_honeypot.db`. Runtime databases, logs,
+Telemetry is stored at `logs/cybershield_honeypot.db` (or legacy `logs/argus_honeypot.db`). Runtime databases, logs,
 certificates, private keys, and `.env` are ignored by Git. See
 [Telemetry Reference](docs/telemetry.md).
 
@@ -284,7 +284,7 @@ certificates, private keys, and `.env` are ignored by Git. See
 | `GET` | `/api/v1/honeypot/sessions/{id}` | Session transcript and analysis |
 | `POST` | `/api/v1/honeypot/sessions/{id}/analyze` | Generate and save Gemini + RAG SOC report |
 | `POST` | `/api/v1/honeypot/sessions/{id}/contain` | Disconnect a session |
-| `POST` | `/api/v1/honeypot/block-source` | Block a source inside ARGUS |
+| `POST` | `/api/v1/honeypot/block-source` | Block a source inside CyberShield AI |
 | `GET` | `/api/v1/honeypot/events` | List normalized events |
 | `GET` | `/api/v1/honeypot/sessions/{id}/export` | Export evidence JSON |
 
@@ -316,11 +316,11 @@ For anything beyond a localhost/WSL demonstration:
 2. Deny outbound traffic at the network layer.
 3. Do not mount credentials, production data, or host-management sockets.
 4. Restrict dashboard access to an operator network.
-5. Redirect standard public ports to ARGUS high ports only after reviewing the
+5. Redirect standard public ports to CyberShield AI high ports only after reviewing the
    sample `deploy/argus-honeypot.nft` rules.
 6. Establish retention, monitoring, and incident-response procedures.
 
-ARGUS never modifies the host firewall automatically. See
+CyberShield AI never modifies the host firewall automatically. See
 [Security Model](docs/security-model.md) and [Troubleshooting](docs/troubleshooting.md).
 
 ## Repository layout

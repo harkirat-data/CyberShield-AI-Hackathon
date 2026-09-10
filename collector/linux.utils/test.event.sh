@@ -1,6 +1,6 @@
 #!/bin/bash
 # test_events.sh
-# Generates test events for ARGUS Linux collectors.
+# Generates test events for CyberShield AI Linux collectors.
 # Run with: sudo ./test_events.sh
 
 set -e
@@ -123,8 +123,8 @@ section "Test Complete"
 echo -e "${GREEN}All test events generated.${NC}"
 echo ""
 echo "Now check the output:"
-echo "  tail -f /home/\$USER/projects/argus/logs/events.jsonl | python3 -m json.tool"
-echo "  tail -f /home/\$USER/projects/argus/logs/alerts.jsonl | python3 -m json.tool"
+echo "  tail -f /home/\$USER/projects/cybershield-ai/logs/events.jsonl | python3 -m json.tool"
+echo "  tail -f /home/\$USER/projects/cybershield-ai/logs/alerts.jsonl | python3 -m json.tool"
 echo ""
 echo "Expected alerts:"
 echo "  - BRUTE_FORCE_BY_IP (from step 1)"
@@ -138,4 +138,4 @@ echo "  - OOM_KILL (from step 12)"
 echo ""
 echo "To reset and test again:"
 echo "  sudo truncate -s 0 /var/log/auth.log /var/log/kern.log /var/log/syslog"
-echo "  rm -f /home/\$USER/projects/argus/logs/*.jsonl"
+echo "  rm -f /home/\$USER/projects/cybershield-ai/logs/*.jsonl"

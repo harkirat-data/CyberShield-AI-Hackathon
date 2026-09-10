@@ -1,4 +1,4 @@
-"""Run the ARGUS deception grid as a standalone process."""
+"""Run the CyberShield AI deception grid as a standalone process."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ async def serve() -> None:
     settings = HoneypotSettings.from_env()
     runtime = HoneypotRuntime(settings=settings)
     status = await runtime.start()
-    print("ARGUS Gemini Deception Grid")
+    print("CyberShield AI Deception Grid")
     print(json.dumps(status, indent=2))
     print("Press Ctrl+C to stop.")
     try:
@@ -26,7 +26,7 @@ def main() -> None:
     try:
         asyncio.run(serve())
     except KeyboardInterrupt:
-        print("\nARGUS deception grid stopped.")
+        print("\nCyberShield AI deception grid stopped.")
 
 
 if __name__ == "__main__":
