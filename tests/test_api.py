@@ -126,3 +126,49 @@ def test_session_soc_rag_report_is_generated_and_persisted(tmp_path):
         assert saved["analyst_report"]["summary"] == report["summary"]
 
     store.close()
+
+
+def test_alerts_api_status_and_test(tmp_path):
+    settings = HoneypotSettings(
+        bind_host="127.0.0.1",
+        database_path=tmp_path / "alerts.db",
+        certificate_dir=tmp_path / "certs",
+        enable_gemini=False,
+        services=tuple(replace(item, port=0) for item in default_services()),
+    )
+    store = TelemetryStore(settings.database_path)
+    runtime = HoneypotRuntime(settings=settings, store=store)
+    app = create_app(
+        use_rag=False,
+        use_llm=False,
+        honeypot_store=store,
+        honeypot_runtime=runtime,
+        honeypot_autostart=False,
+    )
+
+    with TestClient(app) as client:
+        # 1. Test status endpoint
+        status_resp = client.get("/api/v1/alerts/status")
+        assert status_resp.status_code == 200
+        data = status_resp.json()
+        assert "channels" in data
+        assert "policy" in data
+        assert "slack" in data["channels"]
+        assert "discord" in data["channels"]
+        assert "email" in data["channels"]
+
+        # 2. Test test-alert dispatch endpoint
+        test_resp = client.post("/api/v1/alerts/test")
+        assert test_resp.status_code == 200
+        test_data = test_resp.json()
+        assert test_data["ok"] is True
+        assert "alert_id" in test_data
+        assert "results" in test_data
+
+        # 3. Verify history now includes the test alert
+        status_after = client.get("/api/v1/alerts/status").json()
+        assert len(status_after["history"]) >= 1
+        assert status_after["history"][0]["event_type"] == "TEST_SECURITY_INCIDENT"
+
+    store.close()
+

@@ -447,21 +447,157 @@ async function toggleCanaryStatus(tokenId, currentStatus) {
   }
 }
 
+function renderAlerts(data) {
+  if (!data) return;
+  state.alerts = data;
+
+  const count = data.active_channels_count || 0;
+  const channelCountEl = $("alerts-channel-count");
+  if (channelCountEl) {
+    channelCountEl.textContent = `${count} / 3 CHANNELS ACTIVE`;
+  }
+
+  // Slack
+  const slack = data.channels?.slack || {};
+  const cardSlack = $("card-slack");
+  const badgeSlack = $("slack-status-badge");
+  const textSlack = $("slack-status-text");
+  if (cardSlack && badgeSlack && textSlack) {
+    if (slack.configured) {
+      cardSlack.classList.add("connected");
+      badgeSlack.textContent = "CONNECTED";
+      badgeSlack.classList.add("active");
+      textSlack.textContent = "Incoming Webhook Active";
+    } else {
+      cardSlack.classList.remove("connected");
+      badgeSlack.textContent = "DISABLED";
+      badgeSlack.classList.remove("active");
+      textSlack.textContent = "Webhook not configured in .env";
+    }
+  }
+
+  // Discord
+  const discord = data.channels?.discord || {};
+  const cardDiscord = $("card-discord");
+  const badgeDiscord = $("discord-status-badge");
+  const textDiscord = $("discord-status-text");
+  if (cardDiscord && badgeDiscord && textDiscord) {
+    if (discord.configured) {
+      cardDiscord.classList.add("connected");
+      badgeDiscord.textContent = "CONNECTED";
+      badgeDiscord.classList.add("active");
+      textDiscord.textContent = "Rich Embeds Active";
+    } else {
+      cardDiscord.classList.remove("connected");
+      badgeDiscord.textContent = "DISABLED";
+      badgeDiscord.classList.remove("active");
+      textDiscord.textContent = "Webhook not configured in .env";
+    }
+  }
+
+  // Email
+  const email = data.channels?.email || {};
+  const cardEmail = $("card-email");
+  const badgeEmail = $("email-status-badge");
+  const textEmail = $("email-status-text");
+  if (cardEmail && badgeEmail && textEmail) {
+    if (email.configured) {
+      cardEmail.classList.add("connected");
+      badgeEmail.textContent = "CONNECTED";
+      badgeEmail.classList.add("active");
+      textEmail.textContent = `SMTP: ${email.host || "Configured"} → ${email.to || "Recipient"}`;
+    } else {
+      cardEmail.classList.remove("connected");
+      badgeEmail.textContent = "DISABLED";
+      badgeEmail.classList.remove("active");
+      textEmail.textContent = "SMTP host / recipient not set";
+    }
+  }
+
+  // Policy
+  const policy = data.policy || {};
+  const policyText = $("policy-status-text");
+  if (policyText) {
+    policyText.textContent = `Score ≥ ${policy.min_risk_score || 80} or ${(policy.min_severity || "high").toUpperCase()} • Cooldown: ${policy.dedup_window_seconds || 300}s`;
+  }
+
+  // History Table
+  const history = data.history || [];
+  const emptyEl = $("alerts-empty");
+  const rowsEl = $("alerts-rows");
+  if (emptyEl && rowsEl) {
+    emptyEl.hidden = history.length > 0;
+    rowsEl.innerHTML = history.map(item => {
+      const sev = String(item.severity || "info").toUpperCase();
+      const results = item.results || {};
+
+      function pill(name, status) {
+        if (status === true) return `<span class="channel-pill ok">✔ ${name}</span>`;
+        if (status === false) return `<span class="channel-pill fail">✘ ${name}</span>`;
+        return `<span class="channel-pill off">${name}</span>`;
+      }
+
+      const pills = [
+        pill("Slack", results.slack),
+        pill("Discord", results.discord),
+        pill("Email", results.email),
+      ].join("");
+
+      return `<tr>
+        <td class="mono">${escapeHtml(timeOnly(item.timestamp))}</td>
+        <td>
+          <span class="cell-primary">${escapeHtml(item.event_type || "INCIDENT")}</span>
+          <span class="cell-secondary">${escapeHtml((item.ai_summary || "").slice(0, 70))}</span>
+        </td>
+        <td><span class="badge" style="color:${riskColor(item.severity)}; border-color:${riskColor(item.severity)}">${escapeHtml(sev)}</span></td>
+        <td class="mono" style="color:${riskColor(item.severity)}; font-weight:700;">${item.risk_score}/100</td>
+        <td><code>${escapeHtml(item.source_ip || "unknown")}</code> → <code>${escapeHtml(item.host || "soc")}</code></td>
+        <td>${pills}</td>
+      </tr>`;
+    }).join("");
+  }
+}
+
+async function sendTestAlert() {
+  const btn = $("test-alert-btn");
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+  try {
+    const res = await api("/api/v1/alerts/test", { method: "POST" });
+    const results = res.results || {};
+    const successCount = Object.values(results).filter(v => v === true).length;
+    if (res.active_channels_count === 0) {
+      showToast("Test alert evaluated: No channels configured in .env", false);
+    } else {
+      showToast(`Test alert sent: ${successCount} / ${res.active_channels_count} channel(s) delivered`);
+    }
+    await refresh();
+  } catch (err) {
+    showToast(`Test alert failed: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Send Test Alert";
+  }
+}
+
 async function refresh(showSuccess = false) {
   if (state.refreshing) return;
   state.refreshing = true;
   $("refresh-button").disabled = true;
   try {
-    const [status, metrics, sessionData, canaryData] = await Promise.all([
+    const [status, metrics, sessionData, canaryData, alertsData] = await Promise.all([
       api("/api/v1/honeypot/status"),
       api("/api/v1/honeypot/metrics"),
       api("/api/v1/honeypot/sessions?limit=100"),
-      api("/api/v1/canary/tokens")
+      api("/api/v1/canary/tokens"),
+      api("/api/v1/alerts/status").catch(() => null),
     ]);
     renderStatus(status);
     renderMetrics(metrics);
     renderSessions(sessionData.sessions || []);
     renderCanaryTokens(canaryData.tokens || []);
+    if (alertsData) renderAlerts(alertsData);
     if (state.selectedSessionId) await loadSession(state.selectedSessionId);
     else renderSessionDetail(null, []);
     if (showSuccess) showToast("Dashboard telemetry refreshed");
@@ -570,6 +706,7 @@ function bindEvents() {
   $("export-evidence-button").addEventListener("click", exportEvidence);
   $("export-button").addEventListener("click", exportEvidence);
   $("canary-form").addEventListener("submit", createCanaryToken);
+  $("test-alert-btn")?.addEventListener("click", sendTestAlert);
   $("session-filter").addEventListener("click", () => {
     state.filter = state.filter === "all" ? "active" : "all";
     $("session-filter").textContent = state.filter === "all" ? "All sessions" : "Live only";
@@ -612,6 +749,7 @@ function connectWebSocket() {
         renderMetrics(data.metrics);
         renderSessions(data.sessions?.sessions || []);
         renderCanaryTokens(data.canaries?.tokens || []);
+        if (data.alerts) renderAlerts(data.alerts);
 
         if (state.selectedSessionId) {
           const selected = (data.sessions?.sessions || []).find(s => s.session_id === state.selectedSessionId);
