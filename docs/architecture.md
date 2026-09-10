@@ -1,6 +1,6 @@
 # Architecture
 
-ARGUS separates untrusted network traffic from analysis and operator control.
+CyberShield AI separates untrusted network traffic from analysis and operator control.
 The network runtime accepts bytes, converts them into bounded telemetry, and
 returns only simulated data. No received command or query is executed.
 

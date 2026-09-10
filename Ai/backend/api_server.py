@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""FastAPI backend for ARGUS SOC analysis and the deception grid."""
+"""FastAPI backend for CyberShield AI SOC analysis and the deception grid."""
 
 from __future__ import annotations
 
@@ -85,8 +84,8 @@ def _build_session_analysis_event(
     return {
         "event_id": f"session-report-{session['session_id']}",
         "timestamp": utc_now(),
-        "host": session.get("persona", "argus-decoy"),
-        "source": "argus_honeypot",
+        "host": session.get("persona", "cybershield-decoy"),
+        "source": "cybershield_honeypot",
         "event_type": "HONEYPOT_SESSION_REVIEW",
         "severity": session.get("risk_level", "info"),
         "actor": {
@@ -95,7 +94,7 @@ def _build_session_analysis_event(
             "user": session.get("username"),
         },
         "target": {
-            "host": "argus-decoy",
+            "host": "cybershield-decoy",
             "service": session.get("service"),
             "port": session.get("destination_port"),
         },
@@ -175,7 +174,7 @@ def _format_analyst_report(
     }
     error = analysis.get("error") or getattr(getattr(pipeline, "llm", None), "last_error", None)
     summary = str(analysis.get("summary") or risk.get("rationale") or (
-        f"ARGUS observed {session.get('intent', 'reconnaissance').lower()} activity "
+        f"CyberShield AI observed {session.get('intent', 'reconnaissance').lower()} activity "
         f"from {session.get('source_ip', 'an unknown source')} against the "
         f"{session.get('service', 'decoy')} service."
     ))[:3000]
@@ -237,7 +236,7 @@ def create_app(
         yield
         await runtime.stop()
 
-    app = FastAPI(title="ARGUS API", version="1.0.0", lifespan=lifespan)
+    app = FastAPI(title="CyberShield AI API", version="1.0.0", lifespan=lifespan)
     app.state.use_rag = use_rag
     app.state.use_llm = use_llm
     app.state.orchestrator = None
@@ -317,7 +316,7 @@ def create_app(
         rag_pipeline = app.state.rag_pipeline
         return {
             "status": "ok",
-            "service": "argus-api",
+            "service": "cybershield-api",
             "configured": {
                 "use_rag": app.state.use_rag,
                 "use_llm": app.state.use_llm,
@@ -511,7 +510,7 @@ def create_app(
             "ok": True,
             "source_ip": request.source_ip,
             "contained_sessions": contained,
-            "scope": "ARGUS runtime blocklist",
+            "scope": "CyberShield AI runtime blocklist",
         }
 
     @app.get("/api/v1/honeypot/events")
@@ -530,7 +529,7 @@ def create_app(
         return JSONResponse(
             content=evidence,
             headers={
-                "Content-Disposition": f'attachment; filename="argus-{session_id}.json"'
+                "Content-Disposition": f'attachment; filename="cybershield-{session_id}.json"'
             },
         )
 
@@ -576,7 +575,7 @@ def create_app(
         event = {
             "event_id": f"canary-trig-{utc_now().replace(':', '')}-{secret[:8]}",
             "timestamp": utc_now(),
-            "host": "argus-api",
+            "host": "cybershield-api",
             "source": "canary_service",
             "event_type": "CANARY_TOKEN_TRIGGERED",
             "severity": "critical",
@@ -585,7 +584,7 @@ def create_app(
                 "user": None,
             },
             "target": {
-                "host": "argus-api",
+                "host": "cybershield-api",
                 "service": "canary",
                 "port": request.url.port or 80,
             },
