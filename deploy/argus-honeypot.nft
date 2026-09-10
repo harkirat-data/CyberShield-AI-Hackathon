@@ -1,10 +1,10 @@
 #!/usr/sbin/nft -f
 
 # EXAMPLE ONLY — apply on a dedicated Linux honeypot host after reviewing the
-# interface, source-network, and management-access requirements. ARGUS never
+# interface, source-network, and management-access requirements. CyberShield AI never
 # installs these rules automatically.
 
-table inet argus_honeypot {
+table inet cybershield_honeypot {
     chain prerouting {
         type nat hook prerouting priority dstnat; policy accept;
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""ARGUS SOC Log Collector — entry point."""
+"""CyberShield AI SOC Log Collector — entry point."""
 
 import sys
 
 
 def main():
-    print("ARGUS SOC + Gemini Deception Grid")
+    print("CyberShield AI SOC + Gemini Deception Grid")
     print("  API Backend:")
     print("    - FastAPI: Ai/backend/api_server.py")
     print("  Collectors:")

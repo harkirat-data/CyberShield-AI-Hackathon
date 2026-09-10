@@ -1,6 +1,6 @@
 # Authorized Demonstration Attacks
 
-These commands are designed only for the local ARGUS lab. Set `TARGET` to the
+These commands are designed only for the local CyberShield AI lab. Set `TARGET` to the
 Windows host address visible from WSL:
 
 ```bash

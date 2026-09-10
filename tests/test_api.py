@@ -34,7 +34,7 @@ def test_dashboard_and_honeypot_api(tmp_path):
     with TestClient(app) as client:
         dashboard = client.get("/dashboard")
         assert dashboard.status_code == 200
-        assert "ARGUS" in dashboard.text
+        assert "CyberShield AI" in dashboard.text
         assert client.get("/api/v1/honeypot/status").json()["running"] is False
         started = client.post("/api/v1/honeypot/control/start")
         assert started.status_code == 200
