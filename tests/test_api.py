@@ -1,8 +1,12 @@
-from dataclasses import replace
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "Ai" / "backend"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from dataclasses import replace
 from fastapi.testclient import TestClient
 
-from Ai.backend.api_server import create_app
+from api_server import create_app
 from honeypot.config import HoneypotSettings, default_services
 from honeypot.models import DecoySession, TelemetryEvent
 from honeypot.runtime import HoneypotRuntime
@@ -30,7 +34,7 @@ def test_dashboard_and_honeypot_api(tmp_path):
     with TestClient(app) as client:
         dashboard = client.get("/dashboard")
         assert dashboard.status_code == 200
-        assert "ARGUS" in dashboard.text
+        assert "CyberShield AI" in dashboard.text
         assert client.get("/api/v1/honeypot/status").json()["running"] is False
         started = client.post("/api/v1/honeypot/control/start")
         assert started.status_code == 200

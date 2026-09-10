@@ -1,6 +1,6 @@
 # Canary Tokens in CyberShield AI
 
-ARGUS includes a modular Canary Token system designed to detect attackers who attempt to access fake credentials, URLs, or documents placed as bait.
+CyberShield AI includes a modular Canary Token system designed to detect attackers who attempt to access fake credentials, URLs, or documents placed as bait.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ ARGUS includes a modular Canary Token system designed to detect attackers who at
 ## Token Types
 
 - **URL Token**: Generates a fast web hook, e.g. `http://host/t/<secret>`. An attacker accessing the URL immediately triggers a critical alert.
-- **Credential Token**: Generates a fake username or API key (e.g. `AKIA...`). Unlike URLs, credentials require out-of-band monitoring or API submission. ARGUS provides a `/api/v1/canary/test` endpoint to simulate their discovery and usage.
+- **Credential Token**: Generates a fake username or API key (e.g. `AKIA...`). Unlike URLs, credentials require out-of-band monitoring or API submission. CyberShield AI provides a `/api/v1/canary/test` endpoint to simulate their discovery and usage.
 - **Document Token**: Similar to a credential token, this generates a unique embedded identifier (`doc_...`) that can be hidden within files.
 
 ## API Usage

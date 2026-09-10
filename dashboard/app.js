@@ -249,7 +249,7 @@ function renderSessionDetail(session, events) {
 
   const transcriptEvents = events.filter((event) => ["inbound", "outbound", "system"].includes(event.direction)).slice(-80);
   $("terminal-stream").innerHTML = transcriptEvents.length ? transcriptEvents.map((event) => {
-    const role = event.direction === "inbound" ? "ATTACKER" : event.direction === "outbound" ? "DECOY AI" : "ARGUS";
+    const role = event.direction === "inbound" ? "ATTACKER" : event.direction === "outbound" ? "DECOY AI" : "CYBERSHIELD AI";
     const latency = event.latency_ms != null ? ` · ${event.latency_ms}ms` : "";
     return `<div class="terminal-entry ${escapeHtml(event.direction)}">
       <div class="entry-meta"><span class="entry-role">${role}</span><span class="entry-time">${escapeHtml(timeOnly(event.timestamp))}${latency}</span></div>
@@ -309,7 +309,7 @@ function renderAnalyst(report, session) {
     $("analyst-status").textContent = state.analyzing ? "ANALYZING" : "READY";
     $("analyst-generated").textContent = `${session.interactions || 0} attacker action(s) available`;
     $("analyst-empty").textContent = state.analyzing
-      ? "Gemini and the ARGUS knowledge base are analyzing this session. The live honeypot remains responsive."
+      ? "Gemini and the CyberShield AI knowledge base are analyzing this session. The live honeypot remains responsive."
       : "Deterministic SOC scoring is already visible above. Generate the deeper Gemini + RAG report when you are ready.";
     $("analyst-empty").hidden = false;
     $("analyst-content").hidden = true;
@@ -467,7 +467,7 @@ async function refresh(showSuccess = false) {
     if (showSuccess) showToast("Dashboard telemetry refreshed");
     state.errorShown = false;
   } catch (error) {
-    if (!state.errorShown) showToast(`ARGUS API unavailable: ${error.message}`, true);
+    if (!state.errorShown) showToast(`CyberShield AI API unavailable: ${error.message}`, true);
     state.errorShown = true;
   } finally {
     state.refreshing = false;
@@ -524,7 +524,7 @@ async function containSelected() {
 
 async function blockSelectedSource() {
   const sourceIp = state.selectedSession?.source_ip;
-  if (!sourceIp || !confirm(`Block ${sourceIp} inside the ARGUS runtime?`)) return;
+  if (!sourceIp || !confirm(`Block ${sourceIp} inside the CyberShield AI runtime?`)) return;
   try {
     const result = await api("/api/v1/honeypot/block-source", { method: "POST", body: JSON.stringify({ source_ip: sourceIp }) });
     showToast(`Runtime-blocked ${sourceIp}; contained ${result.contained_sessions} session(s)`);
@@ -551,7 +551,7 @@ async function exportEvidence() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `argus-${sessionId}.json`;
+    link.download = `cybershield-${sessionId}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -588,8 +588,62 @@ function updateClock() {
   $("utc-clock").textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
 }
 
+let ws;
+let reconnectTimer;
+function connectWebSocket() {
+  if (ws) {
+    ws.close();
+  }
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/dashboard`;
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    $("refresh-button").style.color = "var(--green)";
+    $("refresh-button").title = "Live Streaming";
+    if (!state.refreshing) refresh(false); // Do a baseline fetch just in case
+  };
+
+  ws.onmessage = async (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "state_update") {
+        renderStatus(data.status);
+        renderMetrics(data.metrics);
+        renderSessions(data.sessions?.sessions || []);
+        renderCanaryTokens(data.canaries?.tokens || []);
+
+        if (state.selectedSessionId) {
+          const selected = (data.sessions?.sessions || []).find(s => s.session_id === state.selectedSessionId);
+          if (selected) {
+             if (state.lastInteractions !== selected.interactions) {
+                 state.lastInteractions = selected.interactions;
+                 await loadSession(state.selectedSessionId);
+             }
+          }
+        }
+        state.errorShown = false;
+      }
+    } catch (e) {
+      console.error("WS error processing message", e);
+    }
+  };
+
+  ws.onclose = () => {
+    $("refresh-button").style.color = "var(--coral)";
+    $("refresh-button").title = "Reconnecting...";
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWebSocket, 3000);
+  };
+
+  ws.onerror = () => {
+    if (!state.errorShown) showToast("WebSocket error, reverting to reconnect...", true);
+    state.errorShown = true;
+  };
+}
+
 bindEvents();
 updateClock();
 setInterval(updateClock, 1000);
 refresh();
-setInterval(() => refresh(false), 3000);
+connectWebSocket();

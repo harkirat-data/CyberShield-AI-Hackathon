@@ -1,6 +1,6 @@
 # Contributing
 
-Changes should preserve ARGUS's primary invariant: attacker-controlled input is
+Changes should preserve CyberShield AI's primary invariant: attacker-controlled input is
 observed and simulated, never executed.
 
 ## Development
