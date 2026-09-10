@@ -3,6 +3,10 @@ import json
 import re
 import win32evtlog
 import subprocess
+import os
+import socket
+import urllib.request
+import urllib.error
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +16,8 @@ from risk_scoring import score_event
 OUTPUT_DIR = Path(r"C:\soc-logs")
 ALERT_LOG = OUTPUT_DIR / "win.log" / "windows_alerts.jsonl"
 EVENT_LOG = OUTPUT_DIR / "win.log" / "windows_events.jsonl"
+API_URL = os.environ.get("CYBERSHIELD_API_URL") or os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
+HOSTNAME = socket.gethostname()
 
 IP_PATTERN = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
 
@@ -248,6 +254,57 @@ def write_jsonl(filepath, payload):
         f.write(json.dumps(payload) + "\n")
 
 
+def _severity_from_risk(risk_level):
+    return (risk_level or "low").lower()
+
+
+def _normalize_event(event, risk_level):
+    details = {
+        "command": event.get("command"),
+        "process": event.get("process"),
+        "service_name": event.get("service_name"),
+        "task_name": event.get("task_name")
+    }
+    details = {k: v for k, v in details.items() if v}
+    return {
+        "event_id": f"{event['event_type']}:{event.get('user') or event.get('source_ip') or 'unknown'}:{int(time.time() * 1000)}",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "host": HOSTNAME,
+        "source": "win_auth",
+        "event_type": event.get("event_type", "UNKNOWN"),
+        "severity": _severity_from_risk(risk_level),
+        "actor": {
+            "source_ip": event.get("source_ip", ""),
+            "user": event.get("user", ""),
+        },
+        "target": {
+            "host": HOSTNAME,
+            "service": "windows",
+        },
+        "details": details,
+        "raw": event.get("message", ""),
+    }
+
+
+def post_to_api(event, risk_level, brute_force_detected=False):
+    payload = {
+        "event": _normalize_event(event, risk_level),
+        "brute_force_detected": brute_force_detected,
+    }
+    request = urllib.request.Request(
+        API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            body = response.read().decode("utf-8", errors="ignore")
+            print(json.dumps({"api_forwarded": True, "status": response.status, "body": body[:200]}))
+    except urllib.error.URLError as exc:
+        print(json.dumps({"api_forwarded": False, "error": str(exc), "url": API_URL}))
+
+
 def poll_log(log_name, max_events=100):
     events = []
     try:
@@ -315,6 +372,7 @@ def main():
                     }
                     write_jsonl(EVENT_LOG, output)
                     print(json.dumps(output))
+                    post_to_api(event, scored["risk_level"], brute_force_detected=False)
 
                     if scored["risk_level"] in ["HIGH", "MEDIUM"]:
                         alert = {
@@ -333,6 +391,7 @@ def main():
                         bf["trigger_event"] = event
                         write_jsonl(ALERT_LOG, bf)
                         print(json.dumps({"alert": bf}))
+                        post_to_api(event, bf.get("severity", "HIGH"), brute_force_detected=True)
 
                     sus_alerts = check_suspicious_patterns(event)
                     for sus in sus_alerts:
@@ -340,6 +399,7 @@ def main():
                         sus["trigger_event"] = event
                         write_jsonl(ALERT_LOG, sus)
                         print(json.dumps({"alert": sus}))
+                        post_to_api(event, sus.get("severity", "HIGH"), brute_force_detected=False)
 
             time.sleep(2)
 

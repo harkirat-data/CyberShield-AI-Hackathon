@@ -13,8 +13,8 @@ if str(AI_ROOT) not in sys.path:
 from rag.core.pipeline import RAGPipeline
 
 
-st.set_page_config(page_title="ARGUS RAG Playground", layout="wide")
-st.title("ARGUS RAG Playground")
+st.set_page_config(page_title="CyberShield AI RAG Playground", layout="wide")
+st.title("CyberShield AI RAG Playground")
 st.caption("Query the local RAG index, optional Gemini answers, and Redis-backed chat memory.")
 
 

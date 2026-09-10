@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""FastAPI backend for ARGUS SOC analysis and the deception grid."""
+"""FastAPI backend for CyberShield AI SOC analysis and the deception grid."""
 
 from __future__ import annotations
 
@@ -10,7 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -85,8 +84,8 @@ def _build_session_analysis_event(
     return {
         "event_id": f"session-report-{session['session_id']}",
         "timestamp": utc_now(),
-        "host": session.get("persona", "argus-decoy"),
-        "source": "argus_honeypot",
+        "host": session.get("persona", "cybershield-decoy"),
+        "source": "cybershield_honeypot",
         "event_type": "HONEYPOT_SESSION_REVIEW",
         "severity": session.get("risk_level", "info"),
         "actor": {
@@ -95,7 +94,7 @@ def _build_session_analysis_event(
             "user": session.get("username"),
         },
         "target": {
-            "host": "argus-decoy",
+            "host": "cybershield-decoy",
             "service": session.get("service"),
             "port": session.get("destination_port"),
         },
@@ -175,7 +174,7 @@ def _format_analyst_report(
     }
     error = analysis.get("error") or getattr(getattr(pipeline, "llm", None), "last_error", None)
     summary = str(analysis.get("summary") or risk.get("rationale") or (
-        f"ARGUS observed {session.get('intent', 'reconnaissance').lower()} activity "
+        f"CyberShield AI observed {session.get('intent', 'reconnaissance').lower()} activity "
         f"from {session.get('source_ip', 'an unknown source')} against the "
         f"{session.get('service', 'decoy')} service."
     ))[:3000]
@@ -237,7 +236,7 @@ def create_app(
         yield
         await runtime.stop()
 
-    app = FastAPI(title="ARGUS API", version="1.0.0", lifespan=lifespan)
+    app = FastAPI(title="CyberShield AI API", version="1.0.0", lifespan=lifespan)
     app.state.use_rag = use_rag
     app.state.use_llm = use_llm
     app.state.orchestrator = None
@@ -247,6 +246,56 @@ def create_app(
 
     canary_manager = CanaryManager(store)
     app.state.canary_manager = canary_manager
+
+    class DashboardConnectionManager:
+        def __init__(self):
+            self.active_connections: List[WebSocket] = []
+            self.running = False
+            self.task: Optional[asyncio.Task] = None
+
+        async def connect(self, websocket: WebSocket):
+            await websocket.accept()
+            self.active_connections.append(websocket)
+            if not self.running:
+                self.running = True
+                self.task = asyncio.create_task(self.broadcast_loop())
+
+        def disconnect(self, websocket: WebSocket):
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+            if not self.active_connections:
+                self.running = False
+                if self.task:
+                    self.task.cancel()
+                    self.task = None
+
+        async def broadcast_loop(self):
+            while self.running:
+                if not self.active_connections:
+                    break
+                try:
+                    payload = {
+                        "type": "state_update",
+                        "status": runtime.status(),
+                        "metrics": store.metrics(),
+                        "sessions": {"sessions": store.list_sessions(limit=100)},
+                        "canaries": {"tokens": canary_manager.list_tokens()}
+                    }
+                    disconnected = []
+                    for connection in self.active_connections:
+                        try:
+                            await connection.send_json(payload)
+                        except Exception:
+                            disconnected.append(connection)
+                    for d in disconnected:
+                        self.disconnect(d)
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    print(f"[ws] broadcast error: {e}")
+                await asyncio.sleep(1)
+
+    ws_manager = DashboardConnectionManager()
 
     def get_orchestrator() -> Any:
         if app.state.orchestrator is None:
@@ -267,7 +316,7 @@ def create_app(
         rag_pipeline = app.state.rag_pipeline
         return {
             "status": "ok",
-            "service": "argus-api",
+            "service": "cybershield-api",
             "configured": {
                 "use_rag": app.state.use_rag,
                 "use_llm": app.state.use_llm,
@@ -307,6 +356,36 @@ def create_app(
                 request.event,
                 brute_force_detected=request.brute_force_detected,
             )
+            
+            # Map external Event into Honeypot models for dashboard UI
+            from honeypot.models import DecoySession, TelemetryEvent
+            session_id = f"ext_{request.event['actor'].get('source_ip', 'unknown').replace('.', '_')}"
+            
+            if not store.get_session(session_id):
+                session = DecoySession(
+                    session_id=session_id,
+                    source_ip=request.event["actor"].get("source_ip", "0.0.0.0"),
+                    source_port=0,
+                    destination_port=0,
+                    service=request.event["target"].get("service", "endpoint"),
+                    protocol=request.event.get("source", "log"),
+                    persona=request.event["target"].get("host", "unknown"),
+                    risk_level=result.risk.level,
+                    risk_score=result.risk.score,
+                    intent="Endpoint Activity",
+                )
+                store.create_session(session)
+            
+            tel_event = TelemetryEvent(
+                session_id=session_id,
+                event_type=request.event.get("event_type", "LOG"),
+                severity=result.risk.level,
+                direction="inbound",
+                content=request.event.get("raw", ""),
+                metadata={"external_event": True, "details": request.event.get("details", {})}
+            )
+            store.record_event(tel_event)
+
             return result.to_dict()
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -369,6 +448,18 @@ def create_app(
         sessions = store.list_sessions(limit=limit, status=status)
         return {"count": len(sessions), "sessions": sessions}
 
+    @app.websocket("/api/v1/ws/dashboard")
+    async def websocket_dashboard(websocket: WebSocket):
+        await ws_manager.connect(websocket)
+        try:
+            while True:
+                # Keep connection alive and wait for client messages if any
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            ws_manager.disconnect(websocket)
+        except Exception:
+            ws_manager.disconnect(websocket)
+
     @app.get("/api/v1/honeypot/sessions/{session_id}")
     def honeypot_session(session_id: str) -> Dict[str, Any]:
         session = store.get_session(session_id)
@@ -419,7 +510,7 @@ def create_app(
             "ok": True,
             "source_ip": request.source_ip,
             "contained_sessions": contained,
-            "scope": "ARGUS runtime blocklist",
+            "scope": "CyberShield AI runtime blocklist",
         }
 
     @app.get("/api/v1/honeypot/events")
@@ -438,7 +529,7 @@ def create_app(
         return JSONResponse(
             content=evidence,
             headers={
-                "Content-Disposition": f'attachment; filename="argus-{session_id}.json"'
+                "Content-Disposition": f'attachment; filename="cybershield-{session_id}.json"'
             },
         )
 
@@ -484,7 +575,7 @@ def create_app(
         event = {
             "event_id": f"canary-trig-{utc_now().replace(':', '')}-{secret[:8]}",
             "timestamp": utc_now(),
-            "host": "argus-api",
+            "host": "cybershield-api",
             "source": "canary_service",
             "event_type": "CANARY_TOKEN_TRIGGERED",
             "severity": "critical",
@@ -493,7 +584,7 @@ def create_app(
                 "user": None,
             },
             "target": {
-                "host": "argus-api",
+                "host": "cybershield-api",
                 "service": "canary",
                 "port": request.url.port or 80,
             },
