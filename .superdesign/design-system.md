@@ -1,8 +1,8 @@
-# ARGUS Deception Grid — Design System
+# CyberShield AI Deception Grid — Design System
 
 ## Product
 
-ARGUS is a defensive SOC workstation that combines host log investigation with a Gemini-powered, five-service deception grid. The primary user is a SOC analyst monitoring active intrusions. Their job is to notice a new session, understand attacker intent, inspect the evidence, and isolate or export the incident without losing the live thread.
+CyberShield AI is a defensive SOC workstation that combines host log investigation with a Gemini-powered, five-service deception grid. The primary user is a SOC analyst monitoring active intrusions. Their job is to notice a new session, understand attacker intent, inspect the evidence, and isolate or export the incident without losing the live thread.
 
 The primary screen is a desktop command center with four zones: a slim global navigation rail, a high-signal posture header, a live attacker-session workspace, and a persistent intelligence/response sidebar. Honeypot data must be visibly labeled `DECOY` so simulated host responses can never be mistaken for real infrastructure state.
 
@@ -32,7 +32,7 @@ The primary screen is a desktop command center with four zones: a slim global na
 ## Layout
 
 - Desktop-first at 1440×1000, responsive down to 1024px.
-- Left navigation rail: 72px with ARGUS wordmark and icon labels.
+- Left navigation rail: 72px with CyberShield AI wordmark and icon labels.
 - Main region: 12-column grid. Active session/transcript occupies 7–8 columns; intelligence rail occupies 4–5.
 - Header presents `DECEPTION GRID ONLINE`, environment selector, UTC clock, Gemini state, and analyst avatar.
 - Top metrics: active sessions, interactions captured, unique sources, and mean dwell time.

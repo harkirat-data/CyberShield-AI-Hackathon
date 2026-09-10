@@ -29,7 +29,7 @@ from risk_scoring import score_event
 OUTPUT_DIR = Path(r"C:\soc-logs")
 EVENT_LOG  = OUTPUT_DIR / "win.log"/"windows_events.jsonl"
 ALERT_LOG  = OUTPUT_DIR / "win.log"/"windows_alerts.jsonl"
-API_URL = os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
+API_URL = os.environ.get("CYBERSHIELD_API_URL") or os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
 HOSTNAME = socket.gethostname()
 
 # Event IDs of interest at the system / endpoint level

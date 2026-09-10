@@ -1,6 +1,6 @@
 # Telemetry Reference
 
-ARGUS stores three logical record types in SQLite.
+CyberShield AI stores three logical record types in SQLite.
 
 ## Sessions
 

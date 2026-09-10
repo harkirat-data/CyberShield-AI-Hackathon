@@ -1,6 +1,6 @@
 # Security Policy
 
-ARGUS is defensive lab software and should be treated as an exposed security
+CyberShield AI is defensive lab software and should be treated as an exposed security
 sensor, not as a hardened production service.
 
 ## Reporting

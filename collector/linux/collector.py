@@ -14,7 +14,7 @@ from risk_scoring import score_event
 LOG_FILE = "/var/log/auth.log"
 ALERT_LOG = Path.home() / "soc-testing" / "logs" / "alerts.jsonl"
 EVENT_LOG = Path.home() / "soc-testing" / "logs" / "events.jsonl"
-API_URL = os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
+API_URL = os.environ.get("CYBERSHIELD_API_URL") or os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
 HOSTNAME = socket.gethostname()
 
 AUTH_FAILURE_PATTERN = r"Failed password for (?:invalid user )?(\w+) from ([\d.]+)"

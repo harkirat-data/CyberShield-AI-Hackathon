@@ -249,7 +249,7 @@ function renderSessionDetail(session, events) {
 
   const transcriptEvents = events.filter((event) => ["inbound", "outbound", "system"].includes(event.direction)).slice(-80);
   $("terminal-stream").innerHTML = transcriptEvents.length ? transcriptEvents.map((event) => {
-    const role = event.direction === "inbound" ? "ATTACKER" : event.direction === "outbound" ? "DECOY AI" : "ARGUS";
+    const role = event.direction === "inbound" ? "ATTACKER" : event.direction === "outbound" ? "DECOY AI" : "CYBERSHIELD AI";
     const latency = event.latency_ms != null ? ` · ${event.latency_ms}ms` : "";
     return `<div class="terminal-entry ${escapeHtml(event.direction)}">
       <div class="entry-meta"><span class="entry-role">${role}</span><span class="entry-time">${escapeHtml(timeOnly(event.timestamp))}${latency}</span></div>
@@ -309,7 +309,7 @@ function renderAnalyst(report, session) {
     $("analyst-status").textContent = state.analyzing ? "ANALYZING" : "READY";
     $("analyst-generated").textContent = `${session.interactions || 0} attacker action(s) available`;
     $("analyst-empty").textContent = state.analyzing
-      ? "Gemini and the ARGUS knowledge base are analyzing this session. The live honeypot remains responsive."
+      ? "Gemini and the CyberShield AI knowledge base are analyzing this session. The live honeypot remains responsive."
       : "Deterministic SOC scoring is already visible above. Generate the deeper Gemini + RAG report when you are ready.";
     $("analyst-empty").hidden = false;
     $("analyst-content").hidden = true;
@@ -467,7 +467,7 @@ async function refresh(showSuccess = false) {
     if (showSuccess) showToast("Dashboard telemetry refreshed");
     state.errorShown = false;
   } catch (error) {
-    if (!state.errorShown) showToast(`ARGUS API unavailable: ${error.message}`, true);
+    if (!state.errorShown) showToast(`CyberShield AI API unavailable: ${error.message}`, true);
     state.errorShown = true;
   } finally {
     state.refreshing = false;
@@ -524,7 +524,7 @@ async function containSelected() {
 
 async function blockSelectedSource() {
   const sourceIp = state.selectedSession?.source_ip;
-  if (!sourceIp || !confirm(`Block ${sourceIp} inside the ARGUS runtime?`)) return;
+  if (!sourceIp || !confirm(`Block ${sourceIp} inside the CyberShield AI runtime?`)) return;
   try {
     const result = await api("/api/v1/honeypot/block-source", { method: "POST", body: JSON.stringify({ source_ip: sourceIp }) });
     showToast(`Runtime-blocked ${sourceIp}; contained ${result.contained_sessions} session(s)`);
@@ -551,7 +551,7 @@ async function exportEvidence() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `argus-${sessionId}.json`;
+    link.download = `cybershield-${sessionId}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();

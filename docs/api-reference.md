@@ -49,11 +49,11 @@ metadata.
 POST /api/v1/honeypot/sessions/{session_id}/analyze
 ```
 
-Runs the existing ARGUS RAG pipeline against captured inbound evidence without
+Runs the existing CyberShield AI RAG pipeline against captured inbound evidence without
 blocking the live decoy response. The result includes summary, severity,
 findings, MITRE techniques, remediation, model/RAG state, and retrieved source
 snippets. It is persisted and returned by later session-detail and export calls.
-If Gemini or retrieval is unavailable, ARGUS saves an `evidence-only` report.
+If Gemini or retrieval is unavailable, CyberShield AI saves an `evidence-only` report.
 
 ## Containment
 
@@ -77,7 +77,7 @@ GET /api/v1/honeypot/sessions/{session_id}/export
 Returns a downloadable JSON bundle containing the session, transcript, hashes,
 metadata, and investigations.
 
-## Existing ARGUS endpoints
+## Existing CyberShield AI endpoints
 
 ```http
 GET  /health

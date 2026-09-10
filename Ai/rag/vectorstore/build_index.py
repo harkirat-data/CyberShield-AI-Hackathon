@@ -17,7 +17,7 @@ from rag.core.config import CHROMA_PATH, COLLECTION_NAME
 
 def main():
     print("=" * 60)
-    print("ARGUS RAG Index Builder")
+    print("CyberShield AI RAG Index Builder")
     print("=" * 60)
 
     # 1. Load all knowledge base documents
