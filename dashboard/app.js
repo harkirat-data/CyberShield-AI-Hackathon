@@ -1177,7 +1177,8 @@ function renderAttackVectors(sessionsArr, eventsArr) {
     const lon = geo.longitude || 0;
     const { x, y } = projectGeoCoords(lat, lon, idx);
     const risk = item.max_risk_score || 50;
-    const color = risk >= 80 ? "#C24B4B" : risk >= 50 ? "#C98A3C" : "#8B9A6E";
+    const isTopAdversary = idx === 0;
+    const color = isTopAdversary ? "#ef4444" : risk >= 80 ? "#C24B4B" : risk >= 50 ? "#C98A3C" : "#8B9A6E";
     const flag = geo.country_flag || "🌐";
     const asn = geo.asn || "AS-UNKNOWN";
     const country = geo.country || "Unknown";
@@ -1188,25 +1189,51 @@ function renderAttackVectors(sessionsArr, eventsArr) {
     const ctrlY = Math.min(y, center.y) - 25;
     const title = `${flag} ${ip} [${asn}] — ${city}, ${country} | Risk ${risk}/100`;
 
-    html += `
-      <g class="geo-vector-group" data-ip="${esc(ip)}" style="cursor:pointer">
-        <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
-          stroke="${color}"
-          stroke-dasharray="4 4"
-          stroke-width="1.6"
-          opacity="0.85"
-          fill="none">
-          <title>${esc(title)}</title>
-        </path>
-        <circle cx="${x}" cy="${y}" r="6" fill="${color}" opacity="0.35" class="geo-beacon-pulse"/>
-        <circle class="geo-pin" cx="${x}" cy="${y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
-          <title>${esc(title)}</title>
-        </circle>
-        <text x="${x}" y="${y - 8}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#242c1d" style="filter:drop-shadow(0 1px 2px #fff)">
-          ${flag} ${esc(ip)}
-        </text>
-      </g>
-    `;
+    if (isTopAdversary) {
+      html += `
+        <g class="geo-vector-group top-adversary-group" data-ip="${esc(ip)}" style="cursor:pointer">
+          <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
+            stroke="#ef4444"
+            stroke-dasharray="5 3"
+            stroke-width="2.2"
+            opacity="0.95"
+            fill="none">
+            <title>${esc(title)}</title>
+          </path>
+          <circle cx="${x}" cy="${y}" r="16" fill="#ef4444" opacity="0.45" class="geo-beacon-pulse"/>
+          <circle class="geo-pin" cx="${x}" cy="${y}" r="6.5" fill="#ef4444" stroke="#ffffff" stroke-width="2">
+            <title>${esc(title)}</title>
+          </circle>
+          <rect x="${x - 46}" y="${y - 28}" width="92" height="15" rx="3" fill="#dc2626" opacity="0.95" stroke="#ffffff" stroke-width="0.8"/>
+          <text x="${x}" y="${y - 17}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="700" fill="#ffffff" letter-spacing="0.05em">
+            ⚡ LATEST ATTACK
+          </text>
+          <text x="${x}" y="${y + 16}" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#ffffff" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.95))">
+            ${flag} ${esc(ip)}
+          </text>
+        </g>
+      `;
+    } else {
+      html += `
+        <g class="geo-vector-group" data-ip="${esc(ip)}" style="cursor:pointer">
+          <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
+            stroke="${color}"
+            stroke-dasharray="4 4"
+            stroke-width="1.6"
+            opacity="0.85"
+            fill="none">
+            <title>${esc(title)}</title>
+          </path>
+          <circle cx="${x}" cy="${y}" r="6" fill="${color}" opacity="0.3" class="geo-beacon-pulse"/>
+          <circle class="geo-pin" cx="${x}" cy="${y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
+            <title>${esc(title)}</title>
+          </circle>
+          <text x="${x}" y="${y - 8}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.9))">
+            ${flag} ${esc(ip)}
+          </text>
+        </g>
+      `;
+    }
   });
 
   g.innerHTML = html;
@@ -1229,6 +1256,8 @@ async function loadAttackerGeoIntel(cachedAttackers) {
       const resp = await api("/api/v1/intel/attackers");
       attackers = resp.attackers || [];
     }
+    // Filter out synthetic local test harness clients
+    attackers = (attackers || []).filter(a => a.ip && a.ip.toLowerCase() !== "testclient");
     state.attackers = attackers;
 
     const badge = $("geo-attacker-badge");
@@ -1244,7 +1273,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
         if (empty) empty.style.display = "block";
       } else {
         if (empty) empty.style.display = "none";
-        tbody.innerHTML = attackers.map(atk => {
+        tbody.innerHTML = attackers.map((atk, idx) => {
           const g = atk.geo || {};
           const flag = g.country_flag || "🌐";
           const country = g.country || "Unknown";
@@ -1256,12 +1285,14 @@ async function loadAttackerGeoIntel(cachedAttackers) {
           const decoys = (atk.probed_services || []).join(", ") || "Decoy Sensor";
           const risk = atk.max_risk_score || 50;
           const riskCls = risk >= 80 ? "high" : risk >= 50 ? "med" : "low";
+          const isLatest = idx === 0;
 
-          return `<tr>
+          return `<tr class="${isLatest ? 'latest-attacker-row' : ''}">
             <td>
               <span class="geo-ip-link" data-ip="${esc(atk.ip)}">
-                <span class="material-symbols-outlined" style="font-size:15px;color:var(--primary)">radar</span>
-                ${esc(atk.ip)}
+                <span class="material-symbols-outlined" style="font-size:15px;color:${isLatest ? 'var(--rose)' : 'var(--primary)'}">radar</span>
+                <strong>${esc(atk.ip)}</strong>
+                ${isLatest ? '<span style="background:var(--rose);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-family:var(--font-mono)">LATEST</span>' : ''}
               </span>
             </td>
             <td>
@@ -1307,19 +1338,30 @@ async function loadAttackerGeoIntel(cachedAttackers) {
     }
 
     renderAttackVectors(state.sessions, state.events);
+
+    // Auto-display and prefill the live dossier card for the most recent active attacker
+    if (attackers.length > 0) {
+      const topAtk = attackers[0];
+      const inputEl = $("ip-tracker-input");
+      if (inputEl && !inputEl.value) {
+        inputEl.value = topAtk.ip;
+      }
+      // Populate dossier card immediately without disrupting user with toast/scroll
+      trackIpAddress(topAtk.ip, false, false);
+    }
   } catch (err) {
     console.error("Failed to load attacker geo intel:", err);
   }
 }
 
-async function trackIpAddress(ip) {
+async function trackIpAddress(ip, showToast = true, scroll = true) {
   if (!ip) return;
   const cleanIp = ip.trim();
   const card = $("ip-dossier-card");
   if (!card) return;
 
   try {
-    toast(`Tracing network footprint for ${cleanIp}...`);
+    if (showToast) toast(`Tracing network footprint for ${cleanIp}...`);
     card.style.display = "block";
     const data = await api(`/api/v1/intel/ip/${encodeURIComponent(cleanIp)}`);
     const geo = data.geo || {};
@@ -1343,6 +1385,19 @@ async function trackIpAddress(ip) {
     $("dossier-threat-type").textContent = geo.threat_type || "External Ingress";
     $("dossier-sessions").textContent = `${data.session_count || 0} session(s) engaged`;
     $("dossier-canaries").textContent = `${(data.canary_triggers || []).length} tripwire trigger(s)`;
+
+    // Attach latest targeted decoy and observed intent
+    const latestSess = (data.sessions && data.sessions.length > 0) ? data.sessions[0] : null;
+    const targetPort = latestSess?.destination_port ? `Port ${latestSess.destination_port}` : "Perimeter Listener";
+    const targetProto = latestSess?.service || latestSess?.protocol || "HTTP";
+    const targetEl = $("dossier-target-vector");
+    if (targetEl) {
+      targetEl.textContent = `${targetProto} Decoy (${targetPort})`;
+    }
+    const intentEl = $("dossier-attack-intent");
+    if (intentEl) {
+      intentEl.textContent = latestSess?.intent || geo.threat_type || "Database discovery / Ingress";
+    }
 
     const blockBtn = $("dossier-btn-block");
     if (blockBtn) {
@@ -1379,9 +1434,11 @@ async function trackIpAddress(ip) {
       };
     }
 
-    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (scroll) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   } catch (err) {
-    toast(`Failed to track IP: ${err.message}`, true);
+    if (showToast) toast(`Failed to track IP: ${err.message}`, true);
   }
 }
 
@@ -2658,6 +2715,22 @@ function setupButtons() {
         card.style.borderColor = "";
         card.style.boxShadow = "";
       }, 1600);
+    }
+  });
+
+  $("modal-btn-view-geo")?.addEventListener("click", () => {
+    if (!state.selectedSession) return;
+    const ip = state.selectedSession.source_ip || state.selectedSession.source_address;
+    closeSessionModal();
+    const target = $("telemetry-drawer");
+    const scrollEl = document.querySelector(".scroll-canvas");
+    if (target && scrollEl) {
+      scrollEl.scrollTo({ top: target.offsetTop - 16, behavior: "smooth" });
+    } else if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (ip) {
+      trackIpAddress(ip, true, true);
     }
   });
 

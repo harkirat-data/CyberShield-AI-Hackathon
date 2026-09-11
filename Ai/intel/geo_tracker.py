@@ -381,7 +381,7 @@ class GeoTracker:
 
         for sess in sessions:
             ip = sess.get("source_ip") or sess.get("source_address")
-            if not ip:
+            if not ip or ip.strip().lower() in {"testclient", "test", "0.0.0.0", "unknown"}:
                 continue
             geo = self.lookup(ip)
             port = sess.get("destination_port")
@@ -404,6 +404,11 @@ class GeoTracker:
             entry = ip_map[ip]
             entry["session_count"] += 1
             entry["actions_count"] += sess.get("interactions") or 0
+            sess_time = sess.get("started_at")
+            if sess_time:
+                curr_latest = entry.get("latest_activity")
+                if not curr_latest or sess_time > curr_latest:
+                    entry["latest_activity"] = sess_time
             if port and port not in entry["probed_ports"]:
                 entry["probed_ports"].append(port)
             if proto and proto not in entry["probed_services"]:
@@ -435,10 +440,18 @@ class GeoTracker:
                 else:
                     ip_map[ip]["canary_triggered"] = True
                     ip_map[ip]["max_risk_score"] = max(ip_map[ip]["max_risk_score"], 95)
+                    can_time = can.get("last_triggered_at")
+                    if can_time:
+                        curr_latest = ip_map[ip].get("latest_activity")
+                        if not curr_latest or can_time > curr_latest:
+                            ip_map[ip]["latest_activity"] = can_time
 
-        # Sort by max_risk_score descending, then session_count
+        # Sort by latest_activity descending (most recent attacks first), then max_risk_score
         attackers = list(ip_map.values())
-        attackers.sort(key=lambda a: (a["max_risk_score"], a["session_count"]), reverse=True)
+        attackers.sort(
+            key=lambda a: (a.get("latest_activity") or "", a.get("max_risk_score") or 0),
+            reverse=True,
+        )
         return attackers
 
 
