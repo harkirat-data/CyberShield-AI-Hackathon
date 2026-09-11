@@ -1,4 +1,4 @@
-<group name="argus,local,windows,linux,">
+<group name="cybershield,local,windows,linux,">
   <rule id="100500" level="10">
     <if_group>sysmon_event1</if_group>
     <field name="win.eventdata.commandLine">(?i).*(-enc|-encodedcommand).*</field>

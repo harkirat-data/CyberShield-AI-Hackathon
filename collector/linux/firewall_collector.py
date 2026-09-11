@@ -44,7 +44,7 @@ except ImportError:
 # === Output paths (shared with auth collector) ===
 ALERT_LOG = Path.home()/ "logs" / "alerts.jsonl"
 EVENT_LOG = Path.home()/ "logs" / "events.jsonl"
-API_URL = os.environ.get("CYBERSHIELD_API_URL") or os.environ.get("ARGUS_API_URL", "http://127.0.0.1:8000/api/v1/logs")
+API_URL = os.environ.get("CYBERSHIELD_API_URL", "http://127.0.0.1:8000/api/v1/logs")
 HOSTNAME = socket.gethostname()
 
 

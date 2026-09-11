@@ -12,8 +12,7 @@ load_dotenv()
 RAG_ROOT = Path(__file__).resolve().parents[1]
 KB_ROOT = RAG_ROOT / "data" / "knowledge_base"
 CHROMA_PATH = RAG_ROOT / "chromadb"
-# Retained 'argus_security_kb' to maintain compatibility with pre-built ChromaDB collection on disk
-COLLECTION_NAME = "argus_security_kb"
+COLLECTION_NAME = os.environ.get("CHROMA_COLLECTION_NAME", "cybershield_security_kb")
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
 EMBEDDING_BATCH_SIZE = 64

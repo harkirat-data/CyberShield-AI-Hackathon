@@ -36,9 +36,9 @@ dashboard bind separate; `--host 127.0.0.1` prevents publishing the operator UI.
 
 | Variable | Default | Description |
 |---|---|---|
-| `HONEYPOT_DB_PATH` | `logs/cybershield_honeypot.db` | SQLite telemetry database (supports legacy argus_honeypot.db) |
+| `HONEYPOT_DB_PATH` | `logs/cybershield_honeypot.db` | SQLite telemetry database |
 | `HONEYPOT_CERT_DIR` | `logs/certs` | Generated HTTPS key and certificate directory |
-| `CYBERSHIELD_API_URL` | `http://127.0.0.1:8000/api/v1/logs` | Endpoint for Windows/Linux collectors (ARGUS_API_URL supported as fallback) |
+| `CYBERSHIELD_API_URL` | `http://127.0.0.1:8000/api/v1/logs` | Endpoint for Windows/Linux collectors |
 
 ## Safety limits
 
