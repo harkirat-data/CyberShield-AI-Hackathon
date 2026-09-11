@@ -33,6 +33,7 @@ from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: 
 from honeypot.models import utc_now  # noqa: E402
 from canary import CanaryManager # noqa: E402
 from agents.alerter import get_alert_manager, SecurityAlert  # noqa: E402
+from intel.geo_tracker import get_geo_tracker, KNOWN_THREAT_ACTORS  # noqa: E402
 
 
 
@@ -282,13 +283,19 @@ def create_app(
                 if not self.active_connections:
                     break
                 try:
+                    geo_tracker = get_geo_tracker()
+                    raw_sessions = store.list_sessions(limit=100)
+                    canary_tokens = canary_manager.list_tokens()
+                    attackers = geo_tracker.get_tracked_attackers(raw_sessions, canary_tokens)
+                    enriched_sessions = [geo_tracker.enrich_session(s) for s in raw_sessions]
                     payload = {
                         "type": "state_update",
                         "status": runtime.status(),
                         "metrics": store.metrics(),
-                        "sessions": {"sessions": store.list_sessions(limit=100)},
-                        "canaries": {"tokens": canary_manager.list_tokens()},
+                        "sessions": {"sessions": enriched_sessions},
+                        "canaries": {"tokens": canary_tokens},
                         "alerts": get_alert_manager().get_status(),
+                        "attackers": attackers,
                     }
                     disconnected = []
                     for connection in self.active_connections:
@@ -455,7 +462,9 @@ def create_app(
         status: Optional[str] = Query(default=None, max_length=32),
     ) -> Dict[str, Any]:
         sessions = store.list_sessions(limit=limit, status=status)
-        return {"count": len(sessions), "sessions": sessions}
+        geo_tracker = get_geo_tracker()
+        enriched = [geo_tracker.enrich_session(s) for s in sessions]
+        return {"count": len(enriched), "sessions": enriched}
 
     @app.websocket("/api/v1/ws/dashboard")
     async def websocket_dashboard(websocket: WebSocket):
@@ -474,8 +483,10 @@ def create_app(
         session = store.get_session(session_id)
         if session is None:
             raise HTTPException(status_code=404, detail="Session not found")
+        geo_tracker = get_geo_tracker()
+        enriched = geo_tracker.enrich_session(session)
         return {
-            "session": session,
+            "session": enriched,
             "events": list(
                 reversed(store.list_events(session_id=session_id, limit=500))
             ),
@@ -786,6 +797,100 @@ def create_app(
             }
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+    # --- Geolocation & Threat IP Tracking Endpoints ---
+
+    @app.get("/api/v1/intel/attackers")
+    def get_intel_attackers() -> Dict[str, Any]:
+        geo_tracker = get_geo_tracker()
+        sessions = store.list_sessions(limit=500)
+        canaries = canary_manager.list_tokens()
+        attackers = geo_tracker.get_tracked_attackers(sessions, canaries)
+        return {"count": len(attackers), "attackers": attackers}
+
+    @app.get("/api/v1/intel/ip/{ip}")
+    def get_intel_ip(ip: str) -> Dict[str, Any]:
+        geo_tracker = get_geo_tracker()
+        intel = geo_tracker.lookup(ip)
+        all_sessions = store.list_sessions(limit=500)
+        ip_sessions = [
+            s for s in all_sessions 
+            if (s.get("source_ip") or s.get("source_address")) == ip
+        ]
+        canaries = [
+            c for c in canary_manager.list_tokens() 
+            if c.get("last_source_ip") == ip
+        ]
+        return {
+            "ok": True,
+            "ip": ip,
+            "geo": intel.to_dict(),
+            "session_count": len(ip_sessions),
+            "sessions": [geo_tracker.enrich_session(s) for s in ip_sessions[:20]],
+            "canary_triggers": canaries,
+        }
+
+    class SimulateAttackRequest(BaseModel):
+        country_code: Optional[str] = None
+        target_port: Optional[int] = None
+        service: Optional[str] = None
+
+    @app.post("/api/v1/intel/simulate-attack")
+    async def simulate_attack(req: Optional[SimulateAttackRequest] = None) -> Dict[str, Any]:
+        import random
+        from honeypot.models import DecoySession, TelemetryEvent, new_id
+
+        candidates = list(KNOWN_THREAT_ACTORS.items())
+        if req and req.country_code:
+            filtered = [
+                c for c in candidates 
+                if c[1].get("country_code", "").upper() == req.country_code.upper()
+            ]
+            if filtered:
+                candidates = filtered
+
+        attacker_ip, info = random.choice(candidates)
+        ports = [
+            (2222, "SSH", "ssh", "finance-backup"),
+            (8088, "HTTP", "http", "portal-nginx"),
+            (33060, "MySQL", "mysql", "mariadb-core"),
+            (2323, "Telnet", "telnet", "cisco-router"),
+        ]
+        port_choice = random.choice(ports)
+        dest_port = req.target_port if (req and req.target_port) else port_choice[0]
+        service_name = req.service if (req and req.service) else port_choice[1]
+        proto = port_choice[2]
+        persona = port_choice[3]
+
+        ses_id = new_id("sim")
+        session = DecoySession(
+            session_id=ses_id,
+            source_ip=attacker_ip,
+            source_port=random.randint(40000, 65000),
+            destination_port=dest_port,
+            service=service_name,
+            protocol=proto,
+            persona=persona,
+            risk_score=info.get("threat_score", 75),
+            risk_level="high" if info.get("threat_score", 75) >= 70 else "medium",
+            intent=info.get("threat_type", "Reconnaissance"),
+            interactions=random.randint(3, 15),
+        )
+        store.create_session(session)
+
+        event = TelemetryEvent(
+            session_id=ses_id,
+            event_type="HONEYPOT_SESSION_STARTED",
+            severity=session.risk_level,
+            direction="system",
+            content=f"External adversary connection from {info.get('city')}, {info.get('country')} ({info.get('asn')})",
+            metadata={"source_ip": attacker_ip, "geo": info},
+        )
+        store.record_event(event)
+
+        geo_tracker = get_geo_tracker()
+        enriched = geo_tracker.enrich_session(session.to_dict())
+        return {"ok": True, "session": enriched, "actor": info}
 
     return app
 
