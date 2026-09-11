@@ -1969,7 +1969,7 @@ function renderAlerts(data) {
       badgeEmail.textContent = "DISABLED";
       badgeEmail.className = "channel-status";
       badgeEmail.title = "Not configured in .env";
-      textEmail.textContent = "SMTP host / recipient not set";
+      textEmail.textContent = email.last_error || "SMTP host / credentials not set in .env";
     }
   }
 
@@ -2034,7 +2034,10 @@ async function sendTestAlert() {
     const results = res.results || {};
     const successCount = Object.values(results).filter(v => v === true).length;
     if (res.active_channels_count === 0) {
-      toast("Test alert evaluated: No channels configured in .env", false);
+      const hint = res.email_error ? ` (${res.email_error})` : ": No channels configured in .env";
+      toast(`Test alert evaluated${hint}`, false);
+    } else if (successCount === 0 && res.email_error) {
+      toast(`Test alert failed: ${res.email_error}`, true);
     } else {
       toast(`Test alert sent: ${successCount} / ${res.active_channels_count} channel(s) delivered`);
     }
@@ -2249,7 +2252,8 @@ async function sendTestAlertToSelected() {
     if (results.email === true) {
       toast(`Test alert sent to ${activeEmails.length} recipient(s): ${activeEmails.join(", ")}`);
     } else {
-      toast("Test alert dispatch completed (see incident log).");
+      const reason = res.email_error || "SMTP not configured in .env (missing SMTP_HOST/SMTP_PASSWORD)";
+      toast(`Email alert failed: ${reason}`, true);
     }
     await loadAlerts();
   } catch (err) {

@@ -355,6 +355,7 @@ class EmailAlerter:
         self._alert_to = alert_to
         self._alert_from = alert_from
         self.timeout = timeout_seconds
+        self.last_error: Optional[str] = None
         self._recipients: Optional[List[Dict[str, Any]]] = None
         if alert_to:
             self._recipients = [
@@ -637,8 +638,14 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
 
     def send(self, alert: SecurityAlert, override_recipients: Optional[List[str]] = None) -> bool:
         """Send email alert via SMTP. Returns True on success, False otherwise."""
+        if not self.host:
+            self.last_error = "SMTP_HOST is not configured in .env (e.g. smtp.gmail.com)"
+            logger.debug("[email] %s", self.last_error)
+            return False
+
         if not self.is_configured:
-            logger.debug("[email] SMTP not configured; skipping.")
+            self.last_error = "SMTP not fully configured in .env (missing SMTP_HOST or recipient)"
+            logger.debug("[email] %s", self.last_error)
             return False
 
         recipients = [
@@ -647,7 +654,8 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
             if addr.strip()
         ]
         if not recipients:
-            logger.warning("[email] No active recipients configured; skipping alert %s", alert.event_id)
+            self.last_error = "No active email recipients configured"
+            logger.warning("[email] %s; skipping alert %s", self.last_error, alert.event_id)
             return False
 
         subject, text_body, html_body = self.build_message(alert)
@@ -668,9 +676,11 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
                 if self.user and self.password:
                     server.login(self.user, self.password)
                 server.sendmail(self.from_email, recipients, msg.as_string())
+            self.last_error = None
             logger.info("[email] Alert sent successfully for event %s to %s", alert.event_id, ", ".join(recipients))
             return True
         except Exception as exc:
+            self.last_error = f"SMTP dispatch error: {exc}"
             logger.error("[email] Failed to send alert email for %s: %s", alert.event_id, exc)
             return False
 
@@ -858,6 +868,7 @@ class AlertManager:
                     "name": "Email (SMTP)",
                     "host": self.email.host if self.email.is_configured else "",
                     "to": self.email.to_email if self.email.is_configured else "",
+                    "last_error": getattr(self.email, "last_error", None),
                     "recipients": self.email.get_recipients(),
                     "active_recipients": self.email.get_active_recipients(),
                     "active_recipients_count": len(self.email.get_active_recipients()),
