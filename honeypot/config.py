@@ -143,12 +143,7 @@ class HoneypotSettings:
         return cls(
             bind_host=os.environ.get("HONEYPOT_BIND_HOST", "127.0.0.1"),
             database_path=Path(
-                os.environ.get("HONEYPOT_DB_PATH")
-                or (
-                    "logs/argus_honeypot.db"
-                    if Path("logs/argus_honeypot.db").exists()
-                    else "logs/cybershield_honeypot.db"
-                )
+                os.environ.get("HONEYPOT_DB_PATH") or "logs/cybershield_honeypot.db"
             ),
             certificate_dir=Path(
                 os.environ.get("HONEYPOT_CERT_DIR", "logs/certs")
