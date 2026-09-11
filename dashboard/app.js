@@ -1253,7 +1253,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
                 body: JSON.stringify({ source_ip: ip }),
               });
               toast(`Quarantined IP: ${ip}`);
-              await loadTelemetryData();
+              await refresh();
             } catch (err) {
               toast("Failed to block: " + err.message, true);
             }
@@ -1309,9 +1309,27 @@ async function trackIpAddress(ip) {
             body: JSON.stringify({ source_ip: cleanIp }),
           });
           toast(`Perimeter rule applied: ${cleanIp} quarantined.`);
-          await loadTelemetryData();
+          await refresh();
         } catch (err) {
           toast("Block failed: " + err.message, true);
+        }
+      };
+    }
+
+    const simBtn = $("dossier-btn-simulate");
+    if (simBtn) {
+      simBtn.onclick = async () => {
+        try {
+          toast(`Engaging live attack vector from ${cleanIp}...`);
+          const res = await api("/api/v1/intel/simulate-attack", {
+            method: "POST",
+            body: JSON.stringify({ attacker_ip: cleanIp })
+          });
+          const actor = res.actor || {};
+          toast(`Live attack triggered: ${actor.country || "Adversary"} (${actor.asn || "ASN"}) targeting decoy port ${res.session?.destination_port || 2222}!`);
+          await refresh();
+        } catch (err) {
+          toast("Attack simulation failed: " + err.message, true);
         }
       };
     }
@@ -2193,15 +2211,50 @@ function setupButtons() {
     if (card) card.style.display = "none";
   });
 
+  $("btn-real-attack")?.addEventListener("click", async () => {
+    const btn = $("btn-real-attack");
+    if (btn) btn.disabled = true;
+    try {
+      toast("Detecting your real external WAN public IP...");
+      let myIp = null;
+      try {
+        const ipRes = await fetch("https://api.ipify.org?format=json");
+        const ipData = await ipRes.json();
+        myIp = ipData.ip;
+      } catch (err) {
+        console.warn("Could not fetch ipify from browser, falling back to backend WAN resolution", err);
+      }
+      toast(myIp ? `Attacker IP detected: ${myIp}. Launching real adversary vector...` : "Resolving real WAN IP & launching attack vector...");
+      const res = await api("/api/v1/intel/simulate-attack", {
+        method: "POST",
+        body: JSON.stringify({ attacker_ip: myIp || "auto" })
+      });
+      const actor = res.actor || {};
+      const flag = actor.country_flag || "🌐";
+      toast(`[REAL ATTACK TRAPPED] ${flag} ${actor.city || "Adversary"}, ${actor.country || "WAN"} (${actor.isp || actor.asn || ""}) targeted Port ${res.session?.destination_port || 8088}!`);
+      await refresh();
+      // Auto-open dossier for this real IP
+      if (actor.ip) {
+        const input = $("ip-tracker-input");
+        if (input) input.value = actor.ip;
+        trackIpAddress(actor.ip);
+      }
+    } catch (e) {
+      toast("Real attack execution failed: " + e.message, true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
   $("btn-simulate-threat")?.addEventListener("click", async () => {
     const btn = $("btn-simulate-threat");
     if (btn) btn.disabled = true;
     try {
-      toast("Generating simulated adversary ingress vector...");
+      toast("Generating demo preset adversary ingress vector...");
       const res = await api("/api/v1/intel/simulate-attack", { method: "POST" });
       const actor = res.actor || {};
-      toast(`Simulated threat ingress: ${actor.country || "Adversary"} (${actor.asn || "ASN"}) attacking port ${res.session?.destination_port || 2222}!`);
-      await loadTelemetryData();
+      toast(`Demo threat ingress: ${actor.country || "Adversary"} (${actor.asn || "ASN"}) attacking port ${res.session?.destination_port || 2222}!`);
+      await refresh();
     } catch (e) {
       toast("Simulation failed: " + e.message, true);
     } finally {
