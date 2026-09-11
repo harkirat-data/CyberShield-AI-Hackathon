@@ -1081,6 +1081,21 @@ function updateStatusUI(status) {
     toggleBtn.classList.toggle("running", running);
   }
 
+  // Hero Pause / Resume Button
+  const pauseBtn = $("btn-pause-grid");
+  const pauseIcon = $("pause-grid-icon");
+  const pauseLabel = $("pause-grid-label");
+  if (pauseBtn) {
+    pauseBtn.classList.toggle("paused-grid", !running);
+    if (pauseIcon) {
+      pauseIcon.textContent = running ? "pause_circle" : "play_circle";
+      pauseIcon.style.color = running ? "#7d9cb7" : "#4e5d34";
+    }
+    if (pauseLabel) {
+      pauseLabel.textContent = running ? "Pause Grid" : "Resume Grid";
+    }
+  }
+
   // Gemini status
   const gemini = status?.gemini;
   const modelLabel = $("gemini-model-label");
@@ -2145,17 +2160,30 @@ function connectWebSocket() {
 // BUTTON HANDLERS
 // ============================================================
 function setupButtons() {
-  // Grid toggle
-  $("btn-grid-toggle")?.addEventListener("click", async () => {
+  // Grid toggle & pause handlers
+  const handleToggleGrid = async () => {
     const running = state.status?.running ?? false;
+    const pauseBtn = $("btn-pause-grid");
+    const sideBtn = $("btn-grid-toggle");
+    if (pauseBtn) pauseBtn.disabled = true;
+    if (sideBtn) sideBtn.disabled = true;
     try {
-      await api(`/api/v1/honeypot/control/${running ? "stop" : "start"}`, { method: "POST" });
-      toast(running ? "Honeypot grid stopped." : "Honeypot grid started!");
-      setTimeout(refresh, 600);
+      const res = await api(`/api/v1/honeypot/control/${running ? "stop" : "start"}`, { method: "POST" });
+      toast(running ? "Honeypot grid paused." : "Honeypot grid resumed!");
+      if (res && typeof res.running === "boolean") {
+        updateStatusUI(res);
+      }
+      await refresh();
     } catch (e) {
       toast("Error: " + e.message, true);
+    } finally {
+      if (pauseBtn) pauseBtn.disabled = false;
+      if (sideBtn) sideBtn.disabled = false;
     }
-  });
+  };
+
+  $("btn-grid-toggle")?.addEventListener("click", handleToggleGrid);
+  $("btn-pause-grid")?.addEventListener("click", handleToggleGrid);
 
   // Emergency containment
   $("btn-emergency")?.addEventListener("click", async () => {

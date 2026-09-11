@@ -929,6 +929,16 @@ body {
 .btn-outline:active { transform: scale(0.98); }
 .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-outline.sm { padding: 5px 10px; font-size: 11px; }
+#btn-pause-grid.paused-grid {
+  border-color: #d0ddbe;
+  background: var(--primary-light);
+  color: #4e5d34;
+  font-weight: 600;
+}
+#btn-pause-grid.paused-grid:hover {
+  background: #e3ebd8;
+  border-color: var(--primary);
+}
 
 .btn-kill {
   display: inline-flex; align-items: center; gap: 6px;
