@@ -759,6 +759,7 @@ def create_app(
             "ok": True,
             "alert_id": test_alert.event_id,
             "results": results or {},
+            "email_error": getattr(mgr.email, "last_error", None) if not (results or {}).get("email") else None,
             "recipients_sent": custom_recipients if custom_recipients is not None else mgr.email.get_active_recipients(),
             "active_channels_count": mgr.get_status()["active_channels_count"],
         }
