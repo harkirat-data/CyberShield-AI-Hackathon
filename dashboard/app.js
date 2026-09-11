@@ -1473,6 +1473,28 @@ async function loadAlerts() {
   }
 }
 
+async function toggleChannel(channelName) {
+  const chData = state.alerts?.channels?.[channelName];
+  if (!chData || !chData.configured) {
+    toast(`Cannot toggle ${channelName}: not configured in .env`, true);
+    return;
+  }
+  const currentEnabled = chData.enabled !== false;
+  const newEnabled = !currentEnabled;
+  try {
+    const res = await api(`/api/v1/alerts/channels/${channelName}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled: newEnabled }),
+    });
+    if (res.status) {
+      renderAlerts(res.status);
+    }
+    toast(`${chData.name || channelName} alerts ${newEnabled ? "enabled" : "muted"}.`);
+  } catch (err) {
+    toast(`Failed to toggle ${channelName}: ${err.message}`, true);
+  }
+}
+
 function renderAlerts(data) {
   if (!data) return;
   state.alerts = data;
@@ -1480,7 +1502,7 @@ function renderAlerts(data) {
   const count = data.active_channels_count || 0;
   const channelCountEl = $("alerts-channel-count");
   if (channelCountEl) {
-    channelCountEl.textContent = `${count} / 3 Channels Configured`;
+    channelCountEl.textContent = `${count} / 3 Channels Active`;
   }
   const navBadgeEl = $("nav-badge-alerts");
   if (navBadgeEl) {
@@ -1494,14 +1516,18 @@ function renderAlerts(data) {
   const textSlack = $("slack-status-text");
   if (cardSlack && badgeSlack && textSlack) {
     if (slack.configured) {
-      cardSlack.classList.add("connected");
-      badgeSlack.textContent = "CONNECTED";
-      badgeSlack.classList.add("active");
-      textSlack.textContent = "Incoming Webhook Active";
+      const isEnabled = slack.enabled !== false;
+      cardSlack.classList.toggle("connected", isEnabled);
+      cardSlack.classList.toggle("muted-channel", !isEnabled);
+      badgeSlack.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeSlack.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeSlack.title = isEnabled ? "Click to mute Slack alerts" : "Click to enable Slack alerts";
+      textSlack.textContent = isEnabled ? "Incoming Webhook Active (Click to mute)" : "Webhook configured (Click to unmute)";
     } else {
-      cardSlack.classList.remove("connected");
+      cardSlack.classList.remove("connected", "muted-channel");
       badgeSlack.textContent = "DISABLED";
-      badgeSlack.classList.remove("active");
+      badgeSlack.className = "channel-status";
+      badgeSlack.title = "Not configured in .env";
       textSlack.textContent = "Webhook not configured in .env";
     }
   }
@@ -1513,14 +1539,18 @@ function renderAlerts(data) {
   const textDiscord = $("discord-status-text");
   if (cardDiscord && badgeDiscord && textDiscord) {
     if (discord.configured) {
-      cardDiscord.classList.add("connected");
-      badgeDiscord.textContent = "CONNECTED";
-      badgeDiscord.classList.add("active");
-      textDiscord.textContent = "Rich Embeds Active";
+      const isEnabled = discord.enabled !== false;
+      cardDiscord.classList.toggle("connected", isEnabled);
+      cardDiscord.classList.toggle("muted-channel", !isEnabled);
+      badgeDiscord.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeDiscord.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeDiscord.title = isEnabled ? "Click to mute Discord alerts" : "Click to enable Discord alerts";
+      textDiscord.textContent = isEnabled ? "Rich Embeds Active (Click to mute)" : "Webhook configured (Click to unmute)";
     } else {
-      cardDiscord.classList.remove("connected");
+      cardDiscord.classList.remove("connected", "muted-channel");
       badgeDiscord.textContent = "DISABLED";
-      badgeDiscord.classList.remove("active");
+      badgeDiscord.className = "channel-status";
+      badgeDiscord.title = "Not configured in .env";
       textDiscord.textContent = "Webhook not configured in .env";
     }
   }
@@ -1532,14 +1562,20 @@ function renderAlerts(data) {
   const textEmail = $("email-status-text");
   if (cardEmail && badgeEmail && textEmail) {
     if (email.configured) {
-      cardEmail.classList.add("connected");
-      badgeEmail.textContent = "CONNECTED";
-      badgeEmail.classList.add("active");
-      textEmail.textContent = `SMTP: ${email.host || "Configured"} → ${email.to || "Recipient"}`;
+      const isEnabled = email.enabled !== false;
+      cardEmail.classList.toggle("connected", isEnabled);
+      cardEmail.classList.toggle("muted-channel", !isEnabled);
+      badgeEmail.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeEmail.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeEmail.title = isEnabled ? "Click to mute Email alerts" : "Click to enable Email alerts";
+      textEmail.textContent = isEnabled
+        ? `SMTP: ${email.host || "Configured"} → ${email.to || "Recipient"} (Click to mute)`
+        : `SMTP: ${email.host || "Configured"} (Muted, click to unmute)`;
     } else {
-      cardEmail.classList.remove("connected");
+      cardEmail.classList.remove("connected", "muted-channel");
       badgeEmail.textContent = "DISABLED";
-      badgeEmail.classList.remove("active");
+      badgeEmail.className = "channel-status";
+      badgeEmail.title = "Not configured in .env";
       textEmail.textContent = "SMTP host / recipient not set";
     }
   }
@@ -1960,6 +1996,11 @@ function setupButtons() {
 
   // Test Alert
   $("test-alert-btn")?.addEventListener("click", sendTestAlert);
+
+  // Channel toggle listeners (click to toggle active / muted)
+  $("card-slack")?.addEventListener("click", () => toggleChannel("slack"));
+  $("card-discord")?.addEventListener("click", () => toggleChannel("discord"));
+  $("card-email")?.addEventListener("click", () => toggleChannel("email"));
 
   // Toggle sessions view more / less
   $("btn-toggle-sessions")?.addEventListener("click", () => {

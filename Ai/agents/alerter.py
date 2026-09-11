@@ -133,8 +133,14 @@ class SlackAlerter:
     """Dispatches security alerts to Slack using Incoming Webhooks."""
 
     def __init__(self, webhook_url: Optional[str] = None, timeout_seconds: float = 5.0):
-        self.webhook_url = webhook_url if webhook_url is not None else os.environ.get("SLACK_WEBHOOK_URL", "").strip()
+        self._webhook_url = webhook_url
         self.timeout = timeout_seconds
+
+    @property
+    def webhook_url(self) -> str:
+        if self._webhook_url is not None:
+            return self._webhook_url
+        return os.environ.get("SLACK_WEBHOOK_URL", "").strip()
 
     @property
     def is_configured(self) -> bool:
@@ -239,8 +245,14 @@ class DiscordAlerter:
     """Dispatches security alerts to Discord using Webhook Embeds."""
 
     def __init__(self, webhook_url: Optional[str] = None, timeout_seconds: float = 5.0):
-        self.webhook_url = webhook_url if webhook_url is not None else os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+        self._webhook_url = webhook_url
         self.timeout = timeout_seconds
+
+    @property
+    def webhook_url(self) -> str:
+        if self._webhook_url is not None:
+            return self._webhook_url
+        return os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
 
     @property
     def is_configured(self) -> bool:
@@ -335,29 +347,51 @@ class EmailAlerter:
         alert_from: Optional[str] = None,
         timeout_seconds: float = 10.0,
     ):
-        self.host = smtp_host if smtp_host is not None else os.environ.get("SMTP_HOST", "").strip()
-        
-        port_raw = os.environ.get("SMTP_PORT", "587") if smtp_port is None else smtp_port
-        try:
-            self.port = int(port_raw)
-        except (ValueError, TypeError):
-            self.port = 587
-
-        self.user = smtp_user if smtp_user is not None else os.environ.get("SMTP_USERNAME", "").strip()
-        self.password = smtp_password if smtp_password is not None else os.environ.get("SMTP_PASSWORD", "").strip()
-
-        if smtp_use_tls is not None:
-            self.use_tls = smtp_use_tls
-        else:
-            self.use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
-
-        self.to_email = alert_to if alert_to is not None else os.environ.get("ALERT_EMAIL_TO", "").strip()
-        self.from_email = (
-            alert_from
-            if alert_from is not None
-            else (os.environ.get("ALERT_EMAIL_FROM", "").strip() or self.user or "alerts@cybershield.ai")
-        )
+        self._host = smtp_host
+        self._port = smtp_port
+        self._user = smtp_user
+        self._password = smtp_password
+        self._use_tls = smtp_use_tls
+        self._alert_to = alert_to
+        self._alert_from = alert_from
         self.timeout = timeout_seconds
+
+    @property
+    def host(self) -> str:
+        return self._host if self._host is not None else os.environ.get("SMTP_HOST", "").strip()
+
+    @property
+    def port(self) -> int:
+        if self._port is not None:
+            return self._port
+        try:
+            return int(os.environ.get("SMTP_PORT", "587"))
+        except (ValueError, TypeError):
+            return 587
+
+    @property
+    def user(self) -> str:
+        return self._user if self._user is not None else os.environ.get("SMTP_USERNAME", "").strip()
+
+    @property
+    def password(self) -> str:
+        return self._password if self._password is not None else os.environ.get("SMTP_PASSWORD", "").strip()
+
+    @property
+    def use_tls(self) -> bool:
+        if self._use_tls is not None:
+            return self._use_tls
+        return os.environ.get("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+
+    @property
+    def to_email(self) -> str:
+        return self._alert_to if self._alert_to is not None else os.environ.get("ALERT_EMAIL_TO", "").strip()
+
+    @property
+    def from_email(self) -> str:
+        if self._alert_from is not None:
+            return self._alert_from
+        return os.environ.get("ALERT_EMAIL_FROM", "").strip() or self.user or "alerts@cybershield.ai"
 
     @property
     def is_configured(self) -> bool:
@@ -370,11 +404,25 @@ class EmailAlerter:
         sev = alert.severity.upper()
         subject = f"[CyberShield][{sev}] Security Incident Detected: {alert.event_type}"
 
+        # Severity visual tokens
+        sev_color_map = {
+            "CRITICAL": {"bg": "#ef4444", "text": "#ffffff"},
+            "HIGH":     {"bg": "#f97316", "text": "#ffffff"},
+            "MEDIUM":   {"bg": "#f59e0b", "text": "#ffffff"},
+            "LOW":      {"bg": "#3b82f6", "text": "#ffffff"},
+            "INFO":     {"bg": "#64748b", "text": "#ffffff"},
+        }
+        sev_style = sev_color_map.get(sev, {"bg": "#ef4444", "text": "#ffffff"})
+
         techs_str = ", ".join(alert.mitre_techniques) if alert.mitre_techniques else "None"
         tactics_str = ", ".join(alert.mitre_tactics) if alert.mitre_tactics else "None"
 
         remediation_lines = "\n".join(f"  - {r}" for r in alert.recommended_remediation) or "  - No specific actions provided"
-        remediation_html = "".join(f"<li>{r}</li>" for r in alert.recommended_remediation) or "<li>Review host activity</li>"
+        remediation_items = [
+            f'<li style="margin-bottom: 6px; color: #14532d; font-size: 13px; line-height: 1.5;">{r}</li>'
+            for r in alert.recommended_remediation
+        ]
+        remediation_html = "".join(remediation_items) or '<li style="margin-bottom: 6px; color: #14532d; font-size: 13px; line-height: 1.5;">Review host and network activity for anomalies.</li>'
 
         text_body = f"""CyberShield AI Security Incident Alert
 ======================================================================
@@ -402,47 +450,88 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
         html_body = f"""<!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>[CyberShield AI] Security Incident Alert</title>
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }}
-  .container {{ max-width: 600px; margin: auto; background-color: #1e293b; border-radius: 8px; padding: 24px; border: 1px solid #334155; }}
-  .header {{ border-bottom: 2px solid #ef4444; padding-bottom: 12px; margin-bottom: 16px; }}
-  .header h2 {{ margin: 0; color: #f87171; }}
-  .badge {{ display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background-color: #ef4444; color: white; }}
-  table {{ width: 100%; border-collapse: collapse; margin: 16px 0; }}
-  td {{ padding: 8px; border-bottom: 1px solid #334155; font-size: 14px; }}
-  td.label {{ font-weight: 600; color: #94a3b8; width: 35%; }}
-  td.value {{ color: #f1f5f9; }}
-  .section-title {{ font-size: 15px; font-weight: bold; color: #38bdf8; margin-top: 16px; margin-bottom: 8px; }}
-  .box {{ background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #334155; font-size: 13px; line-height: 1.5; }}
-  ul {{ margin: 0; padding-left: 20px; }}
-  .footer {{ font-size: 11px; color: #64748b; margin-top: 24px; text-align: center; }}
+  body {{ margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }}
+  table {{ border-collapse: collapse; }}
+  .container {{ max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }}
+  .header-bar {{ height: 4px; background-color: {sev_style['bg']}; }}
+  .content {{ padding: 24px; }}
+  .title-row {{ margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }}
+  .title {{ font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 10px 0; }}
+  .badge {{ display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; background-color: {sev_style['bg']}; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }}
+  .pill {{ display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; background-color: #f8fafc; color: #334155; border: 1px solid #e2e8f0; margin-left: 8px; }}
+  .data-table {{ width: 100%; border-collapse: collapse; margin: 16px 0; }}
+  .data-table td {{ padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: top; }}
+  .label {{ font-weight: 600; color: #64748b; width: 35%; }}
+  .value {{ color: #0f172a; font-weight: 500; }}
+  .chip {{ background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0; font-weight: 600; }}
+  .section-label {{ font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 20px; margin-bottom: 8px; }}
+  .analysis-box {{ background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; border-radius: 6px; padding: 14px 16px; color: #0c4a6e; font-size: 13px; line-height: 1.6; word-break: break-word; }}
+  .remediation-box {{ background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 6px; padding: 14px 16px; color: #14532d; font-size: 13px; line-height: 1.6; }}
+  .footer {{ padding: 16px 24px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #64748b; line-height: 1.5; }}
 </style>
 </head>
-<body>
-<div class="container">
-  <div class="header">
-    <h2>[CyberShield AI] Security Incident Alert</h2>
-    <span class="badge">{sev}</span> &nbsp; <span>Risk Score: <strong>{alert.risk_score}/100</strong></span>
-  </div>
-  <table>
-    <tr><td class="label">Event Type</td><td class="value"><code>{alert.event_type}</code></td></tr>
-    <tr><td class="label">Timestamp</td><td class="value">{alert.timestamp}</td></tr>
-    <tr><td class="label">Source IP</td><td class="value"><code>{alert.source_ip}</code></td></tr>
-    <tr><td class="label">Host / Service</td><td class="value"><code>{alert.host}</code> / <code>{alert.service}</code></td></tr>
-    <tr><td class="label">MITRE ATT&CK</td><td class="value"><code>{techs_str}</code></td></tr>
-    <tr><td class="label">Event ID</td><td class="value"><code>{alert.event_id}</code></td></tr>
-  </table>
+<body style="margin: 0; padding: 20px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9; width: 100%;">
+  <tr>
+    <td align="center">
+      <div class="container" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: left;">
+        <div class="header-bar" style="height: 4px; background-color: {sev_style['bg']};"></div>
+        <div class="content" style="padding: 24px;">
+          <div class="title-row" style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;">
+            <h2 class="title" style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 10px 0;">[CyberShield AI] Security Incident Alert</h2>
+            <span class="badge" style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; background-color: {sev_style['bg']}; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">{sev}</span>
+            <span class="pill" style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; background-color: #f8fafc; color: #334155; border: 1px solid #e2e8f0; margin-left: 8px;">Risk Score: <strong style="color: #0f172a;">{alert.risk_score}/100</strong></span>
+          </div>
 
-  <div class="section-title">AI Analysis</div>
-  <div class="box">{alert.ai_summary or "Suspicious activity detected."}</div>
+          <table class="data-table" style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">Event Type</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a;"><code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0; font-weight: 600;">{alert.event_type}</code></td>
+            </tr>
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">Timestamp</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">{alert.timestamp}</td>
+            </tr>
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">Source IP</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a;"><code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0; font-weight: 600;">{alert.source_ip}</code></td>
+            </tr>
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">Host / Service</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a;"><code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0;">{alert.host}</code> / <code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0;">{alert.service}</code></td>
+            </tr>
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">MITRE ATT&amp;CK</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a;"><code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0;">{techs_str}</code></td>
+            </tr>
+            <tr>
+              <td class="label" style="width: 35%; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 600; color: #64748b;">Event ID</td>
+              <td class="value" style="padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #0f172a;"><code class="chip" style="background-color: #f8fafc; color: #0f172a; padding: 2px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; border: 1px solid #e2e8f0;">{alert.event_id}</code></td>
+            </tr>
+          </table>
 
-  <div class="section-title">Recommended Remediation</div>
-  <div class="box">
-    <ul>{remediation_html}</ul>
-  </div>
+          <div class="section-label" style="font-size: 13px; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 20px; margin-bottom: 8px;">AI Analysis &amp; Rationale</div>
+          <div class="analysis-box" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; border-radius: 6px; padding: 14px 16px; color: #0c4a6e; font-size: 13px; line-height: 1.6; word-break: break-word;">{alert.ai_summary or "Suspicious activity detected."}</div>
 
-  <div class="footer">CyberShield AI Autonomous SOC &bull; Automated Telemetry Notification</div>
-</div>
+          <div class="section-label" style="font-size: 13px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 20px; margin-bottom: 8px;">Recommended Remediation</div>
+          <div class="remediation-box" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 6px; padding: 14px 16px; color: #14532d; font-size: 13px; line-height: 1.6;">
+            <ul style="margin: 0; padding-left: 20px; color: #14532d;">{remediation_html}</ul>
+          </div>
+        </div>
+
+        <div class="footer" style="padding: 16px 24px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
+          CyberShield AI Autonomous SOC &bull; Automated Telemetry Notification<br>
+          <span style="color: #94a3b8;">Generated automatically from real-time endpoint and network sensor analysis.</span>
+        </div>
+      </div>
+    </td>
+  </tr>
+</table>
 </body>
 </html>"""
 
@@ -523,10 +612,28 @@ class AlertManager:
             except ValueError:
                 self.dedup_window = 300
 
+        # Channel enabled state (can be configured via env or toggled at runtime)
+        self.channel_enabled: Dict[str, bool] = {
+            "slack": os.environ.get("SLACK_ENABLED", "true").lower() in ("true", "1", "yes"),
+            "discord": os.environ.get("DISCORD_ENABLED", "true").lower() in ("true", "1", "yes"),
+            "email": os.environ.get("EMAIL_ENABLED", "true").lower() in ("true", "1", "yes"),
+        }
+
         # In-memory deduplication cache: {key: timestamp}
         self._cache: Dict[str, float] = {}
         self._history: List[Dict[str, Any]] = []
         self._lock = threading.Lock()
+
+    def toggle_channel(self, channel: str, enabled: Optional[bool] = None) -> bool:
+        """Toggle or set enabled state for an alert channel at runtime."""
+        ch = channel.lower()
+        if ch not in self.channel_enabled:
+            raise ValueError(f"Unknown channel '{channel}'; valid channels are: {list(self.channel_enabled.keys())}")
+        if enabled is None:
+            self.channel_enabled[ch] = not self.channel_enabled[ch]
+        else:
+            self.channel_enabled[ch] = bool(enabled)
+        return self.channel_enabled[ch]
 
     def _dedup_key(self, alert: SecurityAlert) -> str:
         """Create a deduplication key."""
@@ -576,11 +683,11 @@ class AlertManager:
         return True
 
     def _dispatch_all(self, alert: SecurityAlert) -> Dict[str, bool]:
-        """Directly invokes all configured alerters and records to history."""
+        """Directly invokes all configured and enabled alerters and records to history."""
         results = {
-            "slack": self.slack.send(alert),
-            "discord": self.discord.send(alert),
-            "email": self.email.send(alert),
+            "slack": self.slack.send(alert) if self.channel_enabled.get("slack", True) else False,
+            "discord": self.discord.send(alert) if self.channel_enabled.get("discord", True) else False,
+            "email": self.email.send(alert) if self.channel_enabled.get("email", True) else False,
         }
         with self._lock:
             self._history.insert(0, {
@@ -601,11 +708,10 @@ class AlertManager:
 
     def get_status(self) -> Dict[str, Any]:
         """Return status of all alert channels, policy settings, and recent history."""
-        active_count = sum([
-            1 if self.slack.is_configured else 0,
-            1 if self.discord.is_configured else 0,
-            1 if self.email.is_configured else 0,
-        ])
+        slack_active = self.slack.is_configured and self.channel_enabled.get("slack", True)
+        discord_active = self.discord.is_configured and self.channel_enabled.get("discord", True)
+        email_active = self.email.is_configured and self.channel_enabled.get("email", True)
+        active_count = sum([1 if slack_active else 0, 1 if discord_active else 0, 1 if email_active else 0])
         with self._lock:
             history = list(self._history)
 
@@ -614,14 +720,20 @@ class AlertManager:
             "channels": {
                 "slack": {
                     "configured": self.slack.is_configured,
+                    "enabled": self.channel_enabled.get("slack", True),
+                    "active": slack_active,
                     "name": "Slack",
                 },
                 "discord": {
                     "configured": self.discord.is_configured,
+                    "enabled": self.channel_enabled.get("discord", True),
+                    "active": discord_active,
                     "name": "Discord",
                 },
                 "email": {
                     "configured": self.email.is_configured,
+                    "enabled": self.channel_enabled.get("email", True),
+                    "active": email_active,
                     "name": "Email (SMTP)",
                     "host": self.email.host if self.email.is_configured else "",
                     "to": self.email.to_email if self.email.is_configured else "",
