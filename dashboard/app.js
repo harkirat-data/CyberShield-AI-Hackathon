@@ -11,6 +11,7 @@ const state = {
   events: [],
   status: null,
   filter: "all",
+  searchQuery: "",
   activeTab: "transcript",
   refreshing: false,
   analyzing: false,
@@ -374,19 +375,39 @@ function renderSessions(sessionsArr) {
   if (!grid) return;
 
   const filter = state.filter;
-  let filtered = sessionsArr;
+  let filtered = sessionsArr || [];
 
   if (filter === "critical") {
-    filtered = sessionsArr.filter(s => (s.risk_score || 0) >= 80);
+    filtered = filtered.filter(s => (s.risk_score || 0) >= 80);
   } else if (filter !== "all") {
-    filtered = sessionsArr.filter(s => {
+    filtered = filtered.filter(s => {
       const proto = protoFromPort(s.destination_port).toLowerCase();
       return proto.includes(filter.toLowerCase());
     });
   }
 
+  // Filter by search query across IP, protocol, intent, port, session ID, and MITRE techniques
+  const q = (state.searchQuery != null ? state.searchQuery : ($("search-input")?.value || "")).trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter(s => {
+      const src = (s.source_ip || s.source_address || "").toLowerCase();
+      const proto = (s.service || protoFromPort(s.destination_port) || "").toLowerCase();
+      const intent = (s.intent || s.triage?.intent_label || "").toLowerCase();
+      const port = String(s.destination_port || "");
+      const sid = (s.session_id || "").toLowerCase();
+      const mitre = (s.mitre_techniques || s.triage?.mitre_techniques || s.mitre || []).join(" ").toLowerCase();
+      return src.includes(q) || proto.includes(q) || intent.includes(q) || port.includes(q) || sid.includes(q) || mitre.includes(q);
+    });
+  }
+
   const caption = $("sessions-caption");
-  if (caption) caption.textContent = `${filtered.length} session${filtered.length !== 1 ? "s" : ""} engaged across decoy mesh`;
+  if (caption) {
+    if (q) {
+      caption.textContent = `${filtered.length} matching session${filtered.length !== 1 ? "s" : ""} for "${esc(q)}"`;
+    } else {
+      caption.textContent = `${filtered.length} session${filtered.length !== 1 ? "s" : ""} engaged across decoy mesh`;
+    }
+  }
 
   const badge = $("nav-badge-sessions");
   if (badge) {
@@ -405,10 +426,17 @@ function renderSessions(sessionsArr) {
   if (sub) sub.textContent = `${sessionsArr.filter(s => !s.ended_at).length} currently live`;
 
   if (filtered.length === 0) {
+    const icon = q ? "search_off" : (sessionsArr.length === 0 ? "wifi_off" : "filter_alt_off");
+    const msg = q
+      ? `No sessions match "${esc(q)}"`
+      : (sessionsArr.length === 0
+          ? "No active sessions yet. Start the grid and generate some traffic."
+          : "No sessions match this filter.");
     grid.innerHTML = `<div class="empty-state">
-      <span class="material-symbols-outlined" style="font-size:40px;color:#8ca4ac">wifi_off</span>
-      <p>${sessionsArr.length === 0 ? "No active sessions yet. Start the grid and generate some traffic." : "No sessions match this filter."}</p>
+      <span class="material-symbols-outlined" style="font-size:40px;color:#8ca4ac">${icon}</span>
+      <p>${msg}</p>
     </div>`;
+    syncSessionGridExpansion(filtered);
     return;
   }
 
@@ -1051,6 +1079,21 @@ function updateStatusUI(status) {
   if (toggleBtn && toggleLabel) {
     toggleLabel.textContent = running ? "Stop Grid" : "Start Grid";
     toggleBtn.classList.toggle("running", running);
+  }
+
+  // Hero Pause / Resume Button
+  const pauseBtn = $("btn-pause-grid");
+  const pauseIcon = $("pause-grid-icon");
+  const pauseLabel = $("pause-grid-label");
+  if (pauseBtn) {
+    pauseBtn.classList.toggle("paused-grid", !running);
+    if (pauseIcon) {
+      pauseIcon.textContent = running ? "pause_circle" : "play_circle";
+      pauseIcon.style.color = running ? "#7d9cb7" : "#4e5d34";
+    }
+    if (pauseLabel) {
+      pauseLabel.textContent = running ? "Pause Grid" : "Resume Grid";
+    }
   }
 
   // Gemini status
@@ -2135,17 +2178,30 @@ function connectWebSocket() {
 // BUTTON HANDLERS
 // ============================================================
 function setupButtons() {
-  // Grid toggle
-  $("btn-grid-toggle")?.addEventListener("click", async () => {
+  // Grid toggle & pause handlers
+  const handleToggleGrid = async () => {
     const running = state.status?.running ?? false;
+    const pauseBtn = $("btn-pause-grid");
+    const sideBtn = $("btn-grid-toggle");
+    if (pauseBtn) pauseBtn.disabled = true;
+    if (sideBtn) sideBtn.disabled = true;
     try {
-      await api(`/api/v1/honeypot/control/${running ? "stop" : "start"}`, { method: "POST" });
-      toast(running ? "Honeypot grid stopped." : "Honeypot grid started!");
-      setTimeout(refresh, 600);
+      const res = await api(`/api/v1/honeypot/control/${running ? "stop" : "start"}`, { method: "POST" });
+      toast(running ? "Honeypot grid paused." : "Honeypot grid resumed!");
+      if (res && typeof res.running === "boolean") {
+        updateStatusUI(res);
+      }
+      await refresh();
     } catch (e) {
       toast("Error: " + e.message, true);
+    } finally {
+      if (pauseBtn) pauseBtn.disabled = false;
+      if (sideBtn) sideBtn.disabled = false;
     }
-  });
+  };
+
+  $("btn-grid-toggle")?.addEventListener("click", handleToggleGrid);
+  $("btn-pause-grid")?.addEventListener("click", handleToggleGrid);
 
   // Emergency containment
   $("btn-emergency")?.addEventListener("click", async () => {
@@ -2460,25 +2516,17 @@ function setupButtons() {
   $("search-input")?.addEventListener("input", (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      const q = e.target.value.toLowerCase().trim();
-      if (!q) {
-        renderSessions(state.sessions);
-        return;
-      }
-      const filtered = state.sessions.filter(s => {
-        const src = (s.source_ip || s.source_address || "").toLowerCase();
-        const proto = (s.service || protoFromPort(s.destination_port)).toLowerCase();
-        const intent = (s.intent || "").toLowerCase();
-        return src.includes(q) || proto.includes(q) || intent.includes(q);
-      });
-      const grid = $("session-grid");
-      if (!grid) return;
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined" style="font-size:40px;color:#8ca4ac">search_off</span><p>No sessions match "${esc(q)}"</p></div>`;
-        return;
-      }
-      renderSessions(filtered);
-    }, 200);
+      state.searchQuery = (e.target.value || "").trim().toLowerCase();
+      renderSessions(state.sessions);
+    }, 150);
+  });
+  $("search-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.target.value = "";
+      state.searchQuery = "";
+      renderSessions(state.sessions);
+      e.target.blur();
+    }
   });
 
   // Commit IR

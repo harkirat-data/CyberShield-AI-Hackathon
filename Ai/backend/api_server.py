@@ -358,18 +358,24 @@ def create_app(
     def root_redirect() -> RedirectResponse:
         return RedirectResponse(url="/dashboard")
 
+    NO_CACHE_HEADERS = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+
     @app.get("/dashboard", include_in_schema=False)
     def dashboard() -> FileResponse:
-        return FileResponse(DASHBOARD_ROOT / "index.html", media_type="text/html")
+        return FileResponse(DASHBOARD_ROOT / "index.html", media_type="text/html", headers=NO_CACHE_HEADERS)
 
     @app.get("/dashboard/styles.css", include_in_schema=False)
     def dashboard_styles() -> FileResponse:
-        return FileResponse(DASHBOARD_ROOT / "styles.css", media_type="text/css")
+        return FileResponse(DASHBOARD_ROOT / "styles.css", media_type="text/css", headers=NO_CACHE_HEADERS)
 
     @app.get("/dashboard/app.js", include_in_schema=False)
     def dashboard_script() -> FileResponse:
         return FileResponse(
-            DASHBOARD_ROOT / "app.js", media_type="application/javascript"
+            DASHBOARD_ROOT / "app.js", media_type="application/javascript", headers=NO_CACHE_HEADERS
         )
 
     @app.post("/api/v1/logs")
