@@ -23,6 +23,12 @@ PROJECT_ROOT = AI_ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env", override=True)
+except Exception:
+    pass
+
 from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: E402
 from honeypot.models import utc_now  # noqa: E402
 from canary import CanaryManager # noqa: E402
@@ -627,10 +633,20 @@ def create_app(
 
     @app.get("/api/v1/alerts/status")
     def get_alerts_status() -> Dict[str, Any]:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(PROJECT_ROOT / ".env", override=True)
+        except Exception:
+            pass
         return get_alert_manager().get_status()
 
     @app.post("/api/v1/alerts/test")
     def test_alert_dispatch(payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(PROJECT_ROOT / ".env", override=True)
+        except Exception:
+            pass
         mgr = get_alert_manager()
         test_alert = SecurityAlert(
             event_id=f"test-alert-{utc_now().replace(':', '').replace('-', '')[:15]}",
@@ -658,6 +674,24 @@ def create_app(
             "results": results or {},
             "active_channels_count": mgr.get_status()["active_channels_count"],
         }
+
+    @app.put("/api/v1/alerts/channels/{channel}/status")
+    def toggle_channel_status(channel: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        ch = channel.lower().strip()
+        enabled = None
+        if body and "enabled" in body:
+            enabled = bool(body["enabled"])
+        try:
+            new_state = mgr.toggle_channel(ch, enabled=enabled)
+            return {
+                "ok": True,
+                "channel": ch,
+                "enabled": new_state,
+                "status": mgr.get_status(),
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     return app
 

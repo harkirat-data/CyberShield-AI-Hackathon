@@ -1560,16 +1560,25 @@ body {
   gap: 8px;
   box-shadow: var(--shadow-xs);
   transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
 }
 
 .channel-card:hover {
   border-color: var(--primary);
   box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .channel-card.connected {
   border-color: rgba(139, 154, 110, 0.5);
   background: var(--primary-light);
+}
+
+.channel-card.muted-channel {
+  opacity: 0.8;
+  border-color: rgba(201, 138, 60, 0.4);
+  background: #fdfbf7;
 }
 
 .channel-top {
@@ -1596,12 +1605,19 @@ body {
   background: var(--surface-neutral);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  transition: all 0.15s ease;
 }
 
 .channel-status.active {
   color: #3b4e23;
   border-color: rgba(139, 154, 110, 0.6);
   background: #dbe7cd;
+}
+
+.channel-status.muted {
+  color: #925816;
+  border-color: rgba(201, 138, 60, 0.6);
+  background: #fbf3e6;
 }
 
 .channel-info {

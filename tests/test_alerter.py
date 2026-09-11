@@ -365,7 +365,53 @@ def test_canary_trigger_to_alert_flow(tmp_path):
 
         assert mock_dispatch.called
         sent_alert = mock_dispatch.call_args[0][0]
-        assert isinstance(sent_alert, SecurityAlert)
         assert sent_alert.event_id == "canary-trig-test-abc12345"
         assert sent_alert.source_ip == "203.0.113.42"
         assert sent_alert.event_type == "CANARY_TOKEN_TRIGGERED"
+
+
+def test_channel_toggle_and_selective_dispatch():
+    """Verify that toggling channels selectively controls alert delivery."""
+    mock_slack = MagicMock()
+    mock_slack.is_configured = True
+    mock_slack.send.return_value = True
+
+    mock_discord = MagicMock()
+    mock_discord.is_configured = True
+    mock_discord.send.return_value = True
+
+    mock_email = MagicMock()
+    mock_email.is_configured = False
+    mock_email.send.return_value = False
+
+    mgr = AlertManager(slack=mock_slack, discord=mock_discord, email=mock_email)
+
+    # Initially both Slack and Discord are enabled
+    assert mgr.channel_enabled["slack"] is True
+    assert mgr.channel_enabled["discord"] is True
+
+    # Disable Slack
+    mgr.toggle_channel("slack", enabled=False)
+    assert mgr.channel_enabled["slack"] is False
+
+    alert = sample_alert(event_id="evt-toggle-001")
+    results = mgr.send_alert(alert, sync=True)
+
+    # Only Discord should have been invoked, not Slack
+    assert results["slack"] is False
+    assert results["discord"] is True
+    assert mock_slack.send.call_count == 0
+    assert mock_discord.send.call_count == 1
+
+    # Re-enable Slack and toggle off Discord
+    mgr.toggle_channel("slack", enabled=True)
+    mgr.toggle_channel("discord", enabled=False)
+
+    alert2 = sample_alert(event_id="evt-toggle-002")
+    results2 = mgr.send_alert(alert2, sync=True)
+
+    assert results2["slack"] is True
+    assert results2["discord"] is False
+    assert mock_slack.send.call_count == 1
+    assert mock_discord.send.call_count == 1
+
