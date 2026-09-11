@@ -30,7 +30,7 @@ except Exception:
     pass
 
 from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: E402
-from honeypot.models import utc_now  # noqa: E402
+from honeypot.models import utc_now, TelemetryEvent  # noqa: E402
 from canary import CanaryManager # noqa: E402
 from agents.alerter import get_alert_manager, SecurityAlert  # noqa: E402
 from intel.geo_tracker import get_geo_tracker, KNOWN_THREAT_ACTORS  # noqa: E402
@@ -79,6 +79,11 @@ class SimulateAttackRequest(BaseModel):
     country_code: Optional[str] = None
     target_port: Optional[int] = None
     service: Optional[str] = None
+
+
+class InjectRequest(BaseModel):
+    content: str
+    direction: Optional[str] = "operator"
 
 
 def _string_list(value: Any, fallback: Optional[List[str]] = None) -> List[str]:
@@ -535,6 +540,24 @@ def create_app(
         if not await runtime.contain(session_id):
             raise HTTPException(status_code=404, detail="Session not found")
         return {"ok": True, "session_id": session_id, "status": "contained"}
+
+    @app.post("/api/v1/honeypot/sessions/{session_id}/inject")
+    async def inject_into_honeypot_session(
+        session_id: str, request: InjectRequest
+    ) -> Dict[str, Any]:
+        session = store.get_session(session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+        evt = TelemetryEvent(
+            session_id=session_id,
+            event_type="operator_injection",
+            severity="info",
+            direction="operator",
+            content=request.content,
+            metadata={"operator": "SOC Analyst", "manual_injection": True},
+        )
+        stored_dict = store.record_event(evt)
+        return {"ok": True, "session_id": session_id, "event": stored_dict}
 
     @app.post("/api/v1/honeypot/block-source")
     async def block_honeypot_source(request: BlockSourceRequest) -> Dict[str, Any]:
