@@ -883,10 +883,6 @@ class HoneypotRuntime:
         key_path = directory / "cybershield-decoy-key.pem"
         if cert_path.exists() and key_path.exists():
             return cert_path, key_path
-        legacy_cert = directory / "argus-decoy-cert.pem"
-        legacy_key = directory / "argus-decoy-key.pem"
-        if legacy_cert.exists() and legacy_key.exists():
-            return legacy_cert, legacy_key
         directory.mkdir(parents=True, exist_ok=True)
         from cryptography import x509
         from cryptography.hazmat.primitives import hashes, serialization

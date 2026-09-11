@@ -44,7 +44,7 @@ pip3 install --quiet watchdog || \
 echo "[CyberShield AI] WARNING: pip install failed, you may need to install dependencies manually"
 
 # 4. Create auth collector service
-cat > /etc/systemd/system/argus-auth.service << 'EOF'
+cat > /etc/systemd/system/cybershield-auth.service << 'EOF'
 [Unit]
 Description=CyberShield AI Linux Auth Log Collector
 After=network.target
@@ -75,10 +75,10 @@ PrivateTmp=true
 WantedBy=multi-user.target
 EOF
 
-echo "[CyberShield AI] Created /etc/systemd/system/argus-auth.service"
+echo "[CyberShield AI] Created /etc/systemd/system/cybershield-auth.service"
 
 # 5. Create system/firewall collector service
-cat > /etc/systemd/system/argus-system.service << 'EOF'
+cat > /etc/systemd/system/cybershield-system.service << 'EOF'
 [Unit]
 Description=CyberShield AI Linux System & Firewall Collector
 After=network.target
@@ -109,10 +109,10 @@ PrivateTmp=true
 WantedBy=multi-user.target
 EOF
 
-echo "[CyberShield AI] Created /etc/systemd/system/argus-system.service"
+echo "[CyberShield AI] Created /etc/systemd/system/cybershield-system.service"
 
 # 6. Create logrotate config (prevent disk fill)
-cat > /etc/logrotate.d/argus << 'EOF'
+cat > /etc/logrotate.d/cybershield << 'EOF'
 /opt/soc-testing/logs/*.log {
     daily
     rotate 14
@@ -138,14 +138,14 @@ cat > /etc/logrotate.d/argus << 'EOF'
 }
 EOF
 
-echo "[CyberShield AI] Created /etc/logrotate.d/argus"
+echo "[CyberShield AI] Created /etc/logrotate.d/cybershield"
 
 # 7. Reload systemd, enable, and start
 systemctl daemon-reload
-systemctl enable argus-auth.service
-systemctl enable argus-system.service
-systemctl start argus-auth.service
-systemctl start argus-system.service
+systemctl enable cybershield-auth.service
+systemctl enable cybershield-system.service
+systemctl start cybershield-auth.service
+systemctl start cybershield-system.service
 
 sleep 2
 
@@ -155,14 +155,14 @@ echo "[CyberShield AI] Installation complete!"
 echo "[CyberShield AI] ========================================"
 echo ""
 echo "Service status:"
-systemctl --no-pager status argus-auth.service | head -5
+systemctl --no-pager status cybershield-auth.service | head -5
 echo "---"
-systemctl --no-pager status argus-system.service | head -5
+systemctl --no-pager status cybershield-system.service | head -5
 echo ""
 echo "Useful commands:"
-echo "  sudo systemctl status argus-auth"
-echo "  sudo systemctl status argus-system"
-echo "  sudo journalctl -u argus-auth -f"
+echo "  sudo systemctl status cybershield-auth"
+echo "  sudo systemctl status cybershield-system"
+echo "  sudo journalctl -u cybershield-auth -f"
 echo "  sudo tail -f /opt/soc-testing/logs/auth.out.log"
 echo "  sudo tail -f /opt/soc-testing/logs/system.out.log"
 echo ""
