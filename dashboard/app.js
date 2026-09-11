@@ -1249,6 +1249,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
           const flag = g.country_flag || "🌐";
           const country = g.country || "Unknown";
           const city = g.city || "Unknown";
+          const postal = g.postal ? ` (${g.postal})` : "";
           const region = g.region && g.region !== "Unknown" ? `, ${g.region}` : "";
           const asn = g.asn || "AS-UNKNOWN";
           const org = g.as_org || g.org || g.isp || "Unknown";
@@ -1269,7 +1270,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
                 <span>${esc(country)}</span>
               </span>
             </td>
-            <td>${esc(city)}${esc(region)}</td>
+            <td>${esc(city)}${postal}${esc(region)}</td>
             <td><span class="asn-badge">${esc(asn)}</span></td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(org)}">${esc(org)}</td>
             <td><code style="font-size:11px;background:var(--surface-low);padding:2px 6px;border-radius:4px">${esc(decoys)}</code></td>
@@ -1323,9 +1324,10 @@ async function trackIpAddress(ip) {
     const data = await api(`/api/v1/intel/ip/${encodeURIComponent(cleanIp)}`);
     const geo = data.geo || {};
 
+    const postalText = geo.postal ? ` • PIN: ${geo.postal}` : "";
     $("dossier-flag").textContent = geo.country_flag || "🌐";
     $("dossier-ip").textContent = data.ip;
-    $("dossier-loc").textContent = `${geo.city || "Unknown City"}, ${geo.country || "Unknown Country"} (${geo.region || "Region"})`;
+    $("dossier-loc").textContent = `${geo.city || "Unknown City"}, ${geo.region || "Region"}, ${geo.country || "Unknown Country"}${postalText}`;
 
     const threatScore = geo.threat_score || 50;
     const threatBadge = $("dossier-threat");

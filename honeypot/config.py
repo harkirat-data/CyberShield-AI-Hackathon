@@ -116,6 +116,7 @@ class HoneypotSettings:
     max_event_preview_chars: int = 4_096
     max_ai_output_chars: int = 2_000
     services: Tuple[ServiceProfile, ...] = default_services()
+    resolve_wan_for_localhost: bool = True
 
     @classmethod
     def from_env(cls) -> "HoneypotSettings":
@@ -165,12 +166,15 @@ class HoneypotSettings:
             max_interactions_per_session=int(
                 os.environ.get("HONEYPOT_MAX_INTERACTIONS", "64")
             ),
-            max_input_bytes=int(os.environ.get("HONEYPOT_MAX_INPUT_BYTES", "16384")),
+            max_input_bytes=int(
+                os.environ.get("HONEYPOT_MAX_INPUT_BYTES", "16384")
+            ),
             max_event_preview_chars=int(
-                os.environ.get("HONEYPOT_MAX_EVENT_PREVIEW", "4096")
+                os.environ.get("HONEYPOT_MAX_EVENT_PREVIEW_CHARS", "4096")
             ),
             max_ai_output_chars=int(
-                os.environ.get("HONEYPOT_MAX_AI_OUTPUT", "2000")
+                os.environ.get("HONEYPOT_MAX_AI_OUTPUT_CHARS", "2000")
             ),
             services=services,
+            resolve_wan_for_localhost=_flag("HONEYPOT_RESOLVE_WAN_FOR_LOCAL", True),
         )
