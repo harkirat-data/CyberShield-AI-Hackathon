@@ -1125,125 +1125,167 @@ function updateStatusUI(status) {
 }
 
 // ============================================================
-// ATTACK ORIGIN VECTORS & GEOLOCATION PROJECTION
+// ATTACK ORIGIN VECTORS & REAL LEAFLET WORLD MAP
 // ============================================================
-function projectGeoCoords(lat, lon, seed = 0) {
-  // SVG viewBox: 0 0 800 360, center SOC defense at (400, 180)
-  let x, y;
-  if (lat === 0 && lon === 0) {
-    // Internal/local IPs distributed in a controlled arc around defense perimeter
-    const angle = ((seed % 12) / 12) * 2 * Math.PI;
-    x = 400 + Math.cos(angle) * 140;
-    y = 180 + Math.sin(angle) * 80;
-  } else {
-    // Standard equirectangular projection
-    x = 400 + (lon / 180) * 360;
-    y = 180 - (lat / 90) * 150;
+let leafletMap = null;
+let leafletMarkersLayer = null;
+
+function formatAttackTimestamp(isoStr) {
+  if (!isoStr) return { full: "Just now", timeOnly: "Just now", rel: "Live" };
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return { full: isoStr, timeOnly: isoStr, rel: "" };
+    const now = new Date();
+    const diffSec = Math.max(0, Math.floor((now - d) / 1000));
+
+    let rel = "Just now";
+    if (diffSec < 60) rel = `${diffSec}s ago`;
+    else if (diffSec < 3600) rel = `${Math.floor(diffSec / 60)}m ago`;
+    else if (diffSec < 86400) rel = `${Math.floor(diffSec / 3600)}h ago`;
+    else rel = `${Math.floor(diffSec / 86400)}d ago`;
+
+    const timeOnly = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+    const dateOnly = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    return {
+      full: `${dateOnly}, ${timeOnly} (${rel})`,
+      timeOnly: timeOnly,
+      dateOnly: dateOnly,
+      rel: rel
+    };
+  } catch (_) {
+    return { full: isoStr, timeOnly: isoStr, rel: "" };
   }
-  x = Math.max(50, Math.min(750, x));
-  y = Math.max(40, Math.min(320, y));
-  return { x, y };
+}
+
+function initLeafletMap() {
+  const container = $("map-container");
+  if (!container || !window.L) return;
+  if (leafletMap) return;
+
+  try {
+    leafletMap = L.map("map-container", {
+      center: [22.5, 30.0],
+      zoom: 2,
+      minZoom: 1,
+      maxZoom: 12,
+      zoomControl: true,
+      attributionControl: false
+    });
+
+    // Standard normal world map (OpenStreetMap: genuine world map with continents, oceans, borders, cities)
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(leafletMap);
+
+    leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
+
+    // Defense SOC hub marker in center
+    const socIcon = L.divIcon({
+      html: `<div style="background:#22c55e;color:#fff;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 0 10px rgba(34,197,94,0.6);white-space:nowrap">🛡️ CYBERSHIELD GRID</div>`,
+      className: "leaflet-custom-marker-wrap",
+      iconSize: [110, 20],
+      iconAnchor: [55, 10]
+    });
+    L.marker([20.5937, 78.9629], { icon: socIcon, interactive: false }).addTo(leafletMap);
+
+    setTimeout(() => {
+      leafletMap.invalidateSize();
+    }, 200);
+  } catch (err) {
+    console.warn("Leaflet map initialization skipped:", err);
+  }
 }
 
 function renderAttackVectors(sessionsArr, eventsArr) {
-  const g = $("vector-arcs");
-  if (!g) return;
-
-  const attackers = state.attackers || [];
-
-  if (attackers.length === 0 && (!sessionsArr || sessionsArr.length === 0)) {
-    g.innerHTML = `
-      <circle cx="400" cy="180" r="40" fill="none" stroke="#8B9A6E" stroke-dasharray="3 5" stroke-width="1.2" opacity="0.4"/>
-      <text x="400" y="240" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#8c9680" letter-spacing="0.05em">PERIMETER CLEAR • 0 ADVERSARIES ENGAGED</text>
-    `;
-    return;
+  if (!leafletMap && window.L && $("map-container")) {
+    initLeafletMap();
   }
+  if (!leafletMap || !leafletMarkersLayer) return;
 
-  const center = { x: 400, y: 180 };
-  const itemsToRender = attackers.length > 0
-    ? attackers.slice(0, 12)
-    : (sessionsArr || []).slice(0, 8).map((s, idx) => ({
-        ip: s.source_ip || "127.0.0.1",
-        geo: s.geo || { country_flag: "🌐", country: "Internal", city: "Localhost", asn: "AS-PRIVATE", latitude: 0, longitude: 0 },
-        max_risk_score: s.risk_score || 50,
-        session_count: 1,
-        probed_services: [s.service || "honeypot"]
-      }));
+  leafletMarkersLayer.clearLayers();
 
-  let html = "";
-  itemsToRender.forEach((item, idx) => {
-    const geo = item.geo || {};
-    const lat = geo.latitude || 0;
-    const lon = geo.longitude || 0;
-    const { x, y } = projectGeoCoords(lat, lon, idx);
-    const risk = item.max_risk_score || 50;
-    const isTopAdversary = idx === 0;
-    const color = isTopAdversary ? "#ef4444" : risk >= 80 ? "#C24B4B" : risk >= 50 ? "#C98A3C" : "#8B9A6E";
+  const attackers = (state.attackers || []).filter(a => a.ip && a.ip.toLowerCase() !== "testclient");
+  if (attackers.length === 0) return;
+
+  const bounds = [];
+
+  attackers.forEach((atk, idx) => {
+    const geo = atk.geo || {};
+    const lat = geo.latitude;
+    const lon = geo.longitude;
+    if (typeof lat !== "number" || typeof lon !== "number" || (lat === 0 && lon === 0)) return;
+
+    const isLatest = idx === 0;
+    const ip = atk.ip;
     const flag = geo.country_flag || "🌐";
-    const asn = geo.asn || "AS-UNKNOWN";
-    const country = geo.country || "Unknown";
     const city = geo.city || "Unknown";
-    const ip = item.ip;
+    const country = geo.country || "Unknown";
+    const asn = geo.asn || "AS-UNKNOWN";
+    const timeInfo = formatAttackTimestamp(atk.latest_activity);
+    const risk = atk.max_risk_score || 50;
 
-    const ctrlX = (x + center.x) / 2 + ((idx % 2 === 0 ? 1 : -1) * 35);
-    const ctrlY = Math.min(y, center.y) - 25;
-    const title = `${flag} ${ip} [${asn}] — ${city}, ${country} | Risk ${risk}/100`;
+    bounds.push([lat, lon]);
 
-    if (isTopAdversary) {
-      html += `
-        <g class="geo-vector-group top-adversary-group" data-ip="${esc(ip)}" style="cursor:pointer">
-          <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
-            stroke="#ef4444"
-            stroke-dasharray="5 3"
-            stroke-width="2.2"
-            opacity="0.95"
-            fill="none">
-            <title>${esc(title)}</title>
-          </path>
-          <circle cx="${x}" cy="${y}" r="16" fill="#ef4444" opacity="0.45" class="geo-beacon-pulse"/>
-          <circle class="geo-pin" cx="${x}" cy="${y}" r="6.5" fill="#ef4444" stroke="#ffffff" stroke-width="2">
-            <title>${esc(title)}</title>
-          </circle>
-          <rect x="${x - 46}" y="${y - 28}" width="92" height="15" rx="3" fill="#dc2626" opacity="0.95" stroke="#ffffff" stroke-width="0.8"/>
-          <text x="${x}" y="${y - 17}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="700" fill="#ffffff" letter-spacing="0.05em">
-            ⚡ LATEST ATTACK
-          </text>
-          <text x="${x}" y="${y + 16}" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#ffffff" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.95))">
-            ${flag} ${esc(ip)}
-          </text>
-        </g>
-      `;
-    } else {
-      html += `
-        <g class="geo-vector-group" data-ip="${esc(ip)}" style="cursor:pointer">
-          <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
-            stroke="${color}"
-            stroke-dasharray="4 4"
-            stroke-width="1.6"
-            opacity="0.85"
-            fill="none">
-            <title>${esc(title)}</title>
-          </path>
-          <circle cx="${x}" cy="${y}" r="6" fill="${color}" opacity="0.3" class="geo-beacon-pulse"/>
-          <circle class="geo-pin" cx="${x}" cy="${y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
-            <title>${esc(title)}</title>
-          </circle>
-          <text x="${x}" y="${y - 8}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.9))">
-            ${flag} ${esc(ip)}
-          </text>
-        </g>
-      `;
+    const iconHtml = isLatest
+      ? `<div class="leaflet-latest-marker" style="cursor:pointer">
+           <span class="marker-pulse"></span>
+           <span class="marker-dot"></span>
+           <span class="marker-badge">⚡ ${esc(ip)}</span>
+         </div>`
+      : `<div class="leaflet-normal-marker" style="cursor:pointer">
+           <span class="marker-dot"></span>
+           <span class="marker-label">${flag} ${esc(ip)}</span>
+         </div>`;
+
+    const customIcon = L.divIcon({
+      html: iconHtml,
+      className: "leaflet-custom-marker-wrap",
+      iconSize: isLatest ? [125, 26] : [90, 22],
+      iconAnchor: [8, 11],
+    });
+
+    const marker = L.marker([lat, lon], { icon: customIcon }).addTo(leafletMarkersLayer);
+
+    marker.bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:200px">
+        <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #eee;padding-bottom:6px">
+          <span>${flag}</span>
+          <span>${esc(ip)}</span>
+          ${isLatest ? '<span style="background:#ef4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px">LATEST ATTACK</span>' : ''}
+        </div>
+        <div style="font-size:11px;color:#334155;margin-top:6px;line-height:1.6">
+          <strong>Location:</strong> ${esc(city)}, ${esc(country)}<br>
+          <strong>Network:</strong> ${esc(asn)} (${esc(geo.as_org || geo.isp || "Unknown")})<br>
+          <strong>Attack Time:</strong> <span style="color:#ef4444;font-weight:700">${esc(timeInfo.full)}</span><br>
+          <strong>Target Decoy:</strong> ${(atk.probed_services || []).join(", ") || "HTTP Port 8088"}<br>
+          <strong>Risk Score:</strong> ${risk}/100
+        </div>
+        <button class="btn-sm btn-primary" onclick="trackIpAddress('${esc(ip)}')" style="margin-top:8px;width:100%;font-size:11px;padding:4px">Inspect Full Dossier</button>
+      </div>
+    `);
+
+    marker.on("click", () => {
+      trackIpAddress(ip);
+    });
+
+    if (isLatest) {
+      setTimeout(() => {
+        try { marker.openPopup(); } catch (_) {}
+      }, 300);
     }
   });
 
-  g.innerHTML = html;
-
-  g.querySelectorAll(".geo-vector-group").forEach(el => {
-    el.addEventListener("click", () => {
-      const ip = el.dataset.ip;
-      if (ip) trackIpAddress(ip);
-    });
-  });
+  // Center around latest attacker if available
+  if (attackers.length > 0 && attackers[0].geo?.latitude && attackers[0].geo?.longitude) {
+    const lat = attackers[0].geo.latitude;
+    const lon = attackers[0].geo.longitude;
+    if (lat && lon) {
+      leafletMap.setView([lat, lon], 4, { animate: true });
+    }
+  } else if (bounds.length > 0) {
+    leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 5 });
+  }
 }
 
 // ============================================================
@@ -1286,6 +1328,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
           const risk = atk.max_risk_score || 50;
           const riskCls = risk >= 80 ? "high" : risk >= 50 ? "med" : "low";
           const isLatest = idx === 0;
+          const timeInfo = formatAttackTimestamp(atk.latest_activity);
 
           return `<tr class="${isLatest ? 'latest-attacker-row' : ''}">
             <td>
@@ -1294,6 +1337,14 @@ async function loadAttackerGeoIntel(cachedAttackers) {
                 <strong>${esc(atk.ip)}</strong>
                 ${isLatest ? '<span style="background:var(--rose);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-family:var(--font-mono)">LATEST</span>' : ''}
               </span>
+            </td>
+            <td>
+              <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:${isLatest ? 'var(--rose)' : 'var(--text)'}">
+                ${esc(timeInfo.timeOnly)}
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);white-space:nowrap">
+                ${esc(timeInfo.rel)}
+              </div>
             </td>
             <td>
               <span class="geo-flag-badge">
@@ -1371,6 +1422,20 @@ async function trackIpAddress(ip, showToast = true, scroll = true) {
     $("dossier-ip").textContent = data.ip;
     $("dossier-loc").textContent = `${geo.city || "Unknown City"}, ${geo.region || "Region"}, ${geo.country || "Unknown Country"}${postalText}`;
 
+    // Attack Time calculation & display
+    const latestSess = (data.sessions && data.sessions.length > 0) ? data.sessions[0] : null;
+    const attackTimestamp = latestSess?.started_at || null;
+    const timeInfo = formatAttackTimestamp(attackTimestamp);
+
+    const timeTextEl = $("dossier-time-text");
+    if (timeTextEl) {
+      timeTextEl.textContent = `Attack Time: ${timeInfo.full}`;
+    }
+    const stampEl = $("dossier-timestamp");
+    if (stampEl) {
+      stampEl.textContent = timeInfo.full;
+    }
+
     const threatScore = geo.threat_score || 50;
     const threatBadge = $("dossier-threat");
     if (threatBadge) {
@@ -1387,7 +1452,6 @@ async function trackIpAddress(ip, showToast = true, scroll = true) {
     $("dossier-canaries").textContent = `${(data.canary_triggers || []).length} tripwire trigger(s)`;
 
     // Attach latest targeted decoy and observed intent
-    const latestSess = (data.sessions && data.sessions.length > 0) ? data.sessions[0] : null;
     const targetPort = latestSess?.destination_port ? `Port ${latestSess.destination_port}` : "Perimeter Listener";
     const targetProto = latestSess?.service || latestSess?.protocol || "HTTP";
     const targetEl = $("dossier-target-vector");
@@ -1397,6 +1461,11 @@ async function trackIpAddress(ip, showToast = true, scroll = true) {
     const intentEl = $("dossier-attack-intent");
     if (intentEl) {
       intentEl.textContent = latestSess?.intent || geo.threat_type || "Database discovery / Ingress";
+    }
+
+    // Smoothly fly Leaflet map to attacker's location
+    if (leafletMap && geo.latitude && geo.longitude) {
+      leafletMap.flyTo([geo.latitude, geo.longitude], 5, { duration: 1.2 });
     }
 
     const blockBtn = $("dossier-btn-block");
