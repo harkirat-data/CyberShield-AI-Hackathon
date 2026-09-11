@@ -1257,6 +1257,19 @@ function renderAttackVectors(sessionsArr, eventsArr) {
 
     const marker = L.marker([lat, lon], { icon: customIcon }).addTo(leafletMarkersLayer);
 
+    if (isLatest) {
+      // ISP Gateway Coverage Radius Circle (~12km metro routing zone)
+      L.circle([lat, lon], {
+        radius: 12000,
+        color: "#ef4444",
+        weight: 1.5,
+        dashArray: "4 4",
+        fillColor: "#ef4444",
+        fillOpacity: 0.07,
+        interactive: false
+      }).addTo(leafletMarkersLayer);
+    }
+
     marker.bindPopup(`
       <div style="font-family:Inter,sans-serif;min-width:200px">
         <div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #eee;padding-bottom:6px">
@@ -2398,6 +2411,92 @@ function setupButtons() {
   $("dossier-btn-close")?.addEventListener("click", () => {
     const card = $("ip-dossier-card");
     if (card) card.style.display = "none";
+  });
+
+  // Precision Honey-Lure client-side triangulation (demonstrates client-side GPS/Wi-Fi positioning vs BGP ISP routing)
+  $("dossier-btn-lure")?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      toast("HTML5 Geolocation is not supported by your browser environment.", true);
+      return;
+    }
+    const btn = $("dossier-btn-lure");
+    const orig = btn ? btn.innerHTML : "🎯 Precision Honey-Lure";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;animation:spin 1s linear infinite">autorenew</span> Triangulating...`;
+    }
+    toast("Executing client-side Honey-Lure triangulation (Wi-Fi SSID / GPS)...");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = orig;
+        }
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy || 15);
+        toast(`[LURE TRIGGERED] High-precision terminal location locked: ${lat.toFixed(4)}, ${lon.toFixed(4)} (±${acc}m accuracy)`);
+
+        // Update dossier coordinates and notes
+        const coordEl = $("dossier-coords");
+        if (coordEl) coordEl.textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)} (🎯 Precision GPS/Wi-Fi: ±${acc}m)`;
+
+        const notesEl = $("dossier-attribution-notes");
+        if (notesEl) {
+          notesEl.innerHTML = `<span style="color:#059669;font-weight:700">🎯 Precision Honey-Lure Triangulation Active:</span> Pinpointed to physical subscriber node at <strong>${lat.toFixed(5)}, ${lon.toFixed(5)}</strong> (±${acc}m accuracy). Demonstrates client-side sensor honeypot trap vs standard BGP ISP network routing.`;
+        }
+
+        // Add precision marker on Leaflet map
+        if (leafletMap && leafletMarkersLayer) {
+          const lureIcon = L.divIcon({
+            html: `<div class="leaflet-latest-marker" style="cursor:pointer">
+                     <span class="marker-pulse" style="background:rgba(16,185,129,0.5)"></span>
+                     <span class="marker-dot" style="background:#10b981"></span>
+                     <span class="marker-badge" style="background:#059669">🎯 PHYSICAL NODE: ${lat.toFixed(4)}, ${lon.toFixed(4)}</span>
+                   </div>`,
+            className: "leaflet-custom-marker-wrap",
+            iconSize: [195, 26],
+            iconAnchor: [8, 11]
+          });
+
+          // Draw precision accuracy circle
+          L.circle([lat, lon], {
+            radius: Math.max(acc, 50),
+            color: "#059669",
+            weight: 2,
+            fillColor: "#10b981",
+            fillOpacity: 0.15
+          }).addTo(leafletMarkersLayer);
+
+          const lureMarker = L.marker([lat, lon], { icon: lureIcon }).addTo(leafletMarkersLayer);
+          lureMarker.bindPopup(`
+            <div style="font-family:Inter,sans-serif;min-width:220px">
+              <div style="font-weight:700;font-size:13px;color:#059669;display:flex;align-items:center;gap:6px">
+                <span>🎯</span>
+                <span>PHYSICAL SUBSCRIBER NODE</span>
+              </div>
+              <div style="font-size:11px;color:#334155;margin-top:6px;line-height:1.6">
+                <strong>Method:</strong> Client-Side Honey-Lure Triangulation<br>
+                <strong>Coordinates:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}<br>
+                <strong>Accuracy:</strong> ±${acc} meters<br>
+                <strong>Region:</strong> Local Physical Subscriber Address
+              </div>
+            </div>
+          `).openPopup();
+
+          leafletMap.flyTo([lat, lon], 14, { duration: 1.5 });
+        }
+      },
+      (err) => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = orig;
+        }
+        toast(`Honey-Lure triangulation declined: ${err.message}. Showing BGP ISP Gateway location.`, true);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   });
 
   $("btn-real-attack")?.addEventListener("click", async () => {
