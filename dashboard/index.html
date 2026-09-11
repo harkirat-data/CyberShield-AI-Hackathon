@@ -583,7 +583,13 @@
                 <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">mail</span>
                 <span class="channel-title">Email (SMTP)</span>
               </div>
-              <span class="channel-status" id="email-status-badge">Checking...</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button type="button" class="btn-recipients-pill" id="btn-open-recipients" title="Manage email recipients and distribution list">
+                  <span class="material-symbols-outlined" style="font-size:13px">group</span>
+                  <span id="email-recipients-count-pill">1 Recipient</span>
+                </button>
+                <span class="channel-status" id="email-status-badge">Checking...</span>
+              </div>
             </div>
             <div class="channel-info" id="email-status-text">SMTP: Not configured</div>
           </div>
@@ -746,6 +752,94 @@
   </div>
 </div>
 
-<script src="/dashboard/app.js?v=2.7.2"></script>
+<!-- EMAIL ALERT RECIPIENTS MANAGEMENT MODAL -->
+<div id="email-recipients-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
+  <div class="modal-card recipients-modal-card" id="email-recipients-modal-card">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="recipients-icon-wrap">
+            <span class="material-symbols-outlined" style="font-size:24px;color:var(--primary)">forward_to_inbox</span>
+          </div>
+          <div>
+            <h3 id="email-modal-title" style="margin:0;font-size:16px;font-weight:700;color:var(--text);font-family:var(--font-head)">
+              Email Alert Distribution List
+            </h3>
+            <p style="margin:2px 0 0 0;font-size:12px;color:var(--text-muted)">
+              Configure recipient addresses and toggle who receives incident dispatches.
+            </p>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close-btn" id="btn-close-recipients-modal" aria-label="Close modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body recipients-modal-body">
+      <!-- Quick Control Bar -->
+      <div class="recipients-toolbar">
+        <div class="recipients-summary">
+          <span class="recipients-badge-count" id="recipients-active-summary">0 / 0 Active</span>
+        </div>
+        <div class="recipients-quick-actions">
+          <button type="button" class="btn-pill-action" id="btn-recipients-select-all" title="Select all email recipients">
+            <span class="material-symbols-outlined" style="font-size:14px">done_all</span>
+            <span>Select All</span>
+          </button>
+          <button type="button" class="btn-pill-action" id="btn-recipients-deselect-all" title="Deselect all email recipients">
+            <span class="material-symbols-outlined" style="font-size:14px">remove_done</span>
+            <span>Deselect All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add New Recipient Form -->
+      <form id="form-add-recipient" class="add-recipient-form">
+        <div class="add-recipient-input-wrap">
+          <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted)">alternate_email</span>
+          <input type="email" id="input-new-recipient" placeholder="Add analyst email (e.g. soc-analyst@company.com)..." autocomplete="off" />
+        </div>
+        <button type="submit" class="btn-primary" id="btn-add-recipient" style="height:38px;padding:0 14px;white-space:nowrap">
+          <span class="material-symbols-outlined" style="font-size:16px">add</span>
+          <span>Add</span>
+        </button>
+      </form>
+
+      <!-- Recipient List -->
+      <div class="recipients-list-container">
+        <div class="recipients-list-header">
+          <span>Recipient / Distribution Target</span>
+          <span>Status &amp; Actions</span>
+        </div>
+        <div class="recipients-list" id="recipients-list-items">
+          <!-- Populated by JS -->
+        </div>
+        <div class="empty-state" id="recipients-empty-state" style="display:none;padding:24px 16px;text-align:center">
+          <span class="material-symbols-outlined" style="font-size:32px;color:#8ca4ac">mail_off</span>
+          <p style="margin-top:6px;font-size:13px;color:var(--text-muted)">No email recipients configured yet. Add one above.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer recipients-modal-footer">
+      <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:5px">
+        <span class="material-symbols-outlined" style="font-size:14px;color:var(--emerald)">check_circle</span>
+        <span>Auto-synced with <code>.env</code></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-outline sm" id="btn-test-selected-recipients" style="height:34px;display:inline-flex;align-items:center;gap:6px">
+          <span class="material-symbols-outlined" style="font-size:15px;color:var(--primary)">send</span>
+          <span id="btn-test-selected-text">Send Test to Selected</span>
+        </button>
+        <button type="button" class="btn-primary sm" id="btn-done-recipients-modal" style="height:34px;padding:0 16px">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/dashboard/app.js?v=2.7.3"></script>
 </body>
 </html>
