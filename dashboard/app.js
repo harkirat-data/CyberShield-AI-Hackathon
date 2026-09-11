@@ -1129,6 +1129,8 @@ function updateStatusUI(status) {
 // ============================================================
 let leafletMap = null;
 let leafletMarkersLayer = null;
+let mapInitialViewDone = false;
+let userInteractedWithMap = false;
 
 function formatAttackTimestamp(isoStr) {
   if (!isoStr) return { full: "Just now", timeOnly: "Just now", rel: "Live" };
@@ -1170,6 +1172,14 @@ function initLeafletMap() {
       maxZoom: 12,
       zoomControl: true,
       attributionControl: false
+    });
+
+    // Track user drag/pinch so automatic background refreshes never hijack the camera
+    leafletMap.on("movestart", (e) => {
+      if (e.originalEvent) userInteractedWithMap = true;
+    });
+    leafletMap.on("zoomstart", (e) => {
+      if (e.originalEvent) userInteractedWithMap = true;
     });
 
     // Standard normal world map (OpenStreetMap: genuine world map with continents, oceans, borders, cities)
@@ -1261,30 +1271,26 @@ function renderAttackVectors(sessionsArr, eventsArr) {
           <strong>Target Decoy:</strong> ${(atk.probed_services || []).join(", ") || "HTTP Port 8088"}<br>
           <strong>Risk Score:</strong> ${risk}/100
         </div>
-        <button class="btn-sm btn-primary" onclick="trackIpAddress('${esc(ip)}')" style="margin-top:8px;width:100%;font-size:11px;padding:4px">Inspect Full Dossier</button>
+        <button class="btn-sm btn-primary" onclick="trackIpAddress('${esc(ip)}', true, true, true)" style="margin-top:8px;width:100%;font-size:11px;padding:4px">Inspect Full Dossier</button>
       </div>
-    `);
+    `, { autoPan: false });
 
     marker.on("click", () => {
-      trackIpAddress(ip);
+      trackIpAddress(ip, true, true, true);
     });
-
-    if (isLatest) {
-      setTimeout(() => {
-        try { marker.openPopup(); } catch (_) {}
-      }, 300);
-    }
   });
 
-  // Center around latest attacker if available
-  if (attackers.length > 0 && attackers[0].geo?.latitude && attackers[0].geo?.longitude) {
-    const lat = attackers[0].geo.latitude;
-    const lon = attackers[0].geo.longitude;
-    if (lat && lon) {
-      leafletMap.setView([lat, lon], 4, { animate: true });
+  // Center around latest attacker ONCE on initial load only.
+  // Never zoom or reset camera continuously on standby refreshes.
+  if (!mapInitialViewDone && !userInteractedWithMap) {
+    if (attackers.length > 0 && attackers[0].geo?.latitude && attackers[0].geo?.longitude) {
+      const lat = attackers[0].geo.latitude;
+      const lon = attackers[0].geo.longitude;
+      leafletMap.setView([lat, lon], 4);
+    } else if (bounds.length > 0) {
+      leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 4 });
     }
-  } else if (bounds.length > 0) {
-    leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 5 });
+    mapInitialViewDone = true;
   }
 }
 
@@ -1390,22 +1396,24 @@ async function loadAttackerGeoIntel(cachedAttackers) {
 
     renderAttackVectors(state.sessions, state.events);
 
-    // Auto-display and prefill the live dossier card for the most recent active attacker
+    // Auto-display and prefill the live dossier card for the most recent active attacker (without moving map camera)
     if (attackers.length > 0) {
       const topAtk = attackers[0];
       const inputEl = $("ip-tracker-input");
       if (inputEl && !inputEl.value) {
         inputEl.value = topAtk.ip;
       }
-      // Populate dossier card immediately without disrupting user with toast/scroll
-      trackIpAddress(topAtk.ip, false, false);
+      const currentIp = $("dossier-ip")?.textContent?.trim();
+      if (!currentIp || currentIp === "--" || currentIp !== topAtk.ip) {
+        trackIpAddress(topAtk.ip, false, false, false);
+      }
     }
   } catch (err) {
     console.error("Failed to load attacker geo intel:", err);
   }
 }
 
-async function trackIpAddress(ip, showToast = true, scroll = true) {
+async function trackIpAddress(ip, showToast = true, scroll = true, panMap = true) {
   if (!ip) return;
   const cleanIp = ip.trim();
   const card = $("ip-dossier-card");
@@ -1463,9 +1471,9 @@ async function trackIpAddress(ip, showToast = true, scroll = true) {
       intentEl.textContent = latestSess?.intent || geo.threat_type || "Database discovery / Ingress";
     }
 
-    // Smoothly fly Leaflet map to attacker's location
-    if (leafletMap && geo.latitude && geo.longitude) {
-      leafletMap.flyTo([geo.latitude, geo.longitude], 5, { duration: 1.2 });
+    // Smoothly fly Leaflet map to attacker's location ONLY when explicitly requested by user
+    if (panMap && leafletMap && geo.latitude && geo.longitude) {
+      leafletMap.flyTo([geo.latitude, geo.longitude], 5, { duration: 1.0 });
     }
 
     const blockBtn = $("dossier-btn-block");
@@ -1632,9 +1640,6 @@ async function refresh() {
 
     // Render session cards
     renderSessions(sessions);
-
-    // Render live attack origin vectors
-    renderAttackVectors(sessions, events);
 
     // Render target counters
     updateTargetCounts(sessions);
