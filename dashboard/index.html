@@ -1,222 +1,751 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <title>CyberShield AI — Deception Operations</title>
-  <link rel="stylesheet" href="/dashboard/styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberShield AI (ARGUS) — Autonomous Deception &amp; SOC Command Center</title>
+  <meta name="description" content="CyberShield AI ARGUS — Real-time honeypot deception grid with Gemini-powered SOC analyst and MITRE ATT&CK mapping.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard/styles.css?v=2.7.0">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="rail" aria-label="Primary navigation">
-      <div class="brand-mark" aria-label="CyberShield AI">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 5v6c0 5.2-3.3 9.1-8 11-4.7-1.9-8-5.8-8-11V5l8-3Zm0 4.1L7.5 7.8v3.1c0 3.5 1.9 6.1 4.5 7.5 2.6-1.4 4.5-4 4.5-7.5V7.8L12 6.1Zm-2.1 4h4.2v4H9.9v-4Z"/></svg>
-      </div>
-      <nav class="rail-nav">
-        <button class="nav-button active" data-target="overview" aria-label="Overview" title="Overview"><span>⌁</span></button>
-        <button class="nav-button" data-target="sessions" aria-label="Sessions" title="Sessions"><span>›_</span></button>
-        <button class="nav-button" data-target="telemetry" aria-label="Telemetry" title="Telemetry"><span>⌇</span></button>
-        <button class="nav-button" data-target="canary" aria-label="Canary Tokens" title="Canary Tokens"><span>🪤</span></button>
-        <button class="nav-button" data-target="alerts" aria-label="Security Alerts" title="Security Alerts"><span>🔔</span></button>
-        <button class="nav-button" data-target="analyst" aria-label="SOC analyst" title="Gemini + RAG analyst"><span>✦</span></button>
-      </nav>
-      <div class="rail-bottom">
-        <button class="nav-button" aria-label="Settings" title="Settings"><span>⚙</span></button>
-        <div class="avatar" title="Analyst">AN</div>
-      </div>
-    </aside>
 
-    <main class="workspace">
-      <header class="topbar" id="overview">
-        <div class="topbar-title">
-          <div class="title-line">
-            <span class="live-dot" id="live-dot"></span>
-            <h1 id="grid-heading">DECEPTION GRID OFFLINE</h1>
-            <span class="badge badge-decoy">DECOY</span>
-          </div>
-          <p id="safety-message">Sandboxed simulation · real host isolated · no input execution</p>
+<!-- ===== SIDEBAR NAV ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="brand">
+      <div class="brand-icon">
+        <span class="material-symbols-outlined">security</span>
+        <span class="brand-dot"></span>
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">ARGUS SOC</div>
+        <div class="brand-version">
+          <span class="dot-green"></span>
+          v2.5 Sentinel Grid
         </div>
-        <div class="topbar-actions">
-          <button class="button button-secondary" id="runtime-control">Start grid</button>
-          <div class="status-chip"><span class="gemini-symbol">✦</span><span>Gemini</span><strong id="gemini-status">Checking</strong></div>
-          <time id="utc-clock">--:--:-- UTC</time>
-          <button class="icon-button" id="refresh-button" aria-label="Refresh dashboard" title="Refresh">↻</button>
-        </div>
-      </header>
-
-      <div class="content">
-        <section class="metrics" aria-label="Operational metrics">
-          <article class="metric-card"><div class="metric-label"><span>Active sessions</span><span class="metric-icon cyan">●</span></div><div class="metric-value" id="metric-active">0</div><div class="metric-context" id="metric-active-context">No active contacts</div></article>
-          <article class="metric-card"><div class="metric-label"><span>Attacker actions</span><span class="metric-icon violet">◆</span></div><div class="metric-value" id="metric-events">0</div><div class="metric-context" id="metric-event-context">0 telemetry events retained</div></article>
-          <article class="metric-card"><div class="metric-label"><span>Unique sources</span><span class="metric-icon amber">●</span></div><div class="metric-value" id="metric-sources">0</div><div class="metric-context" id="metric-source-context">Across all decoy services</div></article>
-          <article class="metric-card"><div class="metric-label"><span>Mean dwell time</span><span class="metric-icon green">◷</span></div><div class="metric-value" id="metric-dwell">0s</div><div class="metric-context" id="metric-critical">0 critical sessions</div></article>
-        </section>
-
-        <section class="panel port-panel" aria-labelledby="ports-heading">
-          <div class="panel-header compact">
-            <div><h2 id="ports-heading">DECOY SERVICES</h2><span class="header-note" id="ports-summary">0 / 5 LISTENING</span></div>
-            <div class="legend"><span><i class="dot green-bg"></i>Healthy</span><span><i class="dot amber-bg"></i>Engaged</span><span><i class="dot coral-bg"></i>Failed</span></div>
-          </div>
-          <div class="port-grid" id="port-grid" aria-live="polite"></div>
-        </section>
-
-        <section class="operations-grid" id="sessions">
-          <div class="primary-column">
-            <article class="panel sessions-panel">
-              <div class="panel-header">
-                <div><h2>ATTACKER SESSIONS</h2><span class="badge badge-live" id="live-session-badge">0 LIVE</span></div>
-                <div class="header-actions"><button class="button button-ghost" id="session-filter">All sessions</button><button class="button button-ghost" id="export-button">Export selected</button></div>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>Source</th><th>Service</th><th>Intent</th><th>Dwell</th><th>Actions</th><th>Risk</th></tr></thead>
-                  <tbody id="session-rows"></tbody>
-                </table>
-                <div class="empty-state" id="sessions-empty"><span class="empty-symbol">⌁</span><strong>No attacker sessions captured</strong><p>Start the deception grid, then connect to one of the five local decoy ports.</p></div>
-              </div>
-            </article>
-
-            <article class="panel transcript-panel">
-              <div class="panel-header">
-                <div><span class="dot coral-bg"></span><h2 id="transcript-title">LIVE TRANSCRIPT</h2><span class="badge badge-simulated">SIMULATED HOST</span></div>
-                <span class="mono subtle" id="transcript-route">No session selected</span>
-              </div>
-              <div class="terminal" id="terminal">
-                <div class="terminal-meta"><span>Captured input · Gemini/fallback output</span><span id="recording-state">IDLE</span></div>
-                <div class="terminal-stream" id="terminal-stream">
-                  <div class="terminal-empty">Select a session to inspect the interaction transcript.</div>
-                </div>
-              </div>
-              <div class="terminal-footer"><span id="terminal-stats">0 events · 0 bytes</span><strong>NO REAL COMMANDS EXECUTED · EGRESS SHOULD BE BLOCKED</strong></div>
-            </article>
-          </div>
-
-          <aside class="panel intelligence" id="intel">
-            <div class="panel-header"><div><h2>SESSION INTELLIGENCE</h2></div><span class="mono subtle" id="session-short-id">—</span></div>
-            <div class="risk-block">
-              <div class="risk-ring" id="risk-ring"><div><strong id="risk-score">0</strong><span>RISK</span></div></div>
-              <div class="risk-copy"><strong id="risk-level">NO SIGNAL</strong><h3 id="intent-label">Waiting for telemetry</h3><div class="confidence-row"><span>Intent confidence</span><span class="mono" id="intent-confidence">0%</span></div><div class="progress"><i id="confidence-progress"></i></div></div>
-            </div>
-            <div class="intel-section"><span class="section-label">MITRE ATT&amp;CK</span><div class="technique-list" id="technique-list"><span class="placeholder-copy">No mapped techniques</span></div></div>
-            <div class="intel-section"><span class="section-label">SESSION FACTS</span><dl class="facts"><div><dt>Source</dt><dd id="fact-source">—</dd></div><div><dt>Fingerprint</dt><dd id="fact-fingerprint">—</dd></div><div><dt>Username</dt><dd id="fact-username">—</dd></div><div><dt>Bytes captured</dt><dd id="fact-bytes">0 B</dd></div><div><dt>Attacker actions</dt><dd id="fact-interactions">0</dd></div><div><dt>First seen</dt><dd id="fact-first-seen">—</dd></div></dl></div>
-            <div class="intel-section response-section"><span class="section-label">RESPONSE</span><div class="response-grid"><button class="button button-primary" id="contain-button" disabled>Contain session</button><button class="button button-danger" id="block-button" disabled>Block source</button><button class="button button-secondary" id="copy-ioc-button" disabled>Copy IOC</button><button class="button button-secondary" id="export-evidence-button" disabled>Export evidence</button></div><p class="scope-note">Blocking applies to the CyberShield AI runtime only; host firewall changes require operator action.</p></div>
-          </aside>
-        </section>
-
-        <section class="panel analyst-panel" id="analyst" aria-labelledby="analyst-heading">
-          <div class="panel-header analyst-header">
-            <div><span class="analyst-symbol">✦</span><h2 id="analyst-heading">SOC ANALYST · GEMINI + RAG</h2><span class="badge analyst-badge" id="analyst-status">SELECT A SESSION</span></div>
-            <div class="header-actions"><span class="mono subtle" id="analyst-generated">No report generated</span><button class="button button-primary" id="analyze-button" disabled>Analyze selected session</button></div>
-          </div>
-          <div class="analyst-empty" id="analyst-empty">Select an attacker session, then generate a grounded SOC report from its captured evidence.</div>
-          <div class="analyst-grid" id="analyst-content" hidden>
-            <article class="analyst-column analyst-summary"><span class="section-label">EXECUTIVE ASSESSMENT</span><h3 id="analyst-severity">NO REPORT</h3><p id="analyst-summary">—</p><div class="analyst-techniques" id="analyst-techniques"></div></article>
-            <article class="analyst-column"><span class="section-label">EVIDENCE-BASED FINDINGS</span><ul class="analyst-list" id="analyst-findings"></ul></article>
-            <article class="analyst-column"><span class="section-label">RECOMMENDED RESPONSE</span><div class="recommendation-groups" id="analyst-remediation"></div></article>
-            <article class="analyst-column"><span class="section-label">RAG EVIDENCE</span><div class="analyst-engine" id="analyst-engine"></div><div class="source-list" id="analyst-sources"></div></article>
-          </div>
-        </section>
-
-        <section class="lower-grid" id="telemetry">
-          <article class="panel telemetry-panel">
-            <div class="panel-header"><div><h2>TELEMETRY TIMELINE</h2></div><span class="mono subtle" id="telemetry-count">0 EVENTS</span></div>
-            <div class="timeline" id="timeline"><div class="lower-empty">Session telemetry will appear here.</div></div>
-          </article>
-          <article class="panel surface-panel">
-            <div class="panel-header"><div><h2>ATTACK SURFACE</h2></div><span class="subtle">ALL TIME</span></div>
-            <div class="surface-content"><div class="bar-chart" id="service-bars"></div><div class="distribution" id="service-distribution"><div><strong>0%</strong><span>SSH</span></div><div><strong>0%</strong><span>HTTP/S</span></div><div><strong>0%</strong><span>OTHER</span></div></div></div>
-          </article>
-        </section>
-
-        <section class="panel canary-panel" id="canary" aria-labelledby="canary-heading">
-          <div class="panel-header">
-            <div><h2 id="canary-heading">CANARY TOKENS</h2><span class="badge badge-simulated" id="canary-count">0 ACTIVE</span></div>
-            <div class="header-actions">
-              <form id="canary-form" class="canary-form">
-                <input type="text" id="canary-name" placeholder="Token name (e.g. Secret Wiki)" required maxlength="128" />
-                <select id="canary-type" required>
-                  <option value="url">URL</option>
-                  <option value="credential">Credential</option>
-                  <option value="document">Document</option>
-                </select>
-                <button type="submit" class="button button-primary" id="canary-create-btn">Create Token</button>
-              </form>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Name / Type</th><th>Trigger Secret</th><th>Triggers</th><th>Created</th><th>Status</th></tr></thead>
-              <tbody id="canary-rows"></tbody>
-            </table>
-            <div class="empty-state" id="canary-empty" hidden><span class="empty-symbol">🪤</span><strong>No canary tokens created</strong><p>Generate a tripwire token to deploy on your network or endpoints.</p></div>
-          </div>
-        </section>
-
-        <section class="panel alerts-panel" id="alerts" aria-labelledby="alerts-heading">
-          <div class="panel-header">
-            <div>
-              <span class="dot coral-bg"></span>
-              <h2 id="alerts-heading">SECURITY ALERTS &amp; INTEGRATIONS</h2>
-              <span class="badge badge-simulated" id="alerts-channel-count">0 / 3 CHANNELS CONFIGURED</span>
-            </div>
-            <div class="header-actions">
-              <button class="button button-primary" id="test-alert-btn">Send Test Alert</button>
-            </div>
-          </div>
-          
-          <div class="alerts-body">
-            <div class="alerts-channels-grid">
-              <div class="channel-card" id="card-slack">
-                <div class="channel-top">
-                  <span class="channel-title">Slack</span>
-                  <span class="channel-status" id="slack-status-badge">Checking...</span>
-                </div>
-                <div class="channel-info" id="slack-status-text">Webhook: Not configured</div>
-              </div>
-
-              <div class="channel-card" id="card-discord">
-                <div class="channel-top">
-                  <span class="channel-title">Discord</span>
-                  <span class="channel-status" id="discord-status-badge">Checking...</span>
-                </div>
-                <div class="channel-info" id="discord-status-text">Webhook: Not configured</div>
-              </div>
-
-              <div class="channel-card" id="card-email">
-                <div class="channel-top">
-                  <span class="channel-title">Email (SMTP)</span>
-                  <span class="channel-status" id="email-status-badge">Checking...</span>
-                </div>
-                <div class="channel-info" id="email-status-text">SMTP: Not configured</div>
-              </div>
-
-              <div class="channel-card policy-card" id="card-policy">
-                <div class="channel-top">
-                  <span class="channel-title">Notification Policy</span>
-                  <span class="channel-status active">ENFORCING</span>
-                </div>
-                <div class="channel-info" id="policy-status-text">Threshold: Score &ge; 80 or High/Critical &bull; Cooldown: 300s</div>
-              </div>
-            </div>
-
-            <div class="table-wrap alerts-table-wrap">
-              <table>
-                <thead><tr><th>Timestamp</th><th>Incident / Event</th><th>Severity</th><th>Risk Score</th><th>Source IP &rarr; Host</th><th>Channels Delivered</th></tr></thead>
-                <tbody id="alerts-rows"></tbody>
-              </table>
-              <div class="empty-state" id="alerts-empty">
-                <span class="empty-symbol">🔔</span>
-                <strong>No incident notifications dispatched</strong>
-                <p>High-risk events and critical canary triggers will automatically notify configured Slack, Discord, and Email channels.</p>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
-    </main>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#overview" class="nav-item active" data-section="overview">
+        <span class="material-symbols-outlined nav-icon" style="font-variation-settings:'FILL' 1">shield</span>
+        <span class="nav-label">Overview</span>
+      </a>
+      <a href="#decoy-grid" class="nav-item" data-section="decoy-grid">
+        <span class="material-symbols-outlined nav-icon">sensors</span>
+        <span class="nav-label">Decoy Sensors</span>
+        <span class="nav-badge" id="nav-badge-sensors">5 ACT</span>
+      </a>
+      <a href="#session-panel" class="nav-item" data-section="session-panel">
+        <span class="material-symbols-outlined nav-icon">person_pin</span>
+        <span class="nav-label">Sessions</span>
+        <span class="nav-badge danger" id="nav-badge-sessions">0 TRAP</span>
+      </a>
+      <a href="#terminal-stream" class="nav-item" data-section="terminal-stream">
+        <span class="material-symbols-outlined nav-icon">terminal</span>
+        <span class="nav-label">Terminal</span>
+      </a>
+      <a href="#copilot-panel" class="nav-item" data-section="copilot-panel">
+        <span class="material-symbols-outlined nav-icon">smart_toy</span>
+        <span class="nav-label">AI Copilot</span>
+        <span class="nav-dot-blue"></span>
+      </a>
+      <a href="#telemetry-drawer" class="nav-item" data-section="telemetry-drawer">
+        <span class="material-symbols-outlined nav-icon">radar</span>
+        <span class="nav-label">Threat Intel</span>
+      </a>
+      <a href="#canary-panel" class="nav-item" data-section="canary-panel">
+        <span class="material-symbols-outlined nav-icon">vpn_key</span>
+        <span class="nav-label">Canary Tokens</span>
+        <span class="nav-badge" id="nav-badge-canary">0 ACT</span>
+      </a>
+      <a href="#alerts-panel" class="nav-item" data-section="alerts-panel">
+        <span class="material-symbols-outlined nav-icon">notifications_active</span>
+        <span class="nav-label">Security Alerts</span>
+        <span class="nav-badge" id="nav-badge-alerts">0 / 3</span>
+      </a>
+    </nav>
   </div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/dashboard/app.js" defer></script>
+
+  <div class="sidebar-bottom">
+    <button class="btn-contain-grid" id="btn-grid-toggle">
+      <span class="material-symbols-outlined">power_settings_new</span>
+      <span id="grid-toggle-label">Start Grid</span>
+    </button>
+    <div class="sidebar-status">
+      <span class="material-symbols-outlined" style="color:var(--emerald); font-size:16px">network_check</span>
+      <span>Uptime</span>
+      <span class="status-up">99.98%</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main-canvas">
+
+  <!-- TOP HEADER BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="material-symbols-outlined" style="color:var(--primary);font-size:24px">shield_with_heart</span>
+      <span class="topbar-title">ARGUS <span class="topbar-accent">Autonomous Deception</span></span>
+      <div class="gemini-pill" id="gemini-status-pill">
+        <span class="dot-pulse"></span>
+        <span class="pill-label">Model:</span>
+        <span class="pill-value" id="gemini-model-label">Checking...</span>
+        <span class="pill-latency" id="gemini-latency"></span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span class="material-symbols-outlined" style="font-size:17px;color:#8ca4ac">search</span>
+        <input type="text" id="search-input" placeholder="Filter honeypots, IPs, IOC hashes..." autocomplete="off">
+      </div>
+      <div class="grid-badge" id="grid-status-badge">
+        <span class="dot-green"></span>
+        <span id="grid-badge-label">Checking...</span>
+      </div>
+      <button class="btn-emergency" id="btn-emergency">
+        <span class="material-symbols-outlined" style="font-size:16px">crisis_alert</span>
+        <span>Emergency Containment</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SCROLL CANVAS -->
+  <div class="scroll-canvas">
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== SECTION: OVERVIEW ===== -->
+    <section class="section" id="overview">
+      <div class="section-hero">
+        <div>
+          <div class="section-eyebrow">Autonomous Cyber Deception &amp; Threat Intelligence Grid &middot; Sentinel v2.5 Enterprise</div>
+          <h1 class="section-headline">SOC Command &amp; Autonomous Decoy Mesh</h1>
+          <p class="section-sub">Real-time synthetic honeynet orchestrating dynamic kernel lures, high-interaction sandbox diversion, and adaptive Gemini generative responses to actively entrap persistent adversary campaigns.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-outline" id="btn-pause-grid">
+            <span class="material-symbols-outlined" style="font-size:18px;color:#7d9cb7">pause_circle</span>
+            Pause Grid
+          </button>
+          <button class="btn-outline" id="btn-export">
+            <span class="material-symbols-outlined" style="font-size:18px;color:#7d9cb7">file_download</span>
+            Export Telemetry JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- STAT TILES -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Active Decoy Fleet</span>
+            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">sensors</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" id="stat-decoys">5 / 5</span>
+            <span class="badge-green">100% Online</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill green" id="decoy-bar" style="width:100%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Trapped Adversaries</span>
+            <span class="material-symbols-outlined" style="color:#e11d48;font-size:18px">person_pin</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" id="stat-sessions">0</span>
+            <span class="badge-red" id="stat-critical">0 Critical</span>
+          </div>
+          <p class="stat-sub" id="stat-sessions-sub">+0 active sessions last 15m</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Auto-Quarantine</span>
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">shield</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" id="stat-blocked">0</span>
+            <span class="stat-label">Blocked IPs</span>
+          </div>
+          <p class="stat-sub emerald">
+            <span class="material-symbols-outlined" style="font-size:13px">check_circle</span>
+            Runtime containment active
+          </p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>AI Believability Index</span>
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">neurology</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric primary" id="stat-ai">Gemini</span>
+            <span class="badge-mono" id="gemini-model-badge">RAG</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill primary" id="ai-bar" style="width:99%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: DECOY SENSORS ===== -->
+    <section class="section" id="decoy-grid">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">hub</span>
+          <div>
+            <h2 class="section-title">Active Synthetic Sensor Mesh</h2>
+            <p class="section-caption">Autonomous deception cluster with jitter compensation and adaptive entropy</p>
+          </div>
+        </div>
+        <div class="jitter-pill">
+          <span>Jitter: <strong class="emerald">1.25&ndash;2.75s</strong></span>
+          <span class="sep">&#8226;</span>
+          <span>Mode: <strong>Gemini</strong></span>
+        </div>
+      </div>
+      <div class="sensor-grid" id="sensor-grid">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SESSIONS ===== -->
+    <section class="section" id="session-panel">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">stream</span>
+          <div>
+            <h2 class="section-title">Trapped Adversary Sessions &amp; Telemetry Stream</h2>
+            <p class="section-caption" id="sessions-caption">0 Active adversary sessions engaged across decoy mesh</p>
+          </div>
+        </div>
+        <div class="filter-pills">
+          <button class="filter-pill active" data-filter="all" id="filter-all">All Protocols</button>
+          <button class="filter-pill" data-filter="telnet">Telnet</button>
+          <button class="filter-pill" data-filter="ssh">SSH</button>
+          <button class="filter-pill" data-filter="http">HTTP</button>
+          <button class="filter-pill danger" data-filter="critical">&gt;80 Risk</button>
+        </div>
+      </div>
+      <div class="session-grid-wrap collapsed-fade" id="session-grid-wrap">
+        <div class="session-grid collapsed" id="session-grid">
+          <div class="empty-state">
+            <span class="material-symbols-outlined" style="font-size:40px;color:#8ca4ac">wifi_off</span>
+            <p>No active sessions yet. Start the grid and generate some traffic.</p>
+          </div>
+        </div>
+      </div>
+      <div class="session-expand-bar" id="session-expand-bar" style="display:none;">
+        <button class="btn-expand-sessions" id="btn-toggle-sessions">
+          <span id="expand-btn-text">View More Sessions</span>
+          <span class="material-symbols-outlined" id="expand-btn-icon">keyboard_arrow_down</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: TERMINAL ===== -->
+    <section class="section" id="terminal-stream">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">terminal</span>
+          <div>
+            <h2 class="section-title">Deep Session Inspector &amp; Interactive Telemetry</h2>
+            <p class="section-caption" id="terminal-caption">Select a session to inspect its deception transcript</p>
+          </div>
+        </div>
+        <div class="terminal-actions">
+          <button class="btn-kill" id="btn-kill" disabled>
+            <span class="material-symbols-outlined" style="font-size:15px">close</span>
+            Kill Session
+          </button>
+          <button class="btn-outline sm" id="btn-block" disabled>
+            <span class="material-symbols-outlined" style="font-size:15px;color:#7d9cb7">block</span>
+            Block Source IP
+          </button>
+          <button class="btn-outline sm" id="btn-export-session" disabled>
+            <span class="material-symbols-outlined" style="font-size:15px;color:#7d9cb7">download</span>
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <div class="terminal-card">
+        <div class="term-header">
+          <div class="term-dots">
+            <span class="term-dot red"></span>
+            <span class="term-dot amber"></span>
+            <span class="term-dot green"></span>
+            <span class="term-label" id="term-target-label">No session selected</span>
+          </div>
+          <div class="term-meta" id="term-meta"></div>
+        </div>
+        <div class="term-tabs">
+          <div class="tab-group">
+            <button class="tab-btn active" data-tab="transcript" id="tab-transcript">Live Transcript</button>
+            <button class="tab-btn" data-tab="telemetry" id="tab-telemetry">Normalized Telemetry</button>
+            <button class="tab-btn" data-tab="raw" id="tab-raw">Raw Payloads</button>
+          </div>
+          <span class="term-duration" id="term-duration">--</span>
+        </div>
+        <div class="term-body" id="term-body">
+          <div class="term-placeholder">
+            <span class="material-symbols-outlined" style="font-size:36px;opacity:0.25">terminal</span>
+            <p>Select an attacker session from the Sessions panel above to view the live deception transcript.</p>
+          </div>
+        </div>
+        <div class="inject-bar">
+          <span class="inject-label">Operator Injection:</span>
+          <div class="inject-input-wrap">
+            <span class="inject-prompt">#</span>
+            <input type="text" id="inject-input" placeholder="Inject synthetic terminal response..." autocomplete="off">
+          </div>
+          <button class="btn-primary" id="btn-inject">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: AI COPILOT ===== -->
+    <section class="section" id="copilot-panel">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">psychology</span>
+          <div>
+            <h2 class="section-title">Gemini AI Threat Analysis &amp; Incident Playbook</h2>
+            <p class="section-caption">Enterprise RAG + MITRE ATT&amp;CK matrix correlation</p>
+          </div>
+        </div>
+        <button class="btn-outline" id="btn-analyze">
+          <span class="material-symbols-outlined" style="font-size:16px">autorenew</span>
+          Analyze Selected Session
+        </button>
+      </div>
+
+      <div class="copilot-grid">
+        <div class="copilot-card wide">
+          <div class="copilot-card-header">
+            <div class="copilot-card-title">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px">insights</span>
+              <h3>Threat Assessment</h3>
+            </div>
+            <span class="confidence-badge" id="confidence-badge">--</span>
+          </div>
+          <div class="actor-pill" id="actor-pill" style="display:none">
+            <span class="actor-label">Actor Signature:</span>
+            <span class="actor-value" id="actor-value">--</span>
+          </div>
+          <p class="assessment-text" id="assessment-text">Select a session and click <strong>Analyze Selected Session</strong> to generate a Gemini + RAG SOC report.</p>
+          <div class="rag-section" id="rag-section" style="display:none">
+            <div class="rag-title">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:16px">menu_book</span>
+              RAG Knowledge Base Citations
+            </div>
+            <div class="rag-list" id="rag-list"></div>
+          </div>
+        </div>
+
+        <div class="copilot-card">
+          <div class="mitre-section">
+            <div class="mitre-header">
+              <h3 class="copilot-sub-title">
+                <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">grid_view</span>
+                MITRE ATT&amp;CK Mapping
+              </h3>
+              <span class="ttp-count" id="ttp-count">--</span>
+            </div>
+            <div class="mitre-grid" id="mitre-grid">
+              <div class="mitre-empty">Run analysis to map TTPs</div>
+            </div>
+          </div>
+          <div class="ir-section">
+            <div class="ir-header">
+              <h3 class="copilot-sub-title">
+                <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">checklist</span>
+                Automated IR Actions
+              </h3>
+              <span class="ir-pending" id="ir-pending">--</span>
+            </div>
+            <div class="ir-list" id="ir-list">
+              <div class="ir-empty">No IR actions until session is analyzed</div>
+            </div>
+            <button class="btn-primary full-width" id="btn-commit-ir" disabled>Commit Selected Actions</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: TELEMETRY ===== -->
+    <section class="section pb-section" id="telemetry-drawer">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">public</span>
+          <div>
+            <h2 class="section-title">Global Telemetry &amp; Origin Vectors</h2>
+            <p class="section-caption">Multi-point ingress tracking and automated intent classification</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-grid">
+          <div class="vector-map-area">
+            <div class="vector-map-header">
+              <span class="vector-title">Attack Origin Vectors</span>
+              <span class="vector-live">&#9679; Global Telemetry Live</span>
+            </div>
+            <div class="vector-map">
+              <svg viewBox="0 0 420 80" fill="none" style="width:100%;height:100%" id="attack-svg">
+                <defs>
+                  <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <line x1="0" y1="40" x2="420" y2="40" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
+                <line x1="105" y1="0" x2="105" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
+                <line x1="210" y1="0" x2="210" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
+                <line x1="315" y1="0" x2="315" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
+                <circle cx="210" cy="40" r="7" fill="#8B9A6E" filter="url(#glow)" opacity="0.9"/>
+                <circle cx="210" cy="40" r="14" fill="none" stroke="#8B9A6E" stroke-width="1" opacity="0.3"/>
+                <g id="vector-arcs">
+                  <!-- Dynamically populated from live adversary telemetry -->
+                </g>
+              </svg>
+            </div>
+            <div class="target-title" style="margin-top:1.2rem">Top Targeted Decoy Services</div>
+            <div class="target-items" id="target-items">
+              <div class="target-item"><span class="target-name">SSH Honeypot (2222)</span><span class="target-count" id="ti-ssh">0 probes</span></div>
+              <div class="target-item"><span class="target-name">Telnet Legacy (2323)</span><span class="target-count" id="ti-telnet">0 probes</span></div>
+              <div class="target-item"><span class="target-name">HTTP Finance (8088)</span><span class="target-count" id="ti-http">0 probes</span></div>
+              <div class="target-item"><span class="target-name">HTTPS Ops API (8443)</span><span class="target-count" id="ti-https">0 probes</span></div>
+              <div class="target-item"><span class="target-name">MySQL Database (33060)</span><span class="target-count" id="ti-mysql">0 probes</span></div>
+            </div>
+          </div>
+
+          <div class="intent-area">
+            <div class="intent-title">Attack Intent Distribution</div>
+            <div class="intent-chart">
+              <svg viewBox="0 0 120 120" id="intent-svg" style="width:140px;height:140px">
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#EAE2D6" stroke-width="18"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#8B9A6E" stroke-width="18"
+                  stroke-dasharray="0 283" id="intent-recon" transform="rotate(-90 60 60)"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#C24B4B" stroke-width="18"
+                  stroke-dasharray="0 283" id="intent-exploit" transform="rotate(-90 60 60)"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#C98A3C" stroke-width="18"
+                  stroke-dasharray="0 283" id="intent-lateral" transform="rotate(-90 60 60)"/>
+                <text x="60" y="56" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700" fill="#242c1d" id="intent-total-val">0</text>
+                <text x="60" y="70" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" fill="#8c9680">events</text>
+              </svg>
+            </div>
+            <div class="intent-legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#8B9A6E"></span>
+                <span>Reconnaissance</span>
+                <span class="legend-val" id="leg-recon">0</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#C24B4B"></span>
+                <span>Exploitation</span>
+                <span class="legend-val" id="leg-exploit">0</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#C98A3C"></span>
+                <span>Lateral / Payload</span>
+                <span class="legend-val" id="leg-lateral">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <!-- ===== SECTION: CANARY TOKENS ===== -->
+    <section class="section pb-section" id="canary-panel">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="section-eyebrow">Deception Tripwires</span>
+          <h2 class="section-title">Canary Tokens &amp; Honey Credentials</h2>
+        </div>
+        <div class="section-actions">
+          <span class="badge-green" id="canary-count">0 Active</span>
+        </div>
+      </div>
+
+      <div class="canary-grid">
+        <!-- Create Token Card -->
+        <div class="canary-create-card">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">add_moderator</span>
+              <span style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text)">Deploy New Tripwire Token</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0 30px">Generate decoy URLs, AWS keys, or docs to detect unauthorized network or file access.</p>
+          </div>
+          <form id="canary-form" class="canary-form">
+            <div class="canary-form-row">
+              <div class="canary-input-group" style="flex:2">
+                <label for="canary-name">Token Name / Purpose</label>
+                <input type="text" id="canary-name" placeholder="e.g. AWS Production Admin Key or Secret Wiki" required maxlength="128" />
+              </div>
+              <div class="canary-input-group" style="flex:1">
+                <label for="canary-type">Tripwire Type</label>
+                <select id="canary-type" required>
+                  <option value="url">Web URL (HTTP webhook trigger)</option>
+                  <option value="credential">Decoy Credential (Fake AWS Key)</option>
+                  <option value="document">Honey Document (Embedded Token)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-primary" id="canary-create-btn" style="height:38px;align-self:flex-end">
+                <span class="material-symbols-outlined" style="font-size:16px">add</span>
+                Create Token
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Active Tokens List Card -->
+        <div class="canary-list-card">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">shield_lock</span>
+              <span style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text)">Active Tripwire Tokens</span>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted)">Real-time SOC monitoring</span>
+          </div>
+
+          <div style="overflow-x:auto">
+            <table class="canary-table">
+              <thead>
+                <tr>
+                  <th>Token Name &amp; Type</th>
+                  <th>Trigger Secret / URL</th>
+                  <th>Triggers</th>
+                  <th>Deployed</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="canary-rows">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+            <div class="empty-state" id="canary-empty" style="display:none;padding:40px 20px">
+              <span class="material-symbols-outlined" style="font-size:36px;color:#8ca4ac">key_off</span>
+              <p style="margin-top:8px">No canary tokens created yet. Generate a tripwire token above to deploy on your network or endpoints.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SECURITY ALERTS & INTEGRATIONS ===== -->
+    <section class="section pb-section" id="alerts-panel">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="section-eyebrow">Outbound Dispatch &amp; Integrations</span>
+          <h2 class="section-title">Security Alerts &amp; Channels</h2>
+        </div>
+        <div class="section-actions" style="display:flex;align-items:center;gap:10px">
+          <span class="badge-green" id="alerts-channel-count">0 / 3 Channels Configured</span>
+          <button class="btn-primary" id="test-alert-btn" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">send</span>
+            <span>Send Test Alert</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="alerts-body">
+        <div class="alerts-channels-grid">
+          <div class="channel-card" id="card-slack">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">chat</span>
+                <span class="channel-title">Slack</span>
+              </div>
+              <span class="channel-status" id="slack-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="slack-status-text">Webhook: Not configured</div>
+          </div>
+
+          <div class="channel-card" id="card-discord">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">forum</span>
+                <span class="channel-title">Discord</span>
+              </div>
+              <span class="channel-status" id="discord-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="discord-status-text">Webhook: Not configured</div>
+          </div>
+
+          <div class="channel-card" id="card-email">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">mail</span>
+                <span class="channel-title">Email (SMTP)</span>
+              </div>
+              <span class="channel-status" id="email-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="email-status-text">SMTP: Not configured</div>
+          </div>
+
+          <div class="channel-card policy-card" id="card-policy">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">policy</span>
+                <span class="channel-title">Notification Policy</span>
+              </div>
+              <span class="channel-status active">ENFORCING</span>
+            </div>
+            <div class="channel-info" id="policy-status-text">Threshold: Score &ge; 80 or High/Critical &bull; Cooldown: 300s</div>
+          </div>
+        </div>
+
+        <div class="alerts-history-card">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px">history</span>
+              <span style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text)">Incident Dispatch Log</span>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted)">Real-time Webhook &amp; SMTP Audit</span>
+          </div>
+
+          <div style="overflow-x:auto">
+            <table class="canary-table alerts-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Incident / Event</th>
+                  <th>Severity</th>
+                  <th>Risk Score</th>
+                  <th>Source IP &rarr; Host</th>
+                  <th>Channels Delivered</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-rows">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+            <div class="empty-state" id="alerts-empty" style="display:none;padding:36px 20px;text-align:center">
+              <span class="material-symbols-outlined" style="font-size:36px;color:#8ca4ac">notifications_off</span>
+              <p style="margin-top:8px;font-weight:600;color:var(--text)">No incident notifications dispatched</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px">High-risk events and critical canary triggers will automatically notify configured Slack, Discord, and Email channels.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end scroll-canvas -->
+</div><!-- end main-canvas -->
+
+<!-- PLAIN-ENGLISH SESSION DETAIL POPUP MODAL -->
+<div id="session-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card" id="session-modal-card">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-badge-row">
+          <span class="modal-proto-badge" id="modal-proto">HTTPS (Port 8443)</span>
+          <span class="modal-risk-badge" id="modal-risk">95 CRIT • High Risk</span>
+          <span class="modal-status-badge" id="modal-status">Safely Contained</span>
+        </div>
+        <h2 class="modal-title" id="modal-title">Attack Breakdown &amp; Analysis</h2>
+        <div class="modal-subtitle" id="modal-subtitle">
+          <span class="material-symbols-outlined" style="font-size:14px">public</span>
+          <span id="modal-ip">Attacker IP: 127.0.0.1</span>
+          <span style="opacity:0.5">•</span>
+          <span id="modal-time">Started just now</span>
+        </div>
+      </div>
+      <button class="modal-close-btn" id="btn-close-modal" aria-label="Close modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- PLAIN-ENGLISH EXECUTIVE EXPLANATION -->
+      <div class="modal-story-grid">
+        <div class="story-box attacker-box">
+          <div class="story-box-head">
+            <span class="material-symbols-outlined" style="color:var(--rose)">warning</span>
+            <span>What the Attacker Tried to Do</span>
+          </div>
+          <p class="story-text" id="modal-attacker-story">
+            Loading attack story...
+          </p>
+        </div>
+
+        <div class="story-box defender-box">
+          <div class="story-box-head">
+            <span class="material-symbols-outlined" style="color:var(--primary)">shield</span>
+            <span>What CyberShield AI Did (How We Protected You)</span>
+          </div>
+          <p class="story-text" id="modal-defender-story">
+            Loading defense response...
+          </p>
+        </div>
+      </div>
+
+      <!-- QUICK FACTS TILES -->
+      <div class="modal-facts-grid">
+        <div class="fact-card">
+          <span class="fact-label">Adversary Actions</span>
+          <span class="fact-val" id="modal-fact-actions">0</span>
+          <span class="fact-sub" id="modal-fact-actions-sub">Commands &amp; requests</span>
+        </div>
+        <div class="fact-card">
+          <span class="fact-label">Time Entrapped</span>
+          <span class="fact-val" id="modal-fact-duration">0s</span>
+          <span class="fact-sub" id="modal-fact-duration-sub">Attacker dwell time</span>
+        </div>
+        <div class="fact-card">
+          <span class="fact-label">AI Believability</span>
+          <span class="fact-val" id="modal-fact-ai">Gemini Deception</span>
+          <span class="fact-sub" id="modal-fact-ai-sub">Adaptive lure responses</span>
+        </div>
+        <div class="fact-card">
+          <span class="fact-label">Threat Severity</span>
+          <span class="fact-val" id="modal-fact-threat">Critical</span>
+          <span class="fact-sub" id="modal-fact-threat-sub">Risk score: 0/100</span>
+        </div>
+      </div>
+
+      <!-- STEP-BY-STEP STORY TIMELINE -->
+      <div class="modal-timeline-section">
+        <div class="timeline-header">
+          <span class="timeline-title">What Happened Step-by-Step (Plain English)</span>
+          <span class="timeline-count" id="modal-timeline-count">0 events recorded</span>
+        </div>
+        <div class="modal-timeline-list" id="modal-timeline-list">
+          <!-- Populated dynamically with friendly step-by-step translations -->
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <div class="modal-footer-left">
+        <button class="btn-kill" id="modal-btn-block">
+          <span class="material-symbols-outlined" style="font-size:16px">block</span>
+          Block Attacker IP
+        </button>
+        <button class="btn-outline sm" id="modal-btn-contain">
+          <span class="material-symbols-outlined" style="font-size:16px">security</span>
+          Contain Session
+        </button>
+      </div>
+      <div class="modal-footer-right">
+        <button class="btn-outline sm" id="modal-btn-terminal">
+          <span class="material-symbols-outlined" style="font-size:16px">terminal</span>
+          View Technical Terminal
+        </button>
+        <button class="btn-primary" id="modal-btn-export">
+          <span class="material-symbols-outlined" style="font-size:16px">file_download</span>
+          Export Evidence JSON
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/dashboard/app.js?v=2.7.0"></script>
 </body>
 </html>
