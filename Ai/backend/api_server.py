@@ -74,6 +74,13 @@ class CanaryTestRequest(BaseModel):
     secret: str = Field(min_length=1)
 
 
+class SimulateAttackRequest(BaseModel):
+    attacker_ip: Optional[str] = None
+    country_code: Optional[str] = None
+    target_port: Optional[int] = None
+    service: Optional[str] = None
+
+
 def _string_list(value: Any, fallback: Optional[List[str]] = None) -> List[str]:
     if isinstance(value, list):
         return [str(item)[:1000] for item in value if str(item).strip()][:20]
@@ -577,8 +584,17 @@ def create_app(
         return {"ok": True, "status": request.status}
 
     def _trigger_canary(secret: str, request: Request, simulated: bool = False) -> Dict[str, Any]:
-        source_ip = getattr(request.client, "host", "127.0.0.1")
         headers = dict(request.headers)
+        forwarded = (
+            headers.get("cf-connecting-ip")
+            or headers.get("x-forwarded-for")
+            or headers.get("x-real-ip")
+        )
+        if forwarded:
+            source_ip = forwarded.split(",")[0].strip()
+        else:
+            source_ip = getattr(request.client, "host", "127.0.0.1")
+
         metadata = {
             "user_agent": headers.get("user-agent", "unknown"),
             "method": request.method,
@@ -830,26 +846,47 @@ def create_app(
             "canary_triggers": canaries,
         }
 
-    class SimulateAttackRequest(BaseModel):
-        country_code: Optional[str] = None
-        target_port: Optional[int] = None
-        service: Optional[str] = None
-
     @app.post("/api/v1/intel/simulate-attack")
     async def simulate_attack(req: Optional[SimulateAttackRequest] = None) -> Dict[str, Any]:
         import random
         from honeypot.models import DecoySession, TelemetryEvent, new_id
 
-        candidates = list(KNOWN_THREAT_ACTORS.items())
-        if req and req.country_code:
-            filtered = [
-                c for c in candidates 
-                if c[1].get("country_code", "").upper() == req.country_code.upper()
-            ]
-            if filtered:
-                candidates = filtered
+        geo_tracker = get_geo_tracker()
 
-        attacker_ip, info = random.choice(candidates)
+        def _fetch_system_wan_ip() -> str:
+            import json, urllib.request
+            for endpoint in ("https://api.ipify.org?format=json", "http://ip-api.com/json/?fields=query"):
+                try:
+                    r = urllib.request.Request(endpoint, headers={"User-Agent": "CyberShield-Real/1.0"})
+                    with urllib.request.urlopen(r, timeout=3.5) as resp:
+                        d = json.loads(resp.read().decode("utf-8"))
+                        val = d.get("ip") or d.get("query")
+                        if val:
+                            return str(val).strip()
+                except Exception:
+                    pass
+            return "127.0.0.1"
+
+        if req and req.attacker_ip and req.attacker_ip.strip():
+            raw_ip = req.attacker_ip.strip()
+            if raw_ip.lower() in {"auto", "my_ip", "wan", "real"}:
+                attacker_ip = _fetch_system_wan_ip()
+            else:
+                attacker_ip = raw_ip
+            # 100% Live real-time GeoIP & ASN resolution from public registries
+            intel = geo_tracker.lookup(attacker_ip)
+            info = intel.to_dict()
+        else:
+            candidates = list(KNOWN_THREAT_ACTORS.items())
+            if req and req.country_code:
+                filtered = [
+                    c for c in candidates 
+                    if c[1].get("country_code", "").upper() == req.country_code.upper()
+                ]
+                if filtered:
+                    candidates = filtered
+
+            attacker_ip, info = random.choice(candidates)
         ports = [
             (2222, "SSH", "ssh", "finance-backup"),
             (8088, "HTTP", "http", "portal-nginx"),
@@ -891,6 +928,23 @@ def create_app(
         geo_tracker = get_geo_tracker()
         enriched = geo_tracker.enrich_session(session.to_dict())
         return {"ok": True, "session": enriched, "actor": info}
+
+    @app.post("/api/v1/intel/real-attack")
+    async def real_attack(request: Request) -> Dict[str, Any]:
+        """Trigger an attack vector using the caller's real external public WAN IP."""
+        headers = dict(request.headers)
+        forwarded = (
+            headers.get("cf-connecting-ip")
+            or headers.get("x-forwarded-for")
+            or headers.get("x-real-ip")
+        )
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        else:
+            client_ip = getattr(request.client, "host", "127.0.0.1")
+
+        req = SimulateAttackRequest(attacker_ip=client_ip if client_ip not in {"127.0.0.1", "::1", "localhost"} else "auto")
+        return await simulate_attack(req)
 
     return app
 

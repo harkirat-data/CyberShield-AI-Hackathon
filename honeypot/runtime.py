@@ -468,6 +468,18 @@ class HoneypotRuntime:
         if not raw:
             return
         method, path, version, headers, body = self._parse_http(raw)
+
+        # Detect real public client IP if traffic arrived through a reverse proxy or tunnel
+        forwarded_ip = (
+            headers.get("cf-connecting-ip")
+            or headers.get("x-forwarded-for")
+            or headers.get("x-real-ip")
+        )
+        if forwarded_ip:
+            first_ip = forwarded_ip.split(",")[0].strip()
+            if first_ip and first_ip not in {"127.0.0.1", "localhost", "::1", "unknown"}:
+                self.store.update_session_source_ip(session_id, first_ip)
+
         fingerprint = headers.get("user-agent", "unknown")[:240]
         self.store.set_fingerprint(session_id, fingerprint)
         safe_headers = {

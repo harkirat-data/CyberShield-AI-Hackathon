@@ -155,6 +155,15 @@ class TelemetryStore:
             self._connection.commit()
         return cursor.rowcount > 0
 
+    def update_session_source_ip(self, session_id: str, source_ip: str) -> None:
+        """Update source IP for a session if resolved via reverse proxy headers."""
+        with self._lock:
+            self._connection.execute(
+                "UPDATE sessions SET source_ip = ? WHERE session_id = ?",
+                (source_ip[:64], session_id),
+            )
+            self._connection.commit()
+
     def set_fingerprint(
         self,
         session_id: str,

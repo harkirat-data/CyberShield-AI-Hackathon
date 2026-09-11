@@ -388,9 +388,13 @@
         </div>
         <div class="section-actions" style="display:flex;align-items:center;gap:10px">
           <span class="badge-green" id="geo-attacker-badge">0 Attackers Tracked</span>
-          <button class="btn-primary" id="btn-simulate-threat" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
+          <button class="btn-primary" id="btn-real-attack" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#b91c1c,#ef4444);border-color:#dc2626;box-shadow:0 0 14px rgba(239,68,68,0.3)" title="Launch an attack using your ACTUAL real-time public WAN IP with 100% dynamic Geolocation & ISP attribution">
+            <span class="material-symbols-outlined" style="font-size:16px">bolt</span>
+            <span>⚡ Attack with Real WAN IP</span>
+          </button>
+          <button class="btn-secondary" id="btn-simulate-threat" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px" title="Simulate an offline external adversary probe">
             <span class="material-symbols-outlined" style="font-size:16px">satellite_alt</span>
-            <span>Simulate Threat Vector</span>
+            <span>Demo Preset Vector</span>
           </button>
         </div>
       </div>
@@ -418,6 +422,7 @@
             </div>
             <div class="dossier-actions">
               <span class="dossier-threat-badge" id="dossier-threat">Risk 75/100</span>
+              <button class="btn-sm btn-primary" id="dossier-btn-simulate" style="background:#2563eb;border-color:#3b82f6;padding:3px 10px;font-size:11px" title="Simulate an active attack from this exact IP">Attack From This IP</button>
               <button class="btn-sm btn-danger" id="dossier-btn-block">Block at Perimeter</button>
               <button class="btn-sm" id="dossier-btn-close" style="padding:4px 8px"><span class="material-symbols-outlined" style="font-size:16px">close</span></button>
             </div>

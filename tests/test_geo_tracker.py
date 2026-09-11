@@ -167,3 +167,11 @@ def test_api_intel_endpoints(client):
     atk_data = atk_res.json()
     assert atk_data["count"] >= 1
     assert len(atk_data["attackers"]) >= 1
+
+    # Test POST /api/v1/intel/real-attack
+    real_res = client.post("/api/v1/intel/real-attack")
+    assert real_res.status_code == 200
+    real_data = real_res.json()
+    assert real_data["ok"] is True
+    assert "session" in real_data
+    assert "actor" in real_data
