@@ -239,7 +239,7 @@ the dashboard displays **Fallback** and exposes a redacted diagnostic message.
 The dashboard refreshes every three seconds. The fast deterministic SOC triage
 runs during capture; the potentially slower Gemini + RAG report only runs when
 requested and therefore does not hold up the decoy response. The underlying API
-can be queried directly with `scripts/argus-health.ps1`.
+can be queried directly with `scripts/cybershield-health.ps1`.
 
 If the report says **Evidence only**, deterministic findings were still produced,
 but Gemini or RAG was unavailable. Confirm `GEMINI_API_KEY`, then build the local
@@ -267,7 +267,7 @@ client hello. Telemetry also includes every decoy banner/reply and system/SOC
 annotation, so its number will be higher. Restarting CyberShield AI recalculates older
 session counters using the same inbound-only definition.
 
-Telemetry is stored at `logs/cybershield_honeypot.db` (or legacy `logs/argus_honeypot.db`). Runtime databases, logs,
+Telemetry is stored at `logs/cybershield_honeypot.db`. Runtime databases, logs,
 certificates, private keys, and `.env` are ignored by Git. See
 [Telemetry Reference](docs/telemetry.md).
 
@@ -317,7 +317,7 @@ For anything beyond a localhost/WSL demonstration:
 3. Do not mount credentials, production data, or host-management sockets.
 4. Restrict dashboard access to an operator network.
 5. Redirect standard public ports to CyberShield AI high ports only after reviewing the
-   sample `deploy/argus-honeypot.nft` rules.
+   sample `deploy/cybershield-honeypot.nft` rules.
 6. Establish retention, monitoring, and incident-response procedures.
 
 CyberShield AI never modifies the host firewall automatically. See

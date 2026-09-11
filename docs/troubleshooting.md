@@ -50,7 +50,6 @@ selected **Live only** filter hides already-completed sessions.
 
 ## Resetting demonstration data
 
-Stop CyberShield AI before moving or removing `logs/cybershield_honeypot.db` (or legacy
-`logs/argus_honeypot.db`). Treat collected telemetry as evidence: export anything required before cleanup. Do not remove the
+Stop CyberShield AI before moving or removing `logs/cybershield_honeypot.db`. Treat collected telemetry as evidence: export anything required before cleanup. Do not remove the
 entire project or logs directory with a recursive wildcard.
 

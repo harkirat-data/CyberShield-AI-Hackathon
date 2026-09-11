@@ -590,7 +590,7 @@ function explainSessionInPlainEnglish(sess, events = []) {
       (isSQLi ? "SQL database injection (`' OR 1=1`) to bypass logins" : isLFI ? "path traversal (`/../../etc/passwd`) to steal system files" : "sensitive admin panels and code execution endpoints") +
       `, generating ${actions} web requests.`;
 
-    defenderStory = `CyberShield AI intercepted every request at the perimeter. Instead of letting requests reach actual business services, ARGUS served deceptive synthetic web responses, logged every header and payload, and flagged the attacker's IP for immediate quarantine.`;
+    defenderStory = `CyberShield AI intercepted every request at the perimeter. Instead of letting requests reach actual business services, CyberShield AI served deceptive synthetic web responses, logged every header and payload, and flagged the attacker's IP for immediate quarantine.`;
 
   } else if (port === 2222 || proto.includes("SSH")) {
     title = "SSH Mass Scanner & Credential Probe";
@@ -619,7 +619,7 @@ function renderSessionTimelineSimple(events = []) {
       <span class="timeline-step-badge system">SYSTEM</span>
       <div class="timeline-step-content">
         <div class="timeline-step-title">Session initialized</div>
-        <div class="timeline-step-detail">Connection captured and monitored by ARGUS.</div>
+        <div class="timeline-step-detail">Connection captured and monitored by CyberShield AI.</div>
       </div>
     </div>`;
   }
@@ -671,7 +671,7 @@ function renderSessionTimelineSimple(events = []) {
       title = "Port scanning detected across multiple decoys";
       detail = `Adversary scanned ports: ${(meta.ports || []).join(", ")}`;
     } else if (type === "SOURCE_BLOCKED") {
-      title = "Attacker address blocked by ARGUS runtime firewall";
+      title = "Attacker address blocked by CyberShield AI runtime firewall";
       detail = "Connection terminated and dropped at perimeter";
     } else {
       title = `${type.replace(/_/g, " ")}: ${content.slice(0, 70)}`;
@@ -735,8 +735,8 @@ function openSessionModal(sess, events = []) {
   if ($("modal-fact-actions")) $("modal-fact-actions").textContent = actions;
   if ($("modal-fact-duration")) $("modal-fact-duration").textContent = dwell;
   if ($("modal-fact-ai")) {
-    const aiProvider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini 3.6 Flash" : "ARGUS Sandbox");
-    $("modal-fact-ai").textContent = aiProvider.toLowerCase().includes("gemini") ? "Gemini AI Lure" : "ARGUS Sandbox";
+    const aiProvider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini 3.6 Flash" : "CyberShield AI Sandbox");
+    $("modal-fact-ai").textContent = aiProvider.toLowerCase().includes("gemini") ? "Gemini AI Lure" : "CyberShield AI Sandbox";
   }
   if ($("modal-fact-threat")) {
     $("modal-fact-threat").textContent = risk >= 80 ? "Critical" : risk >= 60 ? "High" : "Elevated";
@@ -809,7 +809,7 @@ function renderTerminal() {
 
   const termMeta = $("term-meta");
   if (termMeta) {
-    const provider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini Deception Active" : "ARGUS Sandbox Active");
+    const provider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini Deception Active" : "CyberShield AI Sandbox Active");
     termMeta.innerHTML = `
       <div class="gemini-latency-pill">
         <span class="material-symbols-outlined" style="font-size:14px">neurology</span>
@@ -892,7 +892,7 @@ function renderTerminalBody() {
   const protoName = sess.service || protoFromPort(state.selectedSession?.destination_port);
   let html = `<div class="term-line" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px">
     <span class="term-ts"></span>
-    <span class="term-note">[ARGUS KERNEL HOOK] Ingress socket established &lt;=&gt; Honeypot Node (${esc(protoName)})</span>
+    <span class="term-note">[CYBERSHIELD KERNEL HOOK] Ingress socket established &lt;=&gt; Honeypot Node (${esc(protoName)})</span>
     <span class="term-ts">${timeStr(state.selectedSession?.started_at)}</span>
   </div>`;
 
@@ -907,7 +907,7 @@ function renderTerminalBody() {
       const resp = e.content || e.response_preview || e.data || e.banner || "";
       if (resp) html += `<div class="term-line">${ts}<span class="term-out">&gt;&gt; ${esc(resp.substring(0, 300))}</span></div>`;
     } else if (dir === "system" || dir === "annotation") {
-      html += `<div class="term-line">${ts}<span class="term-sys">&gt;&gt; [ARGUS]: ${esc(content)}</span></div>`;
+      html += `<div class="term-line">${ts}<span class="term-sys">&gt;&gt; [CYBERSHIELD AI]: ${esc(content)}</span></div>`;
     } else if (dir === "operator" || e.event_type === "operator_injection") {
       html += `<div class="term-line operator-line">${ts}<span class="term-op">&gt;&gt; [OPERATOR INJECTION]: ${esc(content)}</span></div>`;
     } else {
@@ -1004,7 +1004,7 @@ function renderCopilot(sess) {
   }
   if (actions.length === 0) {
     actions.push(
-      { step: "Isolate attacker session in high-interaction sandbox", done: sess.contained ?? true, sub: "Auto-executed by ARGUS", type: "green" },
+      { step: "Isolate attacker session in high-interaction sandbox", done: sess.contained ?? true, sub: "Auto-executed by CyberShield AI", type: "green" },
       { step: "Quarantine ingress network segment", done: false, sub: "Isolate perimeter router interface", type: "muted" },
       { step: `Push block rule for ${sess.source_ip || sess.source_address || "threat IP"}`, done: false, sub: "Perimeter firewall rule (TTL 48h)", type: "danger" }
     );
@@ -1432,7 +1432,7 @@ async function createCanaryToken(e) {
   try {
     await api("/api/v1/canary/tokens", {
       method: "POST",
-      body: JSON.stringify({ name, token_type, metadata: { deployed_by: "ARGUS Console" } }),
+      body: JSON.stringify({ name, token_type, metadata: { deployed_by: "CyberShield AI Console" } }),
     });
     toast(`Canary tripwire created: "${name}"`);
     nameInput.value = "";
@@ -1997,7 +1997,7 @@ function setupButtons() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `argus-session-${state.selectedSessionId}.json`;
+      a.download = `cybershield-session-${state.selectedSessionId}.json`;
       a.click();
       toast("Session exported.");
     } catch (e) {
@@ -2012,7 +2012,7 @@ function setupButtons() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `argus-telemetry-${Date.now()}.json`;
+      a.download = `cybershield-telemetry-${Date.now()}.json`;
       a.click();
       toast("Telemetry exported.");
     } catch (e) {
