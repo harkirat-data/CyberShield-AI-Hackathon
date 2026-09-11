@@ -25,6 +25,7 @@ const state = {
   },
   lastPortCounters: {},
   canaryTokens: [],
+  alerts: null,
 };
 
 // ============================================================
@@ -1307,6 +1308,9 @@ async function refresh() {
     // Refresh canary tokens
     await loadCanaryTokens();
 
+    // Refresh security alerts
+    await loadAlerts();
+
     // Update subheader metrics
     const liveCount = sessions.filter(s => !s.ended_at).length;
     const totalInteractions = sessions.reduce((acc, s) => acc + (s.interactions || 0), 0);
@@ -1486,6 +1490,163 @@ async function toggleCanaryStatus(tokenId, currentStatus) {
 }
 
 // ============================================================
+// SECURITY ALERTS & INTEGRATIONS
+// ============================================================
+async function loadAlerts() {
+  try {
+    const data = await api("/api/v1/alerts/status");
+    renderAlerts(data);
+  } catch (_) {
+    // Graceful fallback if alerts uninitialized
+  }
+}
+
+function renderAlerts(data) {
+  if (!data) return;
+  state.alerts = data;
+
+  const count = data.active_channels_count || 0;
+  const channelCountEl = $("alerts-channel-count");
+  if (channelCountEl) {
+    channelCountEl.textContent = `${count} / 3 Channels Configured`;
+  }
+  const navBadgeEl = $("nav-badge-alerts");
+  if (navBadgeEl) {
+    navBadgeEl.textContent = `${count} / 3`;
+  }
+
+  // Slack
+  const slack = data.channels?.slack || {};
+  const cardSlack = $("card-slack");
+  const badgeSlack = $("slack-status-badge");
+  const textSlack = $("slack-status-text");
+  if (cardSlack && badgeSlack && textSlack) {
+    if (slack.configured) {
+      cardSlack.classList.add("connected");
+      badgeSlack.textContent = "CONNECTED";
+      badgeSlack.classList.add("active");
+      textSlack.textContent = "Incoming Webhook Active";
+    } else {
+      cardSlack.classList.remove("connected");
+      badgeSlack.textContent = "DISABLED";
+      badgeSlack.classList.remove("active");
+      textSlack.textContent = "Webhook not configured in .env";
+    }
+  }
+
+  // Discord
+  const discord = data.channels?.discord || {};
+  const cardDiscord = $("card-discord");
+  const badgeDiscord = $("discord-status-badge");
+  const textDiscord = $("discord-status-text");
+  if (cardDiscord && badgeDiscord && textDiscord) {
+    if (discord.configured) {
+      cardDiscord.classList.add("connected");
+      badgeDiscord.textContent = "CONNECTED";
+      badgeDiscord.classList.add("active");
+      textDiscord.textContent = "Rich Embeds Active";
+    } else {
+      cardDiscord.classList.remove("connected");
+      badgeDiscord.textContent = "DISABLED";
+      badgeDiscord.classList.remove("active");
+      textDiscord.textContent = "Webhook not configured in .env";
+    }
+  }
+
+  // Email
+  const email = data.channels?.email || {};
+  const cardEmail = $("card-email");
+  const badgeEmail = $("email-status-badge");
+  const textEmail = $("email-status-text");
+  if (cardEmail && badgeEmail && textEmail) {
+    if (email.configured) {
+      cardEmail.classList.add("connected");
+      badgeEmail.textContent = "CONNECTED";
+      badgeEmail.classList.add("active");
+      textEmail.textContent = `SMTP: ${email.host || "Configured"} → ${email.to || "Recipient"}`;
+    } else {
+      cardEmail.classList.remove("connected");
+      badgeEmail.textContent = "DISABLED";
+      badgeEmail.classList.remove("active");
+      textEmail.textContent = "SMTP host / recipient not set";
+    }
+  }
+
+  // Policy
+  const policy = data.policy || {};
+  const policyText = $("policy-status-text");
+  if (policyText) {
+    policyText.textContent = `Score ≥ ${policy.min_risk_score || 80} or ${(policy.min_severity || "high").toUpperCase()} • Cooldown: ${policy.dedup_window_seconds || 300}s`;
+  }
+
+  // History Table
+  const history = data.history || [];
+  const emptyEl = $("alerts-empty");
+  const rowsEl = $("alerts-rows");
+  if (emptyEl && rowsEl) {
+    emptyEl.style.display = history.length > 0 ? "none" : "block";
+    rowsEl.innerHTML = history.map(item => {
+      const sev = String(item.severity || "info").toUpperCase();
+      const results = item.results || {};
+
+      function pill(name, status) {
+        if (status === true) return `<span class="channel-pill ok">✔ ${name}</span>`;
+        if (status === false) return `<span class="channel-pill fail">✘ ${name}</span>`;
+        return `<span class="channel-pill off">${name}</span>`;
+      }
+
+      const pills = [
+        pill("Slack", results.slack),
+        pill("Discord", results.discord),
+        pill("Email", results.email),
+      ].join("");
+
+      const ts = item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : "--:--:--";
+      const isCrit = item.severity === "critical" || (item.risk_score || 0) >= 80;
+      const badgeStyle = isCrit
+        ? "color:var(--rose);background:var(--rose-light);border:1px solid #fbdada;"
+        : "color:var(--amber);background:var(--amber-light);border:1px solid #fde68a;";
+
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px">${esc(ts)}</td>
+        <td>
+          <div style="font-weight:600;color:var(--text)">${esc(item.event_type || "INCIDENT")}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${esc((item.ai_summary || "").slice(0, 75))}</div>
+        </td>
+        <td><span class="canary-token-type" style="${badgeStyle};font-size:10px">${esc(sev)}</span></td>
+        <td style="font-family:var(--font-mono);font-weight:700;color:${isCrit ? "var(--rose)" : "var(--text)"}">${item.risk_score}/100</td>
+        <td style="font-family:var(--font-mono);font-size:11px"><code>${esc(item.source_ip || "unknown")}</code> &rarr; <code>${esc(item.host || "soc")}</code></td>
+        <td>${pills}</td>
+      </tr>`;
+    }).join("");
+  }
+}
+
+async function sendTestAlert() {
+  const btn = $("test-alert-btn");
+  if (!btn) return;
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:15px;animation:spin 1s linear infinite">autorenew</span> Sending...`;
+  try {
+    const res = await api("/api/v1/alerts/test", { method: "POST" });
+    const results = res.results || {};
+    const successCount = Object.values(results).filter(v => v === true).length;
+    if (res.active_channels_count === 0) {
+      toast("Test alert evaluated: No channels configured in .env", false);
+    } else {
+      toast(`Test alert sent: ${successCount} / ${res.active_channels_count} channel(s) delivered`);
+    }
+    await loadAlerts();
+  } catch (err) {
+    toast(`Test alert failed: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+// ============================================================
 // REALTIME WEBSOCKET STREAMING
 // ============================================================
 let ws;
@@ -1519,6 +1680,9 @@ function connectWebSocket() {
           }
           if (data.canaries?.tokens) {
             renderCanaryTokens(data.canaries.tokens);
+          }
+          if (data.alerts) {
+            renderAlerts(data.alerts);
           }
         }
       } catch (e) {
@@ -1813,6 +1977,9 @@ function setupButtons() {
     const checked = document.querySelectorAll("#ir-list input[type=checkbox]:checked");
     toast(`${checked.length} IR action(s) committed.`);
   });
+
+  // Test Alert
+  $("test-alert-btn")?.addEventListener("click", sendTestAlert);
 
   // Toggle sessions view more / less
   $("btn-toggle-sessions")?.addEventListener("click", () => {

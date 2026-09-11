@@ -63,6 +63,11 @@
         <span class="nav-label">Canary Tokens</span>
         <span class="nav-badge" id="nav-badge-canary">0 ACT</span>
       </a>
+      <a href="#alerts-panel" class="nav-item" data-section="alerts-panel">
+        <span class="material-symbols-outlined nav-icon">notifications_active</span>
+        <span class="nav-label">Security Alerts</span>
+        <span class="nav-badge" id="nav-badge-alerts">0 / 3</span>
+      </a>
     </nav>
   </div>
 
@@ -526,6 +531,104 @@
             <div class="empty-state" id="canary-empty" style="display:none;padding:40px 20px">
               <span class="material-symbols-outlined" style="font-size:36px;color:#8ca4ac">key_off</span>
               <p style="margin-top:8px">No canary tokens created yet. Generate a tripwire token above to deploy on your network or endpoints.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: SECURITY ALERTS & INTEGRATIONS ===== -->
+    <section class="section pb-section" id="alerts-panel">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="section-eyebrow">Outbound Dispatch &amp; Integrations</span>
+          <h2 class="section-title">Security Alerts &amp; Channels</h2>
+        </div>
+        <div class="section-actions" style="display:flex;align-items:center;gap:10px">
+          <span class="badge-green" id="alerts-channel-count">0 / 3 Channels Configured</span>
+          <button class="btn-primary" id="test-alert-btn" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">send</span>
+            <span>Send Test Alert</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="alerts-body">
+        <div class="alerts-channels-grid">
+          <div class="channel-card" id="card-slack">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">chat</span>
+                <span class="channel-title">Slack</span>
+              </div>
+              <span class="channel-status" id="slack-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="slack-status-text">Webhook: Not configured</div>
+          </div>
+
+          <div class="channel-card" id="card-discord">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">forum</span>
+                <span class="channel-title">Discord</span>
+              </div>
+              <span class="channel-status" id="discord-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="discord-status-text">Webhook: Not configured</div>
+          </div>
+
+          <div class="channel-card" id="card-email">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">mail</span>
+                <span class="channel-title">Email (SMTP)</span>
+              </div>
+              <span class="channel-status" id="email-status-badge">Checking...</span>
+            </div>
+            <div class="channel-info" id="email-status-text">SMTP: Not configured</div>
+          </div>
+
+          <div class="channel-card policy-card" id="card-policy">
+            <div class="channel-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:20px;color:var(--primary)">policy</span>
+                <span class="channel-title">Notification Policy</span>
+              </div>
+              <span class="channel-status active">ENFORCING</span>
+            </div>
+            <div class="channel-info" id="policy-status-text">Threshold: Score &ge; 80 or High/Critical &bull; Cooldown: 300s</div>
+          </div>
+        </div>
+
+        <div class="alerts-history-card">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px">history</span>
+              <span style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text)">Incident Dispatch Log</span>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted)">Real-time Webhook &amp; SMTP Audit</span>
+          </div>
+
+          <div style="overflow-x:auto">
+            <table class="canary-table alerts-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Incident / Event</th>
+                  <th>Severity</th>
+                  <th>Risk Score</th>
+                  <th>Source IP &rarr; Host</th>
+                  <th>Channels Delivered</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-rows">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+            <div class="empty-state" id="alerts-empty" style="display:none;padding:36px 20px;text-align:center">
+              <span class="material-symbols-outlined" style="font-size:36px;color:#8ca4ac">notifications_off</span>
+              <p style="margin-top:8px;font-weight:600;color:var(--text)">No incident notifications dispatched</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px">High-risk events and critical canary triggers will automatically notify configured Slack, Discord, and Email channels.</p>
             </div>
           </div>
         </div>
