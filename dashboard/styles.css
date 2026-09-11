@@ -2065,6 +2065,13 @@ body {
 .geo-table tr:hover {
   background: var(--surface-low);
 }
+.latest-attacker-row {
+  background: rgba(239, 68, 68, 0.04);
+  border-left: 3px solid var(--rose);
+}
+.latest-attacker-row:hover {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
 .geo-ip-link {
   font-family: var(--font-mono);
   font-weight: 600;
@@ -2123,11 +2130,11 @@ body {
     opacity: 0.9;
   }
   50% {
-    r: 12;
-    opacity: 0.3;
+    r: 14;
+    opacity: 0.35;
   }
   100% {
-    r: 16;
+    r: 22;
     opacity: 0;
   }
 }
@@ -2141,4 +2148,45 @@ body {
 }
 .geo-pin:hover {
   transform: scale(1.4);
+}
+
+/* Tactical World Map & Radar Styles */
+.vector-map {
+  background: #070d17 !important;
+  border: 1px solid #1e2c40 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  position: relative;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.map-continent {
+  fill: #141f2e;
+  stroke: #253852;
+  stroke-width: 1.1;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+.map-continent:hover {
+  fill: #1c2b3e;
+  stroke: #3b5375;
+}
+.map-india-highlight {
+  fill: #172a3a;
+  stroke: #38bdf8;
+  stroke-width: 1.3;
+}
+.map-india-highlight:hover {
+  fill: #1c354a;
+  stroke: #7dd3fc;
+}
+.map-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  fill: #3b506d;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  user-select: none;
+}
+.geo-vector-group text {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95));
 }
