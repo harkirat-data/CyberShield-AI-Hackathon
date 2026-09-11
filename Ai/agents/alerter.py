@@ -355,6 +355,99 @@ class EmailAlerter:
         self._alert_to = alert_to
         self._alert_from = alert_from
         self.timeout = timeout_seconds
+        self._recipients: Optional[List[Dict[str, Any]]] = None
+        if alert_to:
+            self._recipients = [
+                {"email": addr.strip(), "enabled": True}
+                for addr in alert_to.split(",")
+                if addr.strip()
+            ]
+
+    def _parse_recipients_from_env(self) -> List[Dict[str, Any]]:
+        raw = os.environ.get("ALERT_EMAIL_TO", "").strip()
+        if not raw:
+            return []
+        return [{"email": addr.strip(), "enabled": True} for addr in raw.split(",") if addr.strip()]
+
+    def get_recipients(self) -> List[Dict[str, Any]]:
+        """Returns list of all recipient dictionaries: [{'email': '...', 'enabled': bool}, ...]"""
+        if self._recipients is None:
+            self._recipients = self._parse_recipients_from_env()
+        return [dict(r) for r in self._recipients]
+
+    def get_active_recipients(self) -> List[str]:
+        """Returns list of currently enabled recipient email strings."""
+        return [r["email"] for r in self.get_recipients() if r.get("enabled", True)]
+
+    def set_recipients(self, recipients: Union[List[Dict[str, Any]], List[str], str]) -> List[Dict[str, Any]]:
+        """Set the entire recipient distribution list with enabled flags."""
+        parsed: List[Dict[str, Any]] = []
+        if isinstance(recipients, str):
+            for addr in recipients.split(","):
+                a = addr.strip()
+                if a:
+                    parsed.append({"email": a, "enabled": True})
+        elif isinstance(recipients, list):
+            for item in recipients:
+                if isinstance(item, str):
+                    a = item.strip()
+                    if a:
+                        parsed.append({"email": a, "enabled": True})
+                elif isinstance(item, dict) and "email" in item:
+                    a = str(item["email"]).strip()
+                    if a:
+                        parsed.append({"email": a, "enabled": bool(item.get("enabled", True))})
+        self._recipients = parsed
+        self._alert_to = ",".join(self.get_active_recipients())
+        return self.get_recipients()
+
+    def add_recipient(self, email: str, enabled: bool = True) -> bool:
+        """Add a recipient if not already present, or update enabled state."""
+        clean = email.strip()
+        if not clean or "@" not in clean:
+            return False
+        recipients = self.get_recipients()
+        for r in recipients:
+            if r["email"].lower() == clean.lower():
+                r["enabled"] = enabled
+                self._recipients = recipients
+                self._alert_to = ",".join(self.get_active_recipients())
+                return True
+        recipients.append({"email": clean, "enabled": enabled})
+        self._recipients = recipients
+        self._alert_to = ",".join(self.get_active_recipients())
+        return True
+
+    def remove_recipient(self, email: str) -> bool:
+        """Remove a recipient from the list."""
+        clean = email.strip().lower()
+        recipients = [r for r in self.get_recipients() if r["email"].lower() != clean]
+        self._recipients = recipients
+        self._alert_to = ",".join(self.get_active_recipients())
+        return True
+
+    def toggle_recipient(self, email: str, enabled: Optional[bool] = None) -> bool:
+        """Toggle or set enabled state for a specific recipient."""
+        clean = email.strip().lower()
+        recipients = self.get_recipients()
+        res = False
+        found = False
+        for r in recipients:
+            if r["email"].lower() == clean:
+                if enabled is None:
+                    r["enabled"] = not r.get("enabled", True)
+                else:
+                    r["enabled"] = bool(enabled)
+                res = r["enabled"]
+                found = True
+                break
+        if not found:
+            new_state = True if enabled is None else bool(enabled)
+            recipients.append({"email": email.strip(), "enabled": new_state})
+            res = new_state
+        self._recipients = recipients
+        self._alert_to = ",".join(self.get_active_recipients())
+        return res
 
     @property
     def host(self) -> str:
@@ -385,7 +478,12 @@ class EmailAlerter:
 
     @property
     def to_email(self) -> str:
-        return self._alert_to if self._alert_to is not None else os.environ.get("ALERT_EMAIL_TO", "").strip()
+        active = self.get_active_recipients()
+        if active:
+            return ", ".join(active)
+        if self._alert_to is not None:
+            return self._alert_to
+        return os.environ.get("ALERT_EMAIL_TO", "").strip()
 
     @property
     def from_email(self) -> str:
@@ -395,7 +493,7 @@ class EmailAlerter:
 
     @property
     def is_configured(self) -> bool:
-        return bool(self.host and self.to_email)
+        return bool(self.host and (self.get_recipients() or os.environ.get("ALERT_EMAIL_TO", "").strip()))
 
     def build_message(self, alert: SecurityAlert) -> tuple[str, str, str]:
         """
@@ -537,10 +635,19 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
 
         return subject, text_body, html_body
 
-    def send(self, alert: SecurityAlert) -> bool:
+    def send(self, alert: SecurityAlert, override_recipients: Optional[List[str]] = None) -> bool:
         """Send email alert via SMTP. Returns True on success, False otherwise."""
         if not self.is_configured:
             logger.debug("[email] SMTP not configured; skipping.")
+            return False
+
+        recipients = [
+            addr.strip()
+            for addr in (override_recipients if override_recipients is not None else self.get_active_recipients())
+            if addr.strip()
+        ]
+        if not recipients:
+            logger.warning("[email] No active recipients configured; skipping alert %s", alert.event_id)
             return False
 
         subject, text_body, html_body = self.build_message(alert)
@@ -548,12 +655,11 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = self.from_email
-        msg["To"] = self.to_email
+        msg["To"] = ", ".join(recipients)
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         try:
-            recipients = [addr.strip() for addr in self.to_email.split(",") if addr.strip()]
             with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
                 server.ehlo()
                 if self.use_tls:
@@ -562,7 +668,7 @@ Generated automatically by CyberShield AI Autonomous SOC Engine.
                 if self.user and self.password:
                     server.login(self.user, self.password)
                 server.sendmail(self.from_email, recipients, msg.as_string())
-            logger.info("[email] Alert sent successfully for event %s to %s", alert.event_id, self.to_email)
+            logger.info("[email] Alert sent successfully for event %s to %s", alert.event_id, ", ".join(recipients))
             return True
         except Exception as exc:
             logger.error("[email] Failed to send alert email for %s: %s", alert.event_id, exc)
@@ -608,7 +714,7 @@ class AlertManager:
             self.dedup_window = dedup_window_seconds
         else:
             try:
-                self.dedup_window = int(os.environ.get("ALERT_DEDUPLICATION_WINDOW_SECONDS", "300"))
+                self.dedup_window = int(os.environ.get("ALERT_DEDUP_WINDOW", "300"))
             except ValueError:
                 self.dedup_window = 300
 
@@ -643,11 +749,11 @@ class AlertManager:
 
     def should_alert(self, alert: SecurityAlert, record: bool = False) -> bool:
         """
-        Evaluate alert threshold policy and deduplication.
-        If record=True, updates the deduplication cache with the current timestamp.
+        Evaluate if alert meets severity/risk thresholds and is not a duplicate.
+        If record=True, records this event in the deduplication cache if accepted.
         """
         sev_rank = SEVERITY_RANKS.get(alert.severity.lower(), 0)
-        min_sev_rank = SEVERITY_RANKS.get(self.min_severity, 3)  # default 'high' = 3
+        min_sev_rank = SEVERITY_RANKS.get(self.min_severity.lower(), 3)  # default 'high' = 3
 
         # Match policy if risk_score >= threshold OR severity rank meets minimum
         score_meets = alert.risk_score >= self.min_risk_score
@@ -682,12 +788,27 @@ class AlertManager:
 
         return True
 
-    def _dispatch_all(self, alert: SecurityAlert) -> Dict[str, bool]:
+    def _dispatch_all(self, alert: SecurityAlert, email_recipients: Optional[List[str]] = None) -> Dict[str, bool]:
         """Directly invokes all configured and enabled alerters and records to history."""
+        slack_sent = False
+        if self.channel_enabled.get("slack", True):
+            slack_sent = self.slack.send(alert)
+
+        discord_sent = False
+        if self.channel_enabled.get("discord", True):
+            discord_sent = self.discord.send(alert)
+
+        email_sent = False
+        if self.channel_enabled.get("email", True):
+            if email_recipients is not None:
+                email_sent = self.email.send(alert, override_recipients=email_recipients)
+            else:
+                email_sent = self.email.send(alert)
+
         results = {
-            "slack": self.slack.send(alert) if self.channel_enabled.get("slack", True) else False,
-            "discord": self.discord.send(alert) if self.channel_enabled.get("discord", True) else False,
-            "email": self.email.send(alert) if self.channel_enabled.get("email", True) else False,
+            "slack": slack_sent,
+            "discord": discord_sent,
+            "email": email_sent,
         }
         with self._lock:
             self._history.insert(0, {
@@ -737,6 +858,9 @@ class AlertManager:
                     "name": "Email (SMTP)",
                     "host": self.email.host if self.email.is_configured else "",
                     "to": self.email.to_email if self.email.is_configured else "",
+                    "recipients": self.email.get_recipients(),
+                    "active_recipients": self.email.get_active_recipients(),
+                    "active_recipients_count": len(self.email.get_active_recipients()),
                 },
             },
             "policy": {
@@ -747,7 +871,12 @@ class AlertManager:
             "history": history,
         }
 
-    def send_alert(self, alert: SecurityAlert, sync: bool = False) -> Optional[Dict[str, bool]]:
+    def send_alert(
+        self,
+        alert: SecurityAlert,
+        sync: bool = False,
+        email_recipients: Optional[List[str]] = None,
+    ) -> Optional[Dict[str, bool]]:
         """
         Main entrypoint for sending an alert.
         If sync=True, executes synchronously (primarily for unit tests and CLI).
@@ -758,11 +887,11 @@ class AlertManager:
             return None
 
         if sync:
-            return self._dispatch_all(alert)
+            return self._dispatch_all(alert, email_recipients=email_recipients)
 
         worker = threading.Thread(
             target=self._dispatch_all,
-            args=(alert,),
+            args=(alert, email_recipients),
             daemon=True,
             name=f"alert-dispatch-{alert.event_id[:8]}",
         )

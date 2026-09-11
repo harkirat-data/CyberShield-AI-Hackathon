@@ -415,3 +415,52 @@ def test_channel_toggle_and_selective_dispatch():
     assert mock_slack.send.call_count == 1
     assert mock_discord.send.call_count == 1
 
+
+def test_email_multi_recipient_management_and_selective_routing():
+    """Verify multi-email management, toggling, and selective SMTP dispatch."""
+    email = EmailAlerter(
+        smtp_host="smtp.test.local",
+        alert_to="primary@soc.org, backup@soc.org, oncall@soc.org",
+    )
+
+    # Initial parsed recipients
+    recipients = email.get_recipients()
+    assert len(recipients) == 3
+    assert email.get_active_recipients() == ["primary@soc.org", "backup@soc.org", "oncall@soc.org"]
+
+    # Toggle one off
+    email.toggle_recipient("backup@soc.org", enabled=False)
+    assert email.get_active_recipients() == ["primary@soc.org", "oncall@soc.org"]
+
+    # Add a new recipient
+    email.add_recipient("ciso@soc.org", enabled=True)
+    assert "ciso@soc.org" in email.get_active_recipients()
+
+    # Remove a recipient
+    email.remove_recipient("primary@soc.org")
+    assert "primary@soc.org" not in email.get_active_recipients()
+    assert email.get_active_recipients() == ["oncall@soc.org", "ciso@soc.org"]
+
+    # Mock smtplib to verify actual recipients passed to server.sendmail
+    with patch("smtplib.SMTP") as mock_smtp_cls:
+        mock_server = MagicMock()
+        mock_smtp_cls.return_value.__enter__.return_value = mock_server
+
+        alert = sample_alert(event_id="evt-recipient-test-01")
+        success = email.send(alert)
+        assert success is True
+
+        # sendmail arguments: (from_addr, to_addrs, msg_str)
+        assert mock_server.sendmail.called
+        call_args = mock_server.sendmail.call_args[0]
+        actual_recipients = call_args[1]
+        assert actual_recipients == ["oncall@soc.org", "ciso@soc.org"]
+
+        # Send with custom override recipients
+        mock_server.reset_mock()
+        success_override = email.send(alert, override_recipients=["direct-test@soc.org"])
+        assert success_override is True
+        override_call_args = mock_server.sendmail.call_args[0]
+        assert override_call_args[1] == ["direct-test@soc.org"]
+
+
