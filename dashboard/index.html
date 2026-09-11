@@ -55,8 +55,9 @@
         <span class="nav-dot-blue"></span>
       </a>
       <a href="#telemetry-drawer" class="nav-item" data-section="telemetry-drawer">
-        <span class="material-symbols-outlined nav-icon">radar</span>
-        <span class="nav-label">Threat Intel</span>
+        <span class="material-symbols-outlined nav-icon">public</span>
+        <span class="nav-label">Geo &amp; IP Intel</span>
+        <span class="nav-badge" id="nav-badge-geo">0 IPS</span>
       </a>
       <a href="#canary-panel" class="nav-item" data-section="canary-panel">
         <span class="material-symbols-outlined nav-icon">vpn_key</span>
@@ -378,42 +379,122 @@
       </div>
     </section>
 
-    <!-- ===== SECTION: TELEMETRY ===== -->
+    <!-- ===== SECTION: GEOLOCATION & THREAT INTEL ===== -->
     <section class="section pb-section" id="telemetry-drawer">
       <div class="section-title-row">
         <div class="section-title-group">
-          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">public</span>
-          <div>
-            <h2 class="section-title">Global Telemetry &amp; Origin Vectors</h2>
-            <p class="section-caption">Multi-point ingress tracking and automated intent classification</p>
+          <span class="section-eyebrow">Adversary Origin &amp; Network Intelligence</span>
+          <h2 class="section-title">Geolocation Tracker &amp; IP Attribution</h2>
+        </div>
+        <div class="section-actions" style="display:flex;align-items:center;gap:10px">
+          <span class="badge-green" id="geo-attacker-badge">0 Attackers Tracked</span>
+          <button class="btn-primary" id="btn-simulate-threat" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">satellite_alt</span>
+            <span>Simulate Threat Vector</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- IP Search & Quick Dossier Lookup Bar -->
+      <div class="geo-search-container">
+        <div class="geo-search-bar">
+          <span class="material-symbols-outlined geo-search-icon">travel_explore</span>
+          <input type="text" id="ip-tracker-input" placeholder="Track any attacker IP address (e.g. 185.220.101.5, 194.26.29.112, 218.92.0.198)..." autocomplete="off">
+          <button class="btn-primary" id="btn-track-ip" style="height:36px;padding:0 16px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:15px">radar</span>
+            <span>Track IP</span>
+          </button>
+        </div>
+
+        <!-- IP Dossier Card (Active Inspection) -->
+        <div class="ip-dossier-card" id="ip-dossier-card" style="display:none">
+          <div class="dossier-header">
+            <div class="dossier-ip-title">
+              <span class="dossier-flag" id="dossier-flag">🌐</span>
+              <div>
+                <div class="dossier-ip" id="dossier-ip">0.0.0.0</div>
+                <div class="dossier-loc" id="dossier-loc">City, Country</div>
+              </div>
+            </div>
+            <div class="dossier-actions">
+              <span class="dossier-threat-badge" id="dossier-threat">Risk 75/100</span>
+              <button class="btn-sm btn-danger" id="dossier-btn-block">Block at Perimeter</button>
+              <button class="btn-sm" id="dossier-btn-close" style="padding:4px 8px"><span class="material-symbols-outlined" style="font-size:16px">close</span></button>
+            </div>
+          </div>
+          <div class="dossier-grid">
+            <div class="dossier-item">
+              <span class="dossier-label">Autonomous System (ASN)</span>
+              <span class="dossier-value" id="dossier-asn">AS15169 Google LLC</span>
+            </div>
+            <div class="dossier-item">
+              <span class="dossier-label">ISP / Organization</span>
+              <span class="dossier-value" id="dossier-isp">Google Cloud</span>
+            </div>
+            <div class="dossier-item">
+              <span class="dossier-label">Coordinates / Timezone</span>
+              <span class="dossier-value" id="dossier-coords">37.751, -122.42 (America/Los_Angeles)</span>
+            </div>
+            <div class="dossier-item">
+              <span class="dossier-label">Threat Classification</span>
+              <span class="dossier-value" id="dossier-threat-type">Known Scanner / Tor Node</span>
+            </div>
+            <div class="dossier-item">
+              <span class="dossier-label">Trapped Sessions</span>
+              <span class="dossier-value" id="dossier-sessions">0 Sessions</span>
+            </div>
+            <div class="dossier-item">
+              <span class="dossier-label">Canary Token Triggers</span>
+              <span class="dossier-value" id="dossier-canaries">0 Triggers</span>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- World Vector Map & Service Target Split -->
       <div class="telemetry-card">
         <div class="telemetry-grid">
           <div class="vector-map-area">
             <div class="vector-map-header">
-              <span class="vector-title">Attack Origin Vectors</span>
-              <span class="vector-live">&#9679; Global Telemetry Live</span>
+              <span class="vector-title">Global Adversary Coordinate Projection (Real-Time Lat/Long)</span>
+              <span class="vector-live">&#9679; Geolocation Live</span>
             </div>
-            <div class="vector-map">
-              <svg viewBox="0 0 420 80" fill="none" style="width:100%;height:100%" id="attack-svg">
+            <div class="vector-map" style="height:220px;position:relative">
+              <svg viewBox="0 0 800 360" fill="none" style="width:100%;height:100%" id="attack-svg">
                 <defs>
-                  <filter id="glow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                  <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  <linearGradient id="grid-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#8B9A6E" stop-opacity="0.08"/>
+                    <stop offset="100%" stop-color="#4e5d34" stop-opacity="0.02"/>
+                  </linearGradient>
                 </defs>
-                <line x1="0" y1="40" x2="420" y2="40" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
-                <line x1="105" y1="0" x2="105" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
-                <line x1="210" y1="0" x2="210" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
-                <line x1="315" y1="0" x2="315" y2="80" stroke="#dfd7c9" stroke-dasharray="2 4" stroke-width="1"/>
-                <circle cx="210" cy="40" r="7" fill="#8B9A6E" filter="url(#glow)" opacity="0.9"/>
-                <circle cx="210" cy="40" r="14" fill="none" stroke="#8B9A6E" stroke-width="1" opacity="0.3"/>
-                <g id="vector-arcs">
-                  <!-- Dynamically populated from live adversary telemetry -->
-                </g>
+                <rect x="0" y="0" width="800" height="360" fill="url(#grid-grad)" rx="8"/>
+                <!-- Parallels & Meridians -->
+                <line x1="40" y1="90" x2="760" y2="90" stroke="#dfd7c9" stroke-dasharray="2 6" stroke-width="1" opacity="0.6"/>
+                <line x1="40" y1="180" x2="760" y2="180" stroke="#dfd7c9" stroke-dasharray="3 4" stroke-width="1" opacity="0.8"/>
+                <line x1="40" y1="270" x2="760" y2="270" stroke="#dfd7c9" stroke-dasharray="2 6" stroke-width="1" opacity="0.6"/>
+                <line x1="200" y1="30" x2="200" y2="330" stroke="#dfd7c9" stroke-dasharray="2 6" stroke-width="1" opacity="0.6"/>
+                <line x1="400" y1="30" x2="400" y2="330" stroke="#dfd7c9" stroke-dasharray="3 4" stroke-width="1" opacity="0.8"/>
+                <line x1="600" y1="30" x2="600" y2="330" stroke="#dfd7c9" stroke-dasharray="2 6" stroke-width="1" opacity="0.6"/>
+                
+                <!-- Continental Landmass Silhouettes -->
+                <path d="M 120,70 Q 180,60 220,90 Q 250,140 180,160 Q 130,120 120,70 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                <path d="M 210,180 Q 250,200 240,260 Q 210,310 190,260 Q 185,210 210,180 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                <path d="M 370,60 Q 430,50 440,90 Q 410,120 370,110 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                <path d="M 370,120 Q 440,130 430,220 Q 400,270 370,220 Q 355,160 370,120 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                <path d="M 450,60 Q 640,40 660,110 Q 630,180 540,180 Q 470,140 450,60 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                <path d="M 600,220 Q 680,220 670,270 Q 620,280 600,220 Z" fill="#e8dfd3" opacity="0.5" stroke="#d5ccbe" stroke-width="1"/>
+                
+                <!-- SOC Defense Center Hub -->
+                <circle cx="400" cy="180" r="8" fill="#8B9A6E" filter="url(#glow)" opacity="0.95"/>
+                <circle cx="400" cy="180" r="18" fill="none" stroke="#8B9A6E" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"/>
+                <text x="400" y="210" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#4e5d34">CYBERSHIELD DEFENSE GRID</text>
+
+                <!-- Dynamic Attacker Pins, Beacons, and Ingress Arcs -->
+                <g id="vector-arcs"></g>
               </svg>
             </div>
+
             <div class="target-title" style="margin-top:1.2rem">Top Targeted Decoy Services</div>
             <div class="target-items" id="target-items">
               <div class="target-item"><span class="target-name">SSH Honeypot (2222)</span><span class="target-count" id="ti-ssh">0 probes</span></div>
@@ -459,6 +540,42 @@
           </div>
         </div>
       </div>
+
+      <!-- Active Adversary Geolocation & ASN Intelligence Feed Table -->
+      <div class="geo-table-card">
+        <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">pin_drop</span>
+            <span style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text)">Live Adversary Geolocation &amp; ASN Feed</span>
+          </div>
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted)" id="geo-feed-status">Auto-tracked from Decoys &amp; Traps</span>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="geo-table">
+            <thead>
+              <tr>
+                <th>Attacker IP</th>
+                <th>Country &amp; Flag</th>
+                <th>City / Region</th>
+                <th>Autonomous System (ASN)</th>
+                <th>ISP / Organization</th>
+                <th>Targeted Decoys</th>
+                <th>Threat Score</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="geo-attacker-rows">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+          <div class="empty-state" id="geo-table-empty" style="display:none;padding:36px 20px">
+            <span class="material-symbols-outlined" style="font-size:36px;color:#8ca4ac">public_off</span>
+            <p style="margin-top:8px">No external adversary traffic detected yet. Click "Simulate Threat Vector" above to test global geolocation tracking.</p>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- ===== SECTION: CANARY TOKENS ===== -->
     <section class="section pb-section" id="canary-panel">
       <div class="section-title-row">
@@ -658,6 +775,11 @@
         <div class="modal-subtitle" id="modal-subtitle">
           <span class="material-symbols-outlined" style="font-size:14px">public</span>
           <span id="modal-ip">Attacker IP: 127.0.0.1</span>
+          <span class="modal-geo-pill" id="modal-geo-pill" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-neutral);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">
+            <span id="modal-geo-flag">🌐</span>
+            <span id="modal-geo-country">Local Network</span>
+            <span id="modal-geo-asn" style="opacity:0.75;font-family:var(--font-mono)">AS-PRIVATE</span>
+          </span>
           <span style="opacity:0.5">•</span>
           <span id="modal-time">Started just now</span>
         </div>

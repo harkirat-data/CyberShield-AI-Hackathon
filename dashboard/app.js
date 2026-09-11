@@ -420,13 +420,16 @@ function renderSessions(sessionsArr) {
     const active = !sess.ended_at;
     const src = sess.source_ip || sess.source_address || "Unknown";
     const actions = sess.interactions ?? sess.attacker_action_count ?? 0;
+    const flag = sess.geo?.country_flag || "🌐";
+    const country = sess.geo?.country || "";
+    const asn = sess.geo?.asn || "";
 
     return `<div class="session-card ${selected ? "selected" : ""}" data-id="${esc(sess.session_id)}">
       <div class="session-head">
-        <div class="session-ip">
-          <span class="session-flag">🌐</span>
+        <div class="session-ip" title="${esc(country ? `${country} (${asn})` : src)}">
+          <span class="session-flag">${flag}</span>
           <span style="font-weight:700">${esc(src)}</span>
-          ${sess.destination_port ? `<span class="session-asn">:${sess.destination_port}</span>` : ""}
+          ${asn ? `<span class="session-asn" style="font-size:10px;opacity:0.75">${esc(asn)}</span>` : (sess.destination_port ? `<span class="session-asn">:${sess.destination_port}</span>` : "")}
         </div>
         <span class="risk-badge ${riskClass(risk)}">${riskLabel(risk)}</span>
       </div>
@@ -722,10 +725,14 @@ function openSessionModal(sess, events = []) {
     statusEl.style.background = sess.contained ? "var(--primary-light)" : isLive ? "var(--rose-light)" : "var(--surface-neutral)";
   }
 
-  // Title, IP, Time
+  // Title, IP, Time, and Geo attribution
   if ($("modal-title")) $("modal-title").textContent = title;
   if ($("modal-ip")) $("modal-ip").textContent = `Attacker: ${src}${srcPort}`;
   if ($("modal-time")) $("modal-time").textContent = sess.started_at ? `Started ${timeStr(sess.started_at)}` : "Recent";
+  const geo = sess.geo || {};
+  if ($("modal-geo-flag")) $("modal-geo-flag").textContent = geo.country_flag || "🌐";
+  if ($("modal-geo-country")) $("modal-geo-country").textContent = geo.country || (geo.city ? `${geo.city}, ${geo.country}` : "Internal Network");
+  if ($("modal-geo-asn")) $("modal-geo-asn").textContent = geo.asn || "AS-PRIVATE";
 
   // Story boxes
   if ($("modal-attacker-story")) $("modal-attacker-story").textContent = attackerStory;
@@ -1075,75 +1082,244 @@ function updateStatusUI(status) {
 }
 
 // ============================================================
-// ATTACK ORIGIN VECTORS (100% Real Live Radar Projection)
+// ATTACK ORIGIN VECTORS & GEOLOCATION PROJECTION
 // ============================================================
+function projectGeoCoords(lat, lon, seed = 0) {
+  // SVG viewBox: 0 0 800 360, center SOC defense at (400, 180)
+  let x, y;
+  if (lat === 0 && lon === 0) {
+    // Internal/local IPs distributed in a controlled arc around defense perimeter
+    const angle = ((seed % 12) / 12) * 2 * Math.PI;
+    x = 400 + Math.cos(angle) * 140;
+    y = 180 + Math.sin(angle) * 80;
+  } else {
+    // Standard equirectangular projection
+    x = 400 + (lon / 180) * 360;
+    y = 180 - (lat / 90) * 150;
+  }
+  x = Math.max(50, Math.min(750, x));
+  y = Math.max(40, Math.min(320, y));
+  return { x, y };
+}
+
 function renderAttackVectors(sessionsArr, eventsArr) {
   const g = $("vector-arcs");
   if (!g) return;
 
-  const activeSessions = (sessionsArr || []).filter(s => !s.ended_at);
-  const recentSessions = activeSessions.length > 0 
-    ? activeSessions 
-    : (sessionsArr || []).slice(0, 6);
+  const attackers = state.attackers || [];
 
-  if (recentSessions.length === 0) {
+  if (attackers.length === 0 && (!sessionsArr || sessionsArr.length === 0)) {
     g.innerHTML = `
-      <circle cx="210" cy="40" r="28" fill="none" stroke="#8B9A6E" stroke-dasharray="2 4" stroke-width="1" opacity="0.4"/>
-      <text x="210" y="66" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#8c9680" letter-spacing="0.05em">PERIMETER CLEAR • 0 ADVERSARIES ENGAGED</text>
+      <circle cx="400" cy="180" r="40" fill="none" stroke="#8B9A6E" stroke-dasharray="3 5" stroke-width="1.2" opacity="0.4"/>
+      <text x="400" y="240" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#8c9680" letter-spacing="0.05em">PERIMETER CLEAR • 0 ADVERSARIES ENGAGED</text>
     `;
     return;
   }
 
-  // Reproducible coordinate mapping based on source IP and port
-  const hash = (str) => {
-    let h = 0;
-    const s = String(str || "");
-    for (let i = 0; i < s.length; i++) {
-      h = ((h << 5) - h) + s.charCodeAt(i);
-      h |= 0;
-    }
-    return Math.abs(h);
-  };
+  const center = { x: 400, y: 180 };
+  const itemsToRender = attackers.length > 0
+    ? attackers.slice(0, 12)
+    : (sessionsArr || []).slice(0, 8).map((s, idx) => ({
+        ip: s.source_ip || "127.0.0.1",
+        geo: s.geo || { country_flag: "🌐", country: "Internal", city: "Localhost", asn: "AS-PRIVATE", latitude: 0, longitude: 0 },
+        max_risk_score: s.risk_score || 50,
+        session_count: 1,
+        probed_services: [s.service || "honeypot"]
+      }));
 
-  const center = { x: 210, y: 40 };
-
-  const arcsHtml = recentSessions.slice(0, 8).map((sess, idx) => {
-    const srcIp = sess.source_ip || sess.source_address || "127.0.0.1";
-    const srcPort = sess.source_port || (50000 + (hash(sess.session_id) % 15000));
-    const destPort = sess.destination_port || 2323;
-    const proto = sess.service || protoFromPort(destPort);
-    const risk = sess.risk_score || 0;
-    const isActive = !sess.ended_at;
-
-    const seed = hash(srcIp + ":" + srcPort);
-    const isLeft = (idx % 2 === 0);
-    const x = isLeft ? 25 + (seed % 150) : 245 + (seed % 150);
-    const y = 8 + ((seed >> 3) % 24);
-
-    const ctrlX = (x + center.x) / 2 + (isLeft ? 22 : -22);
-    const ctrlY = 48 + ((seed >> 2) % 16);
-
+  let html = "";
+  itemsToRender.forEach((item, idx) => {
+    const geo = item.geo || {};
+    const lat = geo.latitude || 0;
+    const lon = geo.longitude || 0;
+    const { x, y } = projectGeoCoords(lat, lon, idx);
+    const risk = item.max_risk_score || 50;
     const color = risk >= 80 ? "#C24B4B" : risk >= 50 ? "#C98A3C" : "#8B9A6E";
-    const title = `${esc(srcIp)}:${srcPort} → :${destPort} (${proto}) [Risk ${risk}] ${isActive ? "ACTIVE" : "ENDED"}`;
+    const flag = geo.country_flag || "🌐";
+    const asn = geo.asn || "AS-UNKNOWN";
+    const country = geo.country || "Unknown";
+    const city = geo.city || "Unknown";
+    const ip = item.ip;
 
-    return `
-      <g class="vector-arc-group">
+    const ctrlX = (x + center.x) / 2 + ((idx % 2 === 0 ? 1 : -1) * 35);
+    const ctrlY = Math.min(y, center.y) - 25;
+    const title = `${flag} ${ip} [${asn}] — ${city}, ${country} | Risk ${risk}/100`;
+
+    html += `
+      <g class="geo-vector-group" data-ip="${esc(ip)}" style="cursor:pointer">
         <path d="M ${x},${y} Q ${ctrlX},${ctrlY} ${center.x},${center.y}"
           stroke="${color}"
-          stroke-dasharray="${isActive ? "3 3" : "none"}"
-          stroke-width="${isActive ? 1.75 : 1.25}"
-          opacity="${isActive ? 0.95 : 0.45}"
+          stroke-dasharray="4 4"
+          stroke-width="1.6"
+          opacity="0.85"
           fill="none">
-          <title>${title}</title>
+          <title>${esc(title)}</title>
         </path>
-        <circle cx="${x}" cy="${y}" r="${isActive ? 4 : 3}" fill="${color}" opacity="${isActive ? 1 : 0.6}">
-          <title>${title}</title>
+        <circle cx="${x}" cy="${y}" r="6" fill="${color}" opacity="0.35" class="geo-beacon-pulse"/>
+        <circle class="geo-pin" cx="${x}" cy="${y}" r="5" fill="${color}" stroke="#fff" stroke-width="1.5">
+          <title>${esc(title)}</title>
         </circle>
+        <text x="${x}" y="${y - 8}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#242c1d" style="filter:drop-shadow(0 1px 2px #fff)">
+          ${flag} ${esc(ip)}
+        </text>
       </g>
     `;
-  }).join("");
+  });
 
-  g.innerHTML = arcsHtml;
+  g.innerHTML = html;
+
+  g.querySelectorAll(".geo-vector-group").forEach(el => {
+    el.addEventListener("click", () => {
+      const ip = el.dataset.ip;
+      if (ip) trackIpAddress(ip);
+    });
+  });
+}
+
+// ============================================================
+// ATTACKER GEOLOCATION INTEL & IP DOSSIER TRACKER
+// ============================================================
+async function loadAttackerGeoIntel(cachedAttackers) {
+  try {
+    let attackers = cachedAttackers;
+    if (!attackers) {
+      const resp = await api("/api/v1/intel/attackers");
+      attackers = resp.attackers || [];
+    }
+    state.attackers = attackers;
+
+    const badge = $("geo-attacker-badge");
+    if (badge) badge.textContent = `${attackers.length} Attacker${attackers.length !== 1 ? "s" : ""} Tracked`;
+    const navBadge = $("nav-badge-geo");
+    if (navBadge) navBadge.textContent = `${attackers.length} IPS`;
+
+    const tbody = $("geo-attacker-rows");
+    const empty = $("geo-table-empty");
+    if (tbody) {
+      if (attackers.length === 0) {
+        tbody.innerHTML = "";
+        if (empty) empty.style.display = "block";
+      } else {
+        if (empty) empty.style.display = "none";
+        tbody.innerHTML = attackers.map(atk => {
+          const g = atk.geo || {};
+          const flag = g.country_flag || "🌐";
+          const country = g.country || "Unknown";
+          const city = g.city || "Unknown";
+          const region = g.region && g.region !== "Unknown" ? `, ${g.region}` : "";
+          const asn = g.asn || "AS-UNKNOWN";
+          const org = g.as_org || g.org || g.isp || "Unknown";
+          const decoys = (atk.probed_services || []).join(", ") || "Decoy Sensor";
+          const risk = atk.max_risk_score || 50;
+          const riskCls = risk >= 80 ? "high" : risk >= 50 ? "med" : "low";
+
+          return `<tr>
+            <td>
+              <span class="geo-ip-link" data-ip="${esc(atk.ip)}">
+                <span class="material-symbols-outlined" style="font-size:15px;color:var(--primary)">radar</span>
+                ${esc(atk.ip)}
+              </span>
+            </td>
+            <td>
+              <span class="geo-flag-badge">
+                <span style="font-size:18px">${flag}</span>
+                <span>${esc(country)}</span>
+              </span>
+            </td>
+            <td>${esc(city)}${esc(region)}</td>
+            <td><span class="asn-badge">${esc(asn)}</span></td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(org)}">${esc(org)}</td>
+            <td><code style="font-size:11px;background:var(--surface-low);padding:2px 6px;border-radius:4px">${esc(decoys)}</code></td>
+            <td><span class="threat-pill ${riskCls}">${risk}/100</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button class="btn-sm btn-track-quick" data-ip="${esc(atk.ip)}" style="padding:3px 8px;font-size:11px" title="Inspect IP Dossier">Inspect</button>
+                <button class="btn-sm btn-danger btn-block-quick" data-ip="${esc(atk.ip)}" style="padding:3px 8px;font-size:11px" title="Block at Perimeter">Block</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join("");
+
+        tbody.querySelectorAll(".geo-ip-link, .btn-track-quick").forEach(el => {
+          el.addEventListener("click", () => trackIpAddress(el.dataset.ip));
+        });
+        tbody.querySelectorAll(".btn-block-quick").forEach(el => {
+          el.addEventListener("click", async () => {
+            const ip = el.dataset.ip;
+            if (!confirm(`Block ${ip} immediately at the CyberShield perimeter firewall?`)) return;
+            try {
+              await api("/api/v1/honeypot/block-source", {
+                method: "POST",
+                body: JSON.stringify({ source_ip: ip }),
+              });
+              toast(`Quarantined IP: ${ip}`);
+              await loadTelemetryData();
+            } catch (err) {
+              toast("Failed to block: " + err.message, true);
+            }
+          });
+        });
+      }
+    }
+
+    renderAttackVectors(state.sessions, state.events);
+  } catch (err) {
+    console.error("Failed to load attacker geo intel:", err);
+  }
+}
+
+async function trackIpAddress(ip) {
+  if (!ip) return;
+  const cleanIp = ip.trim();
+  const card = $("ip-dossier-card");
+  if (!card) return;
+
+  try {
+    toast(`Tracing network footprint for ${cleanIp}...`);
+    card.style.display = "block";
+    const data = await api(`/api/v1/intel/ip/${encodeURIComponent(cleanIp)}`);
+    const geo = data.geo || {};
+
+    $("dossier-flag").textContent = geo.country_flag || "🌐";
+    $("dossier-ip").textContent = data.ip;
+    $("dossier-loc").textContent = `${geo.city || "Unknown City"}, ${geo.country || "Unknown Country"} (${geo.region || "Region"})`;
+
+    const threatScore = geo.threat_score || 50;
+    const threatBadge = $("dossier-threat");
+    if (threatBadge) {
+      threatBadge.textContent = `Threat Score: ${threatScore}/100`;
+      threatBadge.style.background = threatScore >= 80 ? "#fde8e8" : threatScore >= 50 ? "#fff4e5" : "#edf7ed";
+      threatBadge.style.color = threatScore >= 80 ? "var(--rose)" : threatScore >= 50 ? "var(--amber)" : "var(--emerald)";
+    }
+
+    $("dossier-asn").textContent = `${geo.asn || "AS-UNKNOWN"} ${geo.as_org ? `(${geo.as_org})` : ""}`;
+    $("dossier-isp").textContent = `${geo.isp || "Unknown"} — ${geo.org || "Unknown Org"}`;
+    $("dossier-coords").textContent = `${geo.latitude?.toFixed(4) || 0}, ${geo.longitude?.toFixed(4) || 0} (TZ: ${geo.timezone || "UTC"})`;
+    $("dossier-threat-type").textContent = geo.threat_type || "External Ingress";
+    $("dossier-sessions").textContent = `${data.session_count || 0} session(s) engaged`;
+    $("dossier-canaries").textContent = `${(data.canary_triggers || []).length} tripwire trigger(s)`;
+
+    const blockBtn = $("dossier-btn-block");
+    if (blockBtn) {
+      blockBtn.onclick = async () => {
+        if (!confirm(`Block ${cleanIp} immediately across CyberShield AI listeners?`)) return;
+        try {
+          await api("/api/v1/honeypot/block-source", {
+            method: "POST",
+            body: JSON.stringify({ source_ip: cleanIp }),
+          });
+          toast(`Perimeter rule applied: ${cleanIp} quarantined.`);
+          await loadTelemetryData();
+        } catch (err) {
+          toast("Block failed: " + err.message, true);
+        }
+      };
+    }
+
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } catch (err) {
+    toast(`Failed to track IP: ${err.message}`, true);
+  }
 }
 
 // ============================================================
@@ -1282,6 +1458,9 @@ async function refresh() {
 
     // Refresh security alerts
     await loadAlerts();
+
+    // Refresh attacker geolocation and ASN intelligence
+    await loadAttackerGeoIntel();
 
     // Update subheader metrics
     const liveCount = sessions.filter(s => !s.ended_at).length;
@@ -1912,6 +2091,9 @@ function connectWebSocket() {
           if (data.alerts) {
             renderAlerts(data.alerts);
           }
+          if (data.attackers) {
+            loadAttackerGeoIntel(data.attackers);
+          }
         }
       } catch (e) {
         console.error("WS message parse error:", e);
@@ -1986,6 +2168,44 @@ function setupButtons() {
       if ($("stat-blocked")) $("stat-blocked").textContent = blocked;
     } catch (e) {
       toast("Error: " + e.message, true);
+    }
+  });
+
+  // Geolocation and IP Tracker event handlers
+  $("btn-track-ip")?.addEventListener("click", () => {
+    const input = $("ip-tracker-input");
+    if (input && input.value.trim()) {
+      trackIpAddress(input.value.trim());
+    }
+  });
+
+  $("ip-tracker-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const input = $("ip-tracker-input");
+      if (input && input.value.trim()) {
+        trackIpAddress(input.value.trim());
+      }
+    }
+  });
+
+  $("dossier-btn-close")?.addEventListener("click", () => {
+    const card = $("ip-dossier-card");
+    if (card) card.style.display = "none";
+  });
+
+  $("btn-simulate-threat")?.addEventListener("click", async () => {
+    const btn = $("btn-simulate-threat");
+    if (btn) btn.disabled = true;
+    try {
+      toast("Generating simulated adversary ingress vector...");
+      const res = await api("/api/v1/intel/simulate-attack", { method: "POST" });
+      const actor = res.actor || {};
+      toast(`Simulated threat ingress: ${actor.country || "Adversary"} (${actor.asn || "ASN"}) attacking port ${res.session?.destination_port || 2222}!`);
+      await loadTelemetryData();
+    } catch (e) {
+      toast("Simulation failed: " + e.message, true);
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
 
