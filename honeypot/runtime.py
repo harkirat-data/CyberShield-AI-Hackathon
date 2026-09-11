@@ -44,6 +44,23 @@ class HoneypotRuntime:
         self._writers: Dict[str, asyncio.StreamWriter] = {}
         self._active_by_ip: Dict[str, int] = defaultdict(int)
         self._blocked_sources: set[str] = set()
+        self._cached_wan_ip: Optional[str] = None
+
+    def _detect_wan_ip(self) -> str:
+        """Detect the machine's external public WAN IP for real geolocation attribution."""
+        import json
+        import urllib.request
+        for endpoint in ("https://api.ipify.org?format=json", "http://ip-api.com/json/?fields=query"):
+            try:
+                req = urllib.request.Request(endpoint, headers={"User-Agent": "CyberShield-Real/1.0"})
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    val = data.get("ip") or data.get("query")
+                    if val:
+                        return str(val).strip()
+            except Exception:
+                pass
+        return "127.0.0.1"
 
     @property
     def running(self) -> bool:
@@ -201,6 +218,14 @@ class HoneypotRuntime:
         peer = writer.get_extra_info("peername") or ("unknown", 0)
         source_ip = str(peer[0])
         source_port = int(peer[1] or 0)
+
+        # Reflect machine's real public WAN IP for local test connections if enabled
+        if getattr(self.settings, "resolve_wan_for_localhost", True) and source_ip in {"127.0.0.1", "::1", "localhost"}:
+            if not getattr(self, "_cached_wan_ip", None):
+                self._cached_wan_ip = self._detect_wan_ip()
+            if self._cached_wan_ip and self._cached_wan_ip not in {"127.0.0.1", "localhost", "::1"}:
+                source_ip = self._cached_wan_ip
+
         session_id = new_id("ses")
         session = DecoySession(
             session_id=session_id,
@@ -515,6 +540,16 @@ class HoneypotRuntime:
 
         if path == "/" and method == "GET":
             payload = self._login_page(profile).encode()
+            status = "200 OK"
+            content_type = "text/html; charset=utf-8"
+            ai_meta = {"provider": "static-decoy", "latency_ms": 0}
+        elif path in {"/hr", "/payroll", "/employees"} and method == "GET":
+            payload = self._hr_page(profile).encode()
+            status = "200 OK"
+            content_type = "text/html; charset=utf-8"
+            ai_meta = {"provider": "static-decoy", "latency_ms": 0}
+        elif path in {"/admin", "/console", "/db"} and method == "GET":
+            payload = self._admin_page(profile).encode()
             status = "200 OK"
             content_type = "text/html; charset=utf-8"
             ai_meta = {"provider": "static-decoy", "latency_ms": 0}
@@ -952,6 +987,44 @@ class HoneypotRuntime:
 <form method="post" action="/login"><label>User</label><input name="user" style="display:block;width:100%;margin:6px 0 14px">
 <label>Password</label><input type="password" name="password" style="display:block;width:100%;margin:6px 0 18px">
 <button type="submit">Sign in</button></form><small>{product}</small></main></body></html>"""
+
+    @staticmethod
+    def _hr_page(profile: ServiceProfile) -> str:
+        product = html.escape(profile.product)
+        return f"""<!doctype html><html><head><title>Northstar HR & Payroll Portal</title></head>
+<body style="font-family:Arial, sans-serif;background:#f0fdf4;color:#14532d;padding:60px">
+<main style="width:400px;margin:auto;background:white;padding:32px;border:1px solid #bbf7d0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.05)">
+<h2 style="margin-top:0;color:#166534">👥 HR & Employee Directory</h2>
+<p style="font-size:13px;color:#4b5563">Employee Self-Service & Payroll Inquiries Portal.</p>
+<form method="post" action="/login">
+<label style="font-size:12px;font-weight:bold;color:#374151">Employee ID / Email</label>
+<input name="user" placeholder="e.g. EMP-10492 or admin" style="display:block;width:100%;padding:8px;margin:6px 0 14px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+<label style="font-size:12px;font-weight:bold;color:#374151">Department PIN / Password</label>
+<input type="password" name="password" style="display:block;width:100%;padding:8px;margin:6px 0 18px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+<button type="submit" style="background:#16a34a;color:white;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-weight:bold">Sign in to HR</button>
+</form>
+<div style="margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af">{product} • Confidential Internal System</div>
+</main></body></html>"""
+
+    @staticmethod
+    def _admin_page(profile: ServiceProfile) -> str:
+        product = html.escape(profile.product)
+        return f"""<!doctype html><html><head><title>Northstar Executive Server Console</title></head>
+<body style="font-family:'Courier New', monospace;background:#0f172a;color:#f8fafc;padding:40px">
+<main style="max-width:650px;margin:auto;background:#1e293b;padding:32px;border:1px solid #334155;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+<h2 style="margin-top:0;color:#38bdf8">⚡ Executive Operations Console</h2>
+<div style="background:#090d16;padding:12px 16px;border-radius:4px;font-size:12px;color:#a5f3fc;margin-bottom:20px">
+  ● System: finance-prod-01 (Ubuntu 22.04 LTS)<br>
+  ● Database Node: Mariadb-Cluster-Primary:33060<br>
+  ● Auth Status: Authenticated as root (session: decoy-admin-01)
+</div>
+<form method="post" action="/admin/exec">
+<label style="font-size:12px;color:#94a3b8">Execute SQL / Maintenance Query</label>
+<input name="cmd" placeholder="e.g. SHOW TABLES; or SELECT * FROM users;" style="display:block;width:100%;padding:10px;margin:8px 0 16px;background:#0f172a;border:1px solid #475569;color:#38bdf8;font-family:monospace;border-radius:4px;box-sizing:border-box">
+<button type="submit" style="background:#0284c7;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold">Execute Remote Command</button>
+</form>
+<div style="margin-top:24px;padding-top:12px;border-top:1px solid #334155;font-size:11px;color:#64748b">{product} • Root Infrastructure Access</div>
+</main></body></html>"""
 
     @staticmethod
     def _mysql_packet(payload: bytes, sequence: int) -> bytes:
