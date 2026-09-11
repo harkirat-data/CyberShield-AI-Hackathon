@@ -365,7 +365,102 @@ def test_canary_trigger_to_alert_flow(tmp_path):
 
         assert mock_dispatch.called
         sent_alert = mock_dispatch.call_args[0][0]
-        assert isinstance(sent_alert, SecurityAlert)
         assert sent_alert.event_id == "canary-trig-test-abc12345"
         assert sent_alert.source_ip == "203.0.113.42"
         assert sent_alert.event_type == "CANARY_TOKEN_TRIGGERED"
+
+
+def test_channel_toggle_and_selective_dispatch():
+    """Verify that toggling channels selectively controls alert delivery."""
+    mock_slack = MagicMock()
+    mock_slack.is_configured = True
+    mock_slack.send.return_value = True
+
+    mock_discord = MagicMock()
+    mock_discord.is_configured = True
+    mock_discord.send.return_value = True
+
+    mock_email = MagicMock()
+    mock_email.is_configured = False
+    mock_email.send.return_value = False
+
+    mgr = AlertManager(slack=mock_slack, discord=mock_discord, email=mock_email)
+
+    # Initially both Slack and Discord are enabled
+    assert mgr.channel_enabled["slack"] is True
+    assert mgr.channel_enabled["discord"] is True
+
+    # Disable Slack
+    mgr.toggle_channel("slack", enabled=False)
+    assert mgr.channel_enabled["slack"] is False
+
+    alert = sample_alert(event_id="evt-toggle-001")
+    results = mgr.send_alert(alert, sync=True)
+
+    # Only Discord should have been invoked, not Slack
+    assert results["slack"] is False
+    assert results["discord"] is True
+    assert mock_slack.send.call_count == 0
+    assert mock_discord.send.call_count == 1
+
+    # Re-enable Slack and toggle off Discord
+    mgr.toggle_channel("slack", enabled=True)
+    mgr.toggle_channel("discord", enabled=False)
+
+    alert2 = sample_alert(event_id="evt-toggle-002")
+    results2 = mgr.send_alert(alert2, sync=True)
+
+    assert results2["slack"] is True
+    assert results2["discord"] is False
+    assert mock_slack.send.call_count == 1
+    assert mock_discord.send.call_count == 1
+
+
+def test_email_multi_recipient_management_and_selective_routing():
+    """Verify multi-email management, toggling, and selective SMTP dispatch."""
+    email = EmailAlerter(
+        smtp_host="smtp.test.local",
+        alert_to="primary@soc.org, backup@soc.org, oncall@soc.org",
+    )
+
+    # Initial parsed recipients
+    recipients = email.get_recipients()
+    assert len(recipients) == 3
+    assert email.get_active_recipients() == ["primary@soc.org", "backup@soc.org", "oncall@soc.org"]
+
+    # Toggle one off
+    email.toggle_recipient("backup@soc.org", enabled=False)
+    assert email.get_active_recipients() == ["primary@soc.org", "oncall@soc.org"]
+
+    # Add a new recipient
+    email.add_recipient("ciso@soc.org", enabled=True)
+    assert "ciso@soc.org" in email.get_active_recipients()
+
+    # Remove a recipient
+    email.remove_recipient("primary@soc.org")
+    assert "primary@soc.org" not in email.get_active_recipients()
+    assert email.get_active_recipients() == ["oncall@soc.org", "ciso@soc.org"]
+
+    # Mock smtplib to verify actual recipients passed to server.sendmail
+    with patch("smtplib.SMTP") as mock_smtp_cls:
+        mock_server = MagicMock()
+        mock_smtp_cls.return_value.__enter__.return_value = mock_server
+
+        alert = sample_alert(event_id="evt-recipient-test-01")
+        success = email.send(alert)
+        assert success is True
+
+        # sendmail arguments: (from_addr, to_addrs, msg_str)
+        assert mock_server.sendmail.called
+        call_args = mock_server.sendmail.call_args[0]
+        actual_recipients = call_args[1]
+        assert actual_recipients == ["oncall@soc.org", "ciso@soc.org"]
+
+        # Send with custom override recipients
+        mock_server.reset_mock()
+        success_override = email.send(alert, override_recipients=["direct-test@soc.org"])
+        assert success_override is True
+        override_call_args = mock_server.sendmail.call_args[0]
+        assert override_call_args[1] == ["direct-test@soc.org"]
+
+

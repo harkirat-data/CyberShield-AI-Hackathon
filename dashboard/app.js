@@ -1501,6 +1501,28 @@ async function loadAlerts() {
   }
 }
 
+async function toggleChannel(channelName) {
+  const chData = state.alerts?.channels?.[channelName];
+  if (!chData || !chData.configured) {
+    toast(`Cannot toggle ${channelName}: not configured in .env`, true);
+    return;
+  }
+  const currentEnabled = chData.enabled !== false;
+  const newEnabled = !currentEnabled;
+  try {
+    const res = await api(`/api/v1/alerts/channels/${channelName}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled: newEnabled }),
+    });
+    if (res.status) {
+      renderAlerts(res.status);
+    }
+    toast(`${chData.name || channelName} alerts ${newEnabled ? "enabled" : "muted"}.`);
+  } catch (err) {
+    toast(`Failed to toggle ${channelName}: ${err.message}`, true);
+  }
+}
+
 function renderAlerts(data) {
   if (!data) return;
   state.alerts = data;
@@ -1508,7 +1530,7 @@ function renderAlerts(data) {
   const count = data.active_channels_count || 0;
   const channelCountEl = $("alerts-channel-count");
   if (channelCountEl) {
-    channelCountEl.textContent = `${count} / 3 Channels Configured`;
+    channelCountEl.textContent = `${count} / 3 Channels Active`;
   }
   const navBadgeEl = $("nav-badge-alerts");
   if (navBadgeEl) {
@@ -1522,14 +1544,18 @@ function renderAlerts(data) {
   const textSlack = $("slack-status-text");
   if (cardSlack && badgeSlack && textSlack) {
     if (slack.configured) {
-      cardSlack.classList.add("connected");
-      badgeSlack.textContent = "CONNECTED";
-      badgeSlack.classList.add("active");
-      textSlack.textContent = "Incoming Webhook Active";
+      const isEnabled = slack.enabled !== false;
+      cardSlack.classList.toggle("connected", isEnabled);
+      cardSlack.classList.toggle("muted-channel", !isEnabled);
+      badgeSlack.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeSlack.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeSlack.title = isEnabled ? "Click to mute Slack alerts" : "Click to enable Slack alerts";
+      textSlack.textContent = isEnabled ? "Incoming Webhook Active (Click to mute)" : "Webhook configured (Click to unmute)";
     } else {
-      cardSlack.classList.remove("connected");
+      cardSlack.classList.remove("connected", "muted-channel");
       badgeSlack.textContent = "DISABLED";
-      badgeSlack.classList.remove("active");
+      badgeSlack.className = "channel-status";
+      badgeSlack.title = "Not configured in .env";
       textSlack.textContent = "Webhook not configured in .env";
     }
   }
@@ -1541,14 +1567,18 @@ function renderAlerts(data) {
   const textDiscord = $("discord-status-text");
   if (cardDiscord && badgeDiscord && textDiscord) {
     if (discord.configured) {
-      cardDiscord.classList.add("connected");
-      badgeDiscord.textContent = "CONNECTED";
-      badgeDiscord.classList.add("active");
-      textDiscord.textContent = "Rich Embeds Active";
+      const isEnabled = discord.enabled !== false;
+      cardDiscord.classList.toggle("connected", isEnabled);
+      cardDiscord.classList.toggle("muted-channel", !isEnabled);
+      badgeDiscord.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeDiscord.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeDiscord.title = isEnabled ? "Click to mute Discord alerts" : "Click to enable Discord alerts";
+      textDiscord.textContent = isEnabled ? "Rich Embeds Active (Click to mute)" : "Webhook configured (Click to unmute)";
     } else {
-      cardDiscord.classList.remove("connected");
+      cardDiscord.classList.remove("connected", "muted-channel");
       badgeDiscord.textContent = "DISABLED";
-      badgeDiscord.classList.remove("active");
+      badgeDiscord.className = "channel-status";
+      badgeDiscord.title = "Not configured in .env";
       textDiscord.textContent = "Webhook not configured in .env";
     }
   }
@@ -1558,16 +1588,29 @@ function renderAlerts(data) {
   const cardEmail = $("card-email");
   const badgeEmail = $("email-status-badge");
   const textEmail = $("email-status-text");
+  const pillRecipients = $("email-recipients-count-pill");
   if (cardEmail && badgeEmail && textEmail) {
+    const activeCount = email.active_recipients_count ?? (email.active_recipients || []).length;
+    const totalCount = (email.recipients || []).length;
+    if (pillRecipients) {
+      pillRecipients.textContent = `${activeCount} / ${totalCount} Active`;
+    }
+
     if (email.configured) {
-      cardEmail.classList.add("connected");
-      badgeEmail.textContent = "CONNECTED";
-      badgeEmail.classList.add("active");
-      textEmail.textContent = `SMTP: ${email.host || "Configured"} → ${email.to || "Recipient"}`;
+      const isEnabled = email.enabled !== false;
+      cardEmail.classList.toggle("connected", isEnabled);
+      cardEmail.classList.toggle("muted-channel", !isEnabled);
+      badgeEmail.textContent = isEnabled ? "CONNECTED" : "MUTED";
+      badgeEmail.className = `channel-status ${isEnabled ? "active" : "muted"}`;
+      badgeEmail.title = isEnabled ? "Click to mute Email alerts" : "Click to enable Email alerts";
+      textEmail.textContent = isEnabled
+        ? `SMTP: ${email.host || "Configured"} → ${activeCount} active recipient(s)`
+        : `SMTP: ${email.host || "Configured"} (Muted, click to unmute)`;
     } else {
-      cardEmail.classList.remove("connected");
+      cardEmail.classList.remove("connected", "muted-channel");
       badgeEmail.textContent = "DISABLED";
-      badgeEmail.classList.remove("active");
+      badgeEmail.className = "channel-status";
+      badgeEmail.title = "Not configured in .env";
       textEmail.textContent = "SMTP host / recipient not set";
     }
   }
@@ -1643,6 +1686,219 @@ async function sendTestAlert() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = origHtml;
+  }
+}
+
+// ============================================================
+// EMAIL RECIPIENTS MANAGEMENT
+// ============================================================
+let localRecipients = [];
+
+async function openRecipientsModal() {
+  const modal = $("email-recipients-modal-overlay");
+  if (!modal) return;
+  modal.style.display = "flex";
+  await loadRecipients();
+}
+
+function closeRecipientsModal() {
+  const modal = $("email-recipients-modal-overlay");
+  if (!modal) return;
+  modal.style.display = "none";
+}
+
+async function loadRecipients() {
+  try {
+    const res = await api("/api/v1/alerts/channels/email/recipients");
+    localRecipients = res.recipients || [];
+    renderRecipientsList(localRecipients);
+  } catch (err) {
+    toast("Failed to load email recipients: " + err.message, true);
+  }
+}
+
+function renderRecipientsList(recipients) {
+  const listEl = $("recipients-list-items");
+  const emptyEl = $("recipients-empty-state");
+  const summaryEl = $("recipients-active-summary");
+  const pillRecipients = $("email-recipients-count-pill");
+  if (!listEl) return;
+
+  const total = recipients.length;
+  const activeCount = recipients.filter(r => r.enabled !== false).length;
+
+  if (summaryEl) {
+    summaryEl.textContent = `${activeCount} / ${total} Active`;
+  }
+  if (pillRecipients) {
+    pillRecipients.textContent = `${activeCount} / ${total} Active`;
+  }
+
+  if (total === 0) {
+    listEl.innerHTML = "";
+    if (emptyEl) emptyEl.style.display = "block";
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = "none";
+
+  listEl.innerHTML = recipients.map(r => {
+    const isEnabled = r.enabled !== false;
+    return `
+      <div class="recipient-row ${isEnabled ? "" : "muted"}">
+        <label class="recipient-row-left">
+          <input type="checkbox" class="recipient-checkbox" ${isEnabled ? "checked" : ""} data-email="${esc(r.email)}" />
+          <span class="recipient-email">${esc(r.email)}</span>
+        </label>
+        <div class="recipient-row-right">
+          <span class="channel-pill ${isEnabled ? "ok" : "off"}">${isEnabled ? "Active" : "Muted"}</span>
+          <button type="button" class="btn-remove-recipient" data-email="${esc(r.email)}" title="Remove ${esc(r.email)}">
+            <span class="material-symbols-outlined" style="font-size:16px">delete</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  listEl.querySelectorAll(".recipient-checkbox").forEach(cb => {
+    cb.addEventListener("change", async () => {
+      const email = cb.dataset.email;
+      const checked = cb.checked;
+      await handleToggleRecipient(email, checked);
+    });
+  });
+
+  listEl.querySelectorAll(".btn-remove-recipient").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const email = btn.dataset.email;
+      await handleRemoveRecipient(email);
+    });
+  });
+}
+
+async function handleToggleRecipient(email, enabled) {
+  localRecipients = localRecipients.map(r => r.email === email ? { ...r, enabled } : r);
+  renderRecipientsList(localRecipients);
+
+  try {
+    const res = await api("/api/v1/alerts/channels/email/recipients", {
+      method: "PUT",
+      body: JSON.stringify({ recipients: localRecipients, persist: true }),
+    });
+    if (res.recipients) {
+      localRecipients = res.recipients;
+      renderRecipientsList(localRecipients);
+    }
+    toast(`${email} ${enabled ? "enabled" : "muted"}.`);
+    await loadAlerts();
+  } catch (err) {
+    toast("Failed to update recipient: " + err.message, true);
+    await loadRecipients();
+  }
+}
+
+async function handleSelectAllRecipients(selectAll) {
+  if (localRecipients.length === 0) return;
+  localRecipients = localRecipients.map(r => ({ ...r, enabled: selectAll }));
+  renderRecipientsList(localRecipients);
+
+  try {
+    const res = await api("/api/v1/alerts/channels/email/recipients", {
+      method: "PUT",
+      body: JSON.stringify({ recipients: localRecipients, persist: true }),
+    });
+    if (res.recipients) {
+      localRecipients = res.recipients;
+      renderRecipientsList(localRecipients);
+    }
+    toast(selectAll ? "All recipients enabled." : "All recipients muted.");
+    await loadAlerts();
+  } catch (err) {
+    toast("Failed to update recipients: " + err.message, true);
+    await loadRecipients();
+  }
+}
+
+async function handleAddRecipient(e) {
+  if (e) e.preventDefault();
+  const input = $("input-new-recipient");
+  if (!input) return;
+  const email = input.value.trim();
+  if (!email || !email.includes("@") || !email.includes(".")) {
+    toast("Please enter a valid email address.", true);
+    return;
+  }
+  if (localRecipients.some(r => r.email.toLowerCase() === email.toLowerCase())) {
+    toast(`Email "${email}" is already in the list.`, true);
+    return;
+  }
+
+  try {
+    const res = await api("/api/v1/alerts/channels/email/recipients", {
+      method: "POST",
+      body: JSON.stringify({ email, enabled: true, persist: true }),
+    });
+    input.value = "";
+    if (res.recipients) {
+      localRecipients = res.recipients;
+      renderRecipientsList(localRecipients);
+    } else {
+      await loadRecipients();
+    }
+    toast(`Added ${email} to alert recipients.`);
+    await loadAlerts();
+  } catch (err) {
+    toast("Failed to add recipient: " + err.message, true);
+  }
+}
+
+async function handleRemoveRecipient(email) {
+  try {
+    const res = await api(`/api/v1/alerts/channels/email/recipients/${encodeURIComponent(email)}?persist=true`, {
+      method: "DELETE",
+    });
+    if (res.recipients) {
+      localRecipients = res.recipients;
+      renderRecipientsList(localRecipients);
+    } else {
+      await loadRecipients();
+    }
+    toast(`Removed ${email} from distribution list.`);
+    await loadAlerts();
+  } catch (err) {
+    toast("Failed to remove recipient: " + err.message, true);
+  }
+}
+
+async function sendTestAlertToSelected() {
+  const activeEmails = localRecipients.filter(r => r.enabled !== false).map(r => r.email);
+  if (activeEmails.length === 0) {
+    toast("No email recipients are active. Please check at least one email.", true);
+    return;
+  }
+  const btn = $("btn-test-selected-recipients");
+  const textEl = $("btn-test-selected-text");
+  const origText = textEl ? textEl.textContent : "Send Test to Selected";
+  if (btn) btn.disabled = true;
+  if (textEl) textEl.textContent = "Sending...";
+
+  try {
+    const res = await api("/api/v1/alerts/test", {
+      method: "POST",
+      body: JSON.stringify({ recipients: activeEmails }),
+    });
+    const results = res.results || {};
+    if (results.email === true) {
+      toast(`Test alert sent to ${activeEmails.length} recipient(s): ${activeEmails.join(", ")}`);
+    } else {
+      toast("Test alert dispatch completed (see incident log).");
+    }
+    await loadAlerts();
+  } catch (err) {
+    toast("Failed to send test alert: " + err.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (textEl) textEl.textContent = origText;
   }
 }
 
@@ -1981,6 +2237,32 @@ function setupButtons() {
   // Test Alert
   $("test-alert-btn")?.addEventListener("click", sendTestAlert);
 
+  // Channel toggle listeners (click to toggle active / muted)
+  $("card-slack")?.addEventListener("click", () => toggleChannel("slack"));
+  $("card-discord")?.addEventListener("click", () => toggleChannel("discord"));
+  $("card-email")?.addEventListener("click", (e) => {
+    if (e.target.closest("#btn-open-recipients")) return;
+    toggleChannel("email");
+  });
+
+  // Recipients modal controls
+  $("btn-open-recipients")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openRecipientsModal();
+  });
+  $("btn-close-recipients-modal")?.addEventListener("click", closeRecipientsModal);
+  $("btn-done-recipients-modal")?.addEventListener("click", closeRecipientsModal);
+  $("email-recipients-modal-overlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "email-recipients-modal-overlay") closeRecipientsModal();
+  });
+
+  // Recipient action buttons
+  $("btn-recipients-select-all")?.addEventListener("click", () => handleSelectAllRecipients(true));
+  $("btn-recipients-deselect-all")?.addEventListener("click", () => handleSelectAllRecipients(false));
+  $("form-add-recipient")?.addEventListener("submit", handleAddRecipient);
+  $("btn-add-recipient")?.addEventListener("click", handleAddRecipient);
+  $("btn-test-selected-recipients")?.addEventListener("click", sendTestAlertToSelected);
+
   // Toggle sessions view more / less
   $("btn-toggle-sessions")?.addEventListener("click", () => {
     state.sessionsExpanded = !state.sessionsExpanded;
@@ -2017,7 +2299,10 @@ function setupButtons() {
     if (e.target.id === "session-modal-overlay") closeSessionModal();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeSessionModal();
+    if (e.key === "Escape") {
+      closeSessionModal();
+      closeRecipientsModal();
+    }
   });
 
   // Modal actions
