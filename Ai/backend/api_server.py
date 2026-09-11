@@ -23,6 +23,12 @@ PROJECT_ROOT = AI_ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env", override=True)
+except Exception:
+    pass
+
 from honeypot import HoneypotRuntime, HoneypotSettings, TelemetryStore  # noqa: E402
 from honeypot.models import utc_now  # noqa: E402
 from canary import CanaryManager # noqa: E402
@@ -625,13 +631,54 @@ def create_app(
         """A test endpoint to simulate a trigger safely, useful for credential/document tokens."""
         return _trigger_canary(test_request.secret, request, simulated=True)
 
+    def _sync_alert_email_to_env(recipients_str: str) -> None:
+        """Helper to sync ALERT_EMAIL_TO in .env file safely."""
+        env_file = PROJECT_ROOT / ".env"
+        if not env_file.exists():
+            return
+        try:
+            content = env_file.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            found = False
+            new_lines = []
+            for line in lines:
+                if line.strip().startswith("ALERT_EMAIL_TO="):
+                    new_lines.append(f"ALERT_EMAIL_TO={recipients_str}")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"ALERT_EMAIL_TO={recipients_str}")
+            env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        except Exception as err:
+            logger.warning("[api] Could not sync .env ALERT_EMAIL_TO: %s", err)
+
     @app.get("/api/v1/alerts/status")
     def get_alerts_status() -> Dict[str, Any]:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(PROJECT_ROOT / ".env", override=True)
+        except Exception:
+            pass
         return get_alert_manager().get_status()
 
     @app.post("/api/v1/alerts/test")
     def test_alert_dispatch(payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(PROJECT_ROOT / ".env", override=True)
+        except Exception:
+            pass
         mgr = get_alert_manager()
+
+        custom_recipients = None
+        if payload and "recipients" in payload:
+            raw_recipients = payload["recipients"]
+            if isinstance(raw_recipients, list):
+                custom_recipients = [str(r).strip() for r in raw_recipients if str(r).strip()]
+            elif isinstance(raw_recipients, str) and raw_recipients.strip():
+                custom_recipients = [r.strip() for r in raw_recipients.split(",") if r.strip()]
+
         test_alert = SecurityAlert(
             event_id=f"test-alert-{utc_now().replace(':', '').replace('-', '')[:15]}",
             timestamp=utc_now(),
@@ -651,13 +698,94 @@ def create_app(
             ],
             details={"manual_test": True},
         )
-        results = mgr.send_alert(test_alert, sync=True)
+        results = mgr.send_alert(test_alert, sync=True, email_recipients=custom_recipients)
         return {
             "ok": True,
             "alert_id": test_alert.event_id,
             "results": results or {},
+            "recipients_sent": custom_recipients if custom_recipients is not None else mgr.email.get_active_recipients(),
             "active_channels_count": mgr.get_status()["active_channels_count"],
         }
+
+    @app.get("/api/v1/alerts/channels/email/recipients")
+    def get_email_recipients() -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        return {
+            "ok": True,
+            "recipients": mgr.email.get_recipients(),
+            "active_recipients": mgr.email.get_active_recipients(),
+            "count": len(mgr.email.get_recipients()),
+            "active_count": len(mgr.email.get_active_recipients()),
+        }
+
+    @app.put("/api/v1/alerts/channels/email/recipients")
+    def update_email_recipients(body: Dict[str, Any]) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        recipients = body.get("recipients", [])
+        updated = mgr.email.set_recipients(recipients)
+        active = mgr.email.get_active_recipients()
+        if body.get("persist", True):
+            _sync_alert_email_to_env(",".join(active))
+        return {
+            "ok": True,
+            "recipients": updated,
+            "active_recipients": active,
+            "count": len(updated),
+            "active_count": len(active),
+            "status": mgr.get_status(),
+        }
+
+    @app.post("/api/v1/alerts/channels/email/recipients")
+    def add_email_recipient(body: Dict[str, Any]) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        email = str(body.get("email", "")).strip()
+        enabled = bool(body.get("enabled", True))
+        if not email or "@" not in email:
+            raise HTTPException(status_code=400, detail="Invalid email address")
+        success = mgr.email.add_recipient(email, enabled=enabled)
+        active = mgr.email.get_active_recipients()
+        if body.get("persist", True):
+            _sync_alert_email_to_env(",".join(active))
+        return {
+            "ok": success,
+            "email": email,
+            "recipients": mgr.email.get_recipients(),
+            "active_recipients": active,
+            "status": mgr.get_status(),
+        }
+
+    @app.delete("/api/v1/alerts/channels/email/recipients/{email}")
+    def delete_email_recipient(email: str, persist: bool = Query(default=True)) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        success = mgr.email.remove_recipient(email)
+        active = mgr.email.get_active_recipients()
+        if persist:
+            _sync_alert_email_to_env(",".join(active))
+        return {
+            "ok": success,
+            "deleted": email,
+            "recipients": mgr.email.get_recipients(),
+            "active_recipients": active,
+            "status": mgr.get_status(),
+        }
+
+    @app.put("/api/v1/alerts/channels/{channel}/status")
+    def toggle_channel_status(channel: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        mgr = get_alert_manager()
+        ch = channel.lower().strip()
+        enabled = None
+        if body and "enabled" in body:
+            enabled = bool(body["enabled"])
+        try:
+            new_state = mgr.toggle_channel(ch, enabled=enabled)
+            return {
+                "ok": True,
+                "channel": ch,
+                "enabled": new_state,
+                "status": mgr.get_status(),
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     return app
 
