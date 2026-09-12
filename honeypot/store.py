@@ -116,6 +116,10 @@ class TelemetryStore:
                 SELECT COUNT(*) FROM telemetry t WHERE t.session_id = sessions.session_id
                 AND t.direction = 'inbound'
             )""")
+            # Auto-close orphaned active sessions from previous server runs
+            self._connection.execute("""UPDATE sessions 
+                SET status = 'closed', ended_at = COALESCE(ended_at, started_at)
+                WHERE status = 'active' OR ended_at IS NULL""")
             self._connection.commit()
 
     def close(self) -> None:
@@ -543,3 +547,4 @@ class TelemetryStore:
 
 # Alias for backward and forward compatibility
 HoneypotStore = TelemetryStore
+
