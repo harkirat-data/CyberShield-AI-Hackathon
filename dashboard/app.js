@@ -3343,13 +3343,14 @@ function setupButtons() {
   });
 
   // 1-Click GitHub PR creation
-  $("btn-trigger-git-pr")?.addEventListener("click", async () => {
+  const handleTriggerGitPR = async (clickedBtn) => {
     const sessionId = state.selectedSessionId || state.selectedSession?.session_id || state.selectedSession?.id || (state.sessions && state.sessions[0]?.session_id) || "ses_demo_sqli";
-    const btn = $("btn-trigger-git-pr");
-    if (!btn) return;
-    const origHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;animation:spin 1s linear infinite">sync</span> Creating PR...`;
+    const btn = clickedBtn || $("btn-trigger-git-pr") || $("btn-trigger-git-pr-top");
+    const origHtml = btn ? btn.innerHTML : "⚡ Create GitHub PR";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size:16px;animation:spin 1s linear infinite">sync</span> Creating PR...`;
+    }
 
     try {
       const stack = $("remed-stack-select")?.value || "python";
@@ -3398,6 +3399,8 @@ function setupButtons() {
           errEl.textContent = `ℹ️ ${pr.error}`;
           banner.querySelector(".pr-result-text")?.appendChild(errEl);
         }
+
+        banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
       if (isReal) {
@@ -3409,10 +3412,15 @@ function setupButtons() {
     } catch (e) {
       toast("Failed to generate PR: " + e.message, true);
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = origHtml;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
     }
-  });
+  };
+
+  $("btn-trigger-git-pr")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr")));
+  $("btn-trigger-git-pr-top")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr-top")));
 
   // Test Alert
   $("test-alert-btn")?.addEventListener("click", sendTestAlert);
