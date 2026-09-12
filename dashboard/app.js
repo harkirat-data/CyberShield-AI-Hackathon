@@ -259,13 +259,8 @@ function renderSensors(sessionsArr, status, eventsArr) {
 
   const countByPort = {};
   (status?.services || []).forEach(srv => {
-    if (srv.port && srv.active_sessions) {
-      countByPort[srv.port] = (countByPort[srv.port] || 0) + srv.active_sessions;
-    }
-  });
-  (sessionsArr || []).forEach(s => {
-    if (!s.ended_at && s.destination_port) {
-      countByPort[s.destination_port] = Math.max(countByPort[s.destination_port] || 0, 1);
+    if (srv.port) {
+      countByPort[srv.port] = srv.active_sessions || 0;
     }
   });
 
@@ -279,16 +274,24 @@ function renderSensors(sessionsArr, status, eventsArr) {
   });
 
   grid.innerHTML = SENSORS.map((s) => {
-    const activeCount = countByPort[s.key] || 0;
-    const engaged = activeCount > 0 && running;
+    const srvInfo = (status?.services || []).find(srv => srv.port === s.key || (s.key === 33060 && (srv.protocol === "mysql" || srv.port === 33061)));
+    const actualPort = srvInfo?.port || s.key;
+    const isServiceListening = running && srvInfo?.status === "listening";
 
-    const portSessions = (sessionsArr || []).filter(sess => sess.destination_port === s.key);
+    const activeCount = countByPort[s.key] || countByPort[actualPort] || 0;
+    const engaged = activeCount > 0 && isServiceListening;
+
+    const portSessions = (sessionsArr || []).filter(sess => 
+      sess.destination_port === s.key || 
+      sess.destination_port === actualPort ||
+      (s.key === 33060 && (sess.protocol === "mysql" || (sess.service && sess.service.toLowerCase().includes("mysql"))))
+    );
     const portInteractions = portSessions.reduce((acc, sess) => acc + (sess.interactions || 0), 0);
     const portBytes = portSessions.reduce((acc, sess) => acc + (sess.bytes_in || 0) + (sess.bytes_out || 0), 0);
 
     const portEvents = (eventsArr || []).filter(e => {
-      if (e.metadata?.destination_port === s.key) return true;
-      return sessionPortMap[e.session_id] === s.key;
+      if (e.metadata?.destination_port === s.key || e.metadata?.destination_port === actualPort) return true;
+      return sessionPortMap[e.session_id] === s.key || sessionPortMap[e.session_id] === actualPort;
     });
 
     // Extract real measured latency or artificial delay from event telemetry
@@ -304,9 +307,9 @@ function renderSensors(sessionsArr, status, eventsArr) {
     } else if (engaged) {
       latencyLabel = "<1ms TCP";
     } else if (portSessions.length > 0) {
-      latencyLabel = "Quiescent";
+      latencyLabel = isServiceListening ? "Listening" : "Quiescent";
     } else {
-      latencyLabel = !running ? "Offline" : "0ms Idle";
+      latencyLabel = !isServiceListening ? "Offline" : "0ms Idle";
     }
 
     // Real throughput / activity label
@@ -316,19 +319,19 @@ function renderSensors(sessionsArr, status, eventsArr) {
     } else if (portSessions.length > 0) {
       activityLabel = `${portSessions.length} logged (${portInteractions} act)`;
     } else {
-      activityLabel = !running ? "Offline" : "0 probes (idle)";
+      activityLabel = !isServiceListening ? "Offline" : "0 probes (idle)";
     }
 
     // Dynamic Sparkline from real history
-    const history = state.sensorHistory[s.key] || [];
+    const history = state.sensorHistory[s.key] || state.sensorHistory[actualPort] || [];
     const spark = generateSparkline(history, 100, 24);
 
     const color = engaged ? (s.key === 2323 ? "#C24B4B" : s.color) : "#8c9680";
-    const statusText = !running ? "Offline" : engaged ? "Engaged" : "Listening";
-    const statusColor = !running ? "#8c9680" : engaged ? "#C24B4B" : "#8B9A6E";
+    const statusText = !running ? "Offline" : isServiceListening ? (engaged ? "Engaged" : "Listening") : "Degraded";
+    const statusColor = !running ? "#8c9680" : isServiceListening ? (engaged ? "#C24B4B" : "#8B9A6E") : "#C24B4B";
 
     return `
-    <div class="sensor-card ${engaged ? "engaged" : ""}" data-port="${s.key}">
+    <div class="sensor-card ${engaged ? "engaged" : ""}" data-port="${actualPort}">
       ${engaged ? `<div class="engaged-tag">Active Attack</div>` : ""}
       <div class="sensor-card-head">
         <div>
@@ -337,7 +340,7 @@ function renderSensors(sessionsArr, status, eventsArr) {
             <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:0.06em">${statusText}</span>
           </div>
           <div class="sensor-name">${esc(s.name)}</div>
-          <div class="sensor-port">Port: <strong style="color:${engaged ? "#C24B4B" : "var(--text)"}">${esc(s.port)}</strong></div>
+          <div class="sensor-port">Port: <strong style="color:${engaged ? "#C24B4B" : "var(--text)"}">${actualPort}/tcp</strong></div>
         </div>
         <span class="sensor-sessions ${activeCount > 0 ? "active" : ""}">${activeCount} active</span>
       </div>
@@ -354,7 +357,8 @@ function renderSensors(sessionsArr, status, eventsArr) {
     </div>`;
   }).join("");
 
-  $("nav-badge-sensors") && ($("nav-badge-sensors").textContent = `${running ? 5 : 0} ACT`);
+  const listeningSensors = (status?.services || []).filter(srv => srv.status === "listening").length;
+  $("nav-badge-sensors") && ($("nav-badge-sensors").textContent = `${running ? listeningSensors : 0} ACT`);
 }
 
 // ============================================================
@@ -423,7 +427,8 @@ function renderSessions(sessionsArr) {
   if (critBadge) critBadge.textContent = `${crit} Critical`;
 
   const sub = $("stat-sessions-sub");
-  if (sub) sub.textContent = `${sessionsArr.filter(s => !s.ended_at).length} currently live`;
+  const liveCount = (state.status?.services || []).reduce((acc, s) => acc + (s.active_sessions || 0), 0);
+  if (sub) sub.textContent = `${liveCount} currently live`;
 
   if (filtered.length === 0) {
     const icon = q ? "search_off" : (sessionsArr.length === 0 ? "wifi_off" : "filter_alt_off");
@@ -1536,9 +1541,13 @@ function updateStatusUI(status) {
 
   const toggleBtn = $("btn-grid-toggle");
   const toggleLabel = $("grid-toggle-label");
+  const toggleIcon = toggleBtn?.querySelector(".material-symbols-outlined");
   if (toggleBtn && toggleLabel) {
     toggleLabel.textContent = running ? "Stop Grid" : "Start Grid";
     toggleBtn.classList.toggle("running", running);
+    if (toggleIcon) {
+      toggleIcon.textContent = running ? "pause_circle" : "power_settings_new";
+    }
   }
 
   // Hero Pause / Resume Button
@@ -1556,26 +1565,61 @@ function updateStatusUI(status) {
     }
   }
 
-  // Gemini status
+  // Gemini & AI Model Status (Unmistakable feedback on AI model engagement)
   const gemini = status?.gemini;
   const modelLabel = $("gemini-model-label");
   const modelBadge = $("gemini-model-badge");
   const latencyEl = $("gemini-latency");
+  const aiBar = $("ai-bar");
+  const statAi = $("stat-ai");
+
+  const backendName = gemini?.backend || "gemini:gemini-2.5-flash";
   if (modelLabel) {
-    modelLabel.textContent = gemini?.backend || gemini?.last_provider || (gemini?.configured ? "gemini-3.6-flash" : "No AI");
+    if (!running) {
+      modelLabel.textContent = `Standby (Grid Stopped) • ${backendName}`;
+      modelLabel.style.color = "#7d9cb7";
+    } else {
+      modelLabel.textContent = backendName;
+      modelLabel.style.color = "#242c1d";
+    }
   }
   if (modelBadge) {
-    const isOnline = gemini?.enabled && gemini?.configured;
-    modelBadge.textContent = isOnline ? "ONLINE" : "OFFLINE";
-    modelBadge.style.color = isOnline ? "#4e5d34" : "#C24B4B";
+    const isConfigured = gemini?.enabled && gemini?.configured;
+    if (!running) {
+      modelBadge.textContent = "STANDBY";
+      modelBadge.style.color = "#8c9680";
+      modelBadge.style.borderColor = "#c5cec0";
+    } else if (isConfigured) {
+      modelBadge.textContent = "ONLINE";
+      modelBadge.style.color = "#4e5d34";
+      modelBadge.style.borderColor = "#8B9A6E";
+    } else {
+      modelBadge.textContent = "OFFLINE";
+      modelBadge.style.color = "#C24B4B";
+      modelBadge.style.borderColor = "#f7d1d1";
+    }
   }
-  if (latencyEl) latencyEl.textContent = "gRPC ~35ms";
+  if (statAi) {
+    statAi.textContent = running ? "Gemini" : "Standby";
+  }
+  if (aiBar) {
+    aiBar.style.width = running ? "99%" : "20%";
+  }
+  if (latencyEl) {
+    latencyEl.textContent = running ? "gRPC ~35ms" : "Offline";
+  }
 
-  // Decoy stat
+  // Decoy fleet stat
+  const listeningCount = (status?.services || []).filter(s => s.status === "listening").length;
+  const totalCount = (status?.services || []).length || 5;
   const decoyStat = $("stat-decoys");
-  if (decoyStat) decoyStat.textContent = running ? "5 / 5" : "0 / 5";
+  if (decoyStat) {
+    decoyStat.textContent = running ? `${listeningCount} / ${totalCount}` : `0 / ${totalCount}`;
+  }
   const decoyBar = $("decoy-bar");
-  if (decoyBar) decoyBar.style.width = running ? "100%" : "0%";
+  if (decoyBar) {
+    decoyBar.style.width = running ? `${Math.round((listeningCount / totalCount) * 100)}%` : "0%";
+  }
 
   // Auto-quarantine blocked sources from live honeypot runtime
   const blockedEl = $("stat-blocked");
@@ -2755,6 +2799,7 @@ function connectWebSocket() {
           if (data.status) {
             state.status = data.status;
             updateStatusUI(data.status);
+            renderSensors(state.sessions, data.status);
           }
           if (data.canaries?.tokens) {
             renderCanaryTokens(data.canaries.tokens);
@@ -2796,10 +2841,19 @@ function setupButtons() {
     if (pauseBtn) pauseBtn.disabled = true;
     if (sideBtn) sideBtn.disabled = true;
     try {
-      const res = await api(`/api/v1/honeypot/control/${running ? "stop" : "start"}`, { method: "POST" });
-      toast(running ? "Honeypot grid paused." : "Honeypot grid resumed!");
+      const action = running ? "stop" : "start";
+      const res = await api(`/api/v1/honeypot/control/${action}`, { method: "POST" });
       if (res && typeof res.running === "boolean") {
         updateStatusUI(res);
+        renderSensors(state.sessions, res);
+        if (res.running) {
+          const listeningCount = (res.services || []).filter(s => s.status === "listening").length;
+          toast(`⚡ Honeypot grid active — ${listeningCount}/5 decoy listeners online & AI engaged!`);
+        } else {
+          toast("⏸️ Honeypot grid stopped — decoy listeners quiescent.");
+        }
+      } else {
+        toast(running ? "Honeypot grid stopped." : "Honeypot grid started!");
       }
       await refresh();
     } catch (e) {
