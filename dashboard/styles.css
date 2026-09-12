@@ -2236,22 +2236,6 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* =============================================
-   AUTONOMOUS DEVSECOPS GITHUB PR REMEDIATION
-   ============================================= */
-.modal-pr-remediation-card {
-  background: #ffffff;
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-top: 14px;
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
-}
-.pr-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 /* =============================================
    NLP CHATBOT WITH VOICE & TEXT CHAT (CSS)
