@@ -3342,6 +3342,78 @@ function setupButtons() {
     toast(`Successfully committed and applied ${checked.length} incident response action(s)!`);
   });
 
+  // 1-Click GitHub PR creation
+  $("btn-trigger-git-pr")?.addEventListener("click", async () => {
+    const sessionId = state.selectedSessionId || state.selectedSession?.session_id || state.selectedSession?.id || (state.sessions && state.sessions[0]?.session_id) || "ses_demo_sqli";
+    const btn = $("btn-trigger-git-pr");
+    if (!btn) return;
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;animation:spin 1s linear infinite">sync</span> Creating PR...`;
+
+    try {
+      const stack = $("remed-stack-select")?.value || "python";
+      const res = await api(`/api/v1/honeypot/sessions/${sessionId}/create-pr`, {
+        method: "POST",
+        body: JSON.stringify({ preferred_stack: stack })
+      });
+
+      const pr = res.pr_payload || res.pr || {};
+      const isReal = pr.status === "created";
+      const htmlUrl = pr.html_url || res.github_url || "";
+
+      const banner = $("pr-result-banner");
+      if (banner) {
+        banner.style.display = "flex";
+        banner.style.background = isReal
+          ? "linear-gradient(135deg, rgba(40,167,69,0.15), rgba(40,167,69,0.05))"
+          : "linear-gradient(135deg, rgba(255,193,7,0.15), rgba(255,193,7,0.05))";
+        banner.style.border = isReal
+          ? "1px solid rgba(40,167,69,0.4)"
+          : "1px solid rgba(255,193,7,0.4)";
+
+        const prNum = pr.pr_number ? `#${pr.pr_number}` : "(Draft)";
+        const label = isReal
+          ? `✅ PR ${prNum} Opened on GitHub`
+          : `⚡ PR Ready (Token required to merge)`;
+
+        if ($("pr-result-title"))
+          $("pr-result-title").textContent = `${label}: ${pr.title || "Security Remediation Patch"}`;
+        if ($("pr-result-msg"))
+          $("pr-result-msg").textContent =
+            `Branch: ${pr.head_branch || "security/patch-fix"} → ${pr.base_branch || "main"} • ` +
+            `Patch: ${pr.target_file || "app.py"} • Repo: ${pr.owner}/${pr.repo}`;
+
+        const link = $("pr-result-link");
+        if (link && htmlUrl) {
+          link.href = htmlUrl;
+          link.target = "_blank";
+          link.textContent = isReal ? "View Pull Request on GitHub →" : "View Compare on GitHub →";
+          link.style.display = "inline-flex";
+        }
+
+        if (pr.error && !isReal) {
+          const errEl = document.createElement("p");
+          errEl.style.cssText = "font-size:11px;color:var(--text-muted);margin:4px 0 0;";
+          errEl.textContent = `ℹ️ ${pr.error}`;
+          banner.querySelector(".pr-result-text")?.appendChild(errEl);
+        }
+      }
+
+      if (isReal) {
+        toast(`✅ GitHub PR #${pr.pr_number} created on ${pr.owner}/${pr.repo}!`);
+      } else {
+        toast(`⚡ PR payload generated for ${pr.owner}/${pr.repo}!`);
+      }
+
+    } catch (e) {
+      toast("Failed to generate PR: " + e.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  });
+
   // Test Alert
   $("test-alert-btn")?.addEventListener("click", sendTestAlert);
 
