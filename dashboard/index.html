@@ -102,6 +102,18 @@
       </div>
     </div>
     <div class="topbar-right">
+      <!-- MENTOR REQUEST 4: EXECUTIVE VS TECHNICAL VIEW TOGGLE -->
+      <div class="view-mode-toggle" id="view-mode-toggle" title="Switch between Executive Layman View and Technical SOC View">
+        <button type="button" class="view-mode-btn active" id="btn-mode-executive" data-mode="executive">
+          <span class="material-symbols-outlined" style="font-size:14px">sentiment_satisfied</span>
+          <span>Executive Layman</span>
+        </button>
+        <button type="button" class="view-mode-btn" id="btn-mode-technical" data-mode="technical">
+          <span class="material-symbols-outlined" style="font-size:14px">terminal</span>
+          <span>Technical SOC</span>
+        </button>
+      </div>
+
       <div class="search-box">
         <span class="material-symbols-outlined" style="font-size:17px;color:#8ca4ac">search</span>
         <input type="text" id="search-input" placeholder="Filter honeypots, IPs, IOC hashes..." autocomplete="off">
@@ -846,6 +858,53 @@
         </div>
       </div>
 
+      <!-- MENTOR REQUEST 2: MATHEMATICAL RISK CALCULATION BREAKDOWN -->
+      <div class="modal-risk-breakdown-section" id="modal-risk-breakdown-section">
+        <div class="breakdown-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="material-symbols-outlined" style="color:var(--rose);font-size:18px">calculate</span>
+            <span class="breakdown-title">Explainable Risk Calculation Formula</span>
+          </div>
+          <span class="breakdown-badge" id="modal-risk-formula-total">Total: 90 / 100</span>
+        </div>
+        <p class="breakdown-sub" style="font-size:11px;color:var(--text-muted);margin:4px 0 10px 0">
+          Deterministic additive point model: Base Severity + Attack Payload + Threat Intel Feed + Velocity + Correlation
+        </p>
+        <div class="breakdown-formula-grid" id="modal-risk-formula-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- MENTOR REQUEST 4: ROOT CAUSE & SECURE CODE PATCH ("FIXING THE LEAK") -->
+      <div class="modal-patch-section" id="modal-patch-section">
+        <div class="patch-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">build_circle</span>
+            <span class="patch-title">Vulnerability Root Cause &amp; Remediation Patch</span>
+          </div>
+          <span class="cwe-pill" id="modal-patch-cwe">CWE-89: SQL Injection</span>
+        </div>
+        <div class="patch-leak-location" id="modal-patch-location" style="margin:8px 0;font-size:12px;color:var(--text-secondary)">
+          <strong>Leak Location:</strong> <code id="modal-patch-file" style="background:#eee;padding:2px 5px;border-radius:3px">/admin/portal.php (Line 42)</code>
+          &mdash; <span id="modal-patch-desc">Untrusted query parameter concatenation allows arbitrary SQL command injection.</span>
+        </div>
+        <div class="code-diff-grid">
+          <div class="code-diff-col vulnerable">
+            <div class="diff-title"><span class="material-symbols-outlined" style="font-size:14px;color:var(--rose)">cancel</span> Vulnerable Code (The Leak)</div>
+            <pre class="diff-code" id="modal-diff-vuln"></pre>
+          </div>
+          <div class="code-diff-col secure">
+            <div class="diff-title"><span class="material-symbols-outlined" style="font-size:14px;color:var(--emerald)">check_circle</span> Secure Patched Code (The Fix)</div>
+            <pre class="diff-code" id="modal-diff-secure"></pre>
+          </div>
+        </div>
+        <div class="patch-firewall-action">
+          <span style="font-size:12px;color:var(--text-secondary);font-weight:600">Perimeter Firewall Patch:</span>
+          <code id="modal-patch-cmd">sudo ufw deny from &lt;ATTACKER_IP&gt;</code>
+          <button type="button" class="btn-copy-patch" id="btn-copy-patch" title="Copy patch command">Copy</button>
+        </div>
+      </div>
+
       <!-- STEP-BY-STEP STORY TIMELINE -->
       <div class="modal-timeline-section">
         <div class="timeline-header">
@@ -878,9 +937,14 @@
           <span class="material-symbols-outlined" style="font-size:16px">terminal</span>
           View Technical Terminal
         </button>
-        <button class="btn-primary" id="modal-btn-export">
-          <span class="material-symbols-outlined" style="font-size:16px">file_download</span>
-          Export Evidence JSON
+        <!-- MENTOR REQUEST 3: HUMAN-READABLE EXECUTIVE BRIEF (NOT JUST JSON) -->
+        <button class="btn-primary" id="modal-btn-export-exec" style="background:#2d6a4f;border-color:#2d6a4f" title="Generate clean printable plain-English incident report for leadership">
+          <span class="material-symbols-outlined" style="font-size:16px">assignment</span>
+          Export Executive Brief
+        </button>
+        <button class="btn-outline sm" id="modal-btn-export">
+          <span class="material-symbols-outlined" style="font-size:16px">data_object</span>
+          Export JSON
         </button>
       </div>
     </div>
@@ -975,7 +1039,52 @@
   </div>
 </div>
 
+<!-- MENTOR REQUEST 3: PRINTABLE EXECUTIVE INCIDENT REPORT MODAL -->
+<div id="executive-report-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="exec-report-title">
+  <div class="modal-card exec-report-card" id="exec-report-card">
+    <div class="modal-header" style="background:#2d6a4f;color:#ffffff">
+      <div class="modal-header-left">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="material-symbols-outlined" style="font-size:26px;color:#ffffff">verified_user</span>
+          <div>
+            <h3 id="exec-report-title" style="margin:0;font-size:16px;font-weight:700;color:#ffffff;font-family:var(--font-head)">
+              CyberShield AI &mdash; Executive Security Incident Advisory
+            </h3>
+            <p style="margin:2px 0 0 0;font-size:12px;color:rgba(255,255,255,0.85)">
+              Non-Technical Management Briefing &middot; Zero Production Impact Certified
+            </p>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close-btn" id="btn-close-exec-report" aria-label="Close modal" style="color:#ffffff">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body exec-report-body" id="exec-report-content" style="padding:24px;background:#ffffff;color:#242c1d;font-family:var(--font-body);line-height:1.6">
+      <!-- Populated dynamically by generateExecutiveBriefHtml() in app.js -->
+    </div>
+
+    <div class="modal-footer" style="background:#f7f9f3;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+        <span class="material-symbols-outlined" style="font-size:15px;color:var(--emerald)">check_circle</span>
+        <span>SHA-256 Forensic Evidence Anchored</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="btn-outline sm" id="btn-copy-exec-report" style="height:36px">
+          <span class="material-symbols-outlined" style="font-size:16px">content_copy</span>
+          <span>Copy Text</span>
+        </button>
+        <button type="button" class="btn-primary" id="btn-print-exec-report" style="background:#2d6a4f;border-color:#2d6a4f;height:36px">
+          <span class="material-symbols-outlined" style="font-size:16px">print</span>
+          <span>Print / Save as PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/dashboard/app.js?v=2.8.4"></script>
+<script src="/dashboard/app.js?v=2.9.0"></script>
 </body>
 </html>

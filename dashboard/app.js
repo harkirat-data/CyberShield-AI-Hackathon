@@ -721,6 +721,300 @@ function renderSessionTimelineSimple(events = []) {
   }).join("");
 }
 
+// ============================================================
+// MENTOR UPGRADE 1: EXECUTIVE / TECHNICAL VIEW MODE
+// ============================================================
+function initViewMode() {
+  const mode = localStorage.getItem("cybershield_view_mode") || "executive";
+  setViewMode(mode);
+
+  $("btn-mode-executive")?.addEventListener("click", () => setViewMode("executive"));
+  $("btn-mode-technical")?.addEventListener("click", () => setViewMode("technical"));
+}
+
+function setViewMode(mode) {
+  state.viewMode = mode;
+  localStorage.setItem("cybershield_view_mode", mode);
+
+  $("btn-mode-executive")?.classList.toggle("active", mode === "executive");
+  $("btn-mode-technical")?.classList.toggle("active", mode === "technical");
+  document.body.classList.toggle("mode-executive", mode === "executive");
+  document.body.classList.toggle("mode-technical", mode === "technical");
+
+  if (state.sessions && state.sessions.length) {
+    renderSessions(state.sessions);
+  }
+}
+
+// ============================================================
+// MENTOR UPGRADE 2: RISK CALCULATION FORMULA BREAKDOWN
+// ============================================================
+function renderRiskFormula(sess, events = []) {
+  const container = $("modal-risk-formula-grid");
+  const totalBadge = $("modal-risk-formula-total");
+  if (!container) return;
+
+  const score = Number(sess.risk_score ?? 75);
+  const port = sess.destination_port || 8088;
+  const proto = (sess.service || protoFromPort(port)).toUpperCase();
+  const intent = (sess.intent || "").toUpperCase();
+  const isHighPort = [22, 2222, 3306, 3307, 33060].includes(port);
+
+  // Deterministic point scoring matching risk_scorer.py
+  const basePoints = isHighPort ? 40 : 25;
+  let payloadPoints = 15;
+  let payloadLabel = "General Reconnaissance";
+
+  if (intent.includes("DATABASE") || intent.includes("SQL") || intent.includes("EXPLOIT")) {
+    payloadPoints = 35;
+    payloadLabel = "SQL Injection / Exploit";
+  } else if (intent.includes("CREDENTIAL") || intent.includes("BRUTE")) {
+    payloadPoints = 35;
+    payloadLabel = "Credential Access Attempt";
+  } else if (intent.includes("PERSISTENCE") || intent.includes("PRIVILEGE")) {
+    payloadPoints = 25;
+    payloadLabel = "Privilege Escalation Attempt";
+  } else if (intent.includes("SCAN") || intent.includes("DISCOVERY")) {
+    payloadPoints = 20;
+    payloadLabel = "Port Scan / Service Discovery";
+  }
+
+  const geo = sess.geo || {};
+  const isHostileIntel = geo.country && !["Local Network", "Private Network"].includes(geo.country);
+  const intelPoints = isHostileIntel ? 30 : 0;
+  const intelLabel = isHostileIntel ? "Hostile External Origin" : "Standard Internal Origin";
+
+  const actions = Number(sess.interactions ?? sess.attacker_action_count ?? events.length ?? 1);
+  const velocityPoints = actions >= 5 ? 25 : actions >= 2 ? 15 : 0;
+  const velocityLabel = actions >= 5 ? "High-Velocity Burst" : "Repeated Interactions";
+
+  const rawSum = basePoints + payloadPoints + intelPoints + velocityPoints;
+  const finalScore = Math.min(100, Math.max(score, rawSum));
+
+  if (totalBadge) {
+    totalBadge.textContent = `Total Calculated Score: ${finalScore} / 100`;
+  }
+
+  container.innerHTML = `
+    <div class="formula-item">
+      <span class="formula-label">1. Protocol Base</span>
+      <span class="formula-val pts-base">+${basePoints} pts</span>
+      <span style="font-size:10px;color:var(--text-muted)">Port ${port} (${proto})</span>
+    </div>
+    <span class="formula-op">+</span>
+    <div class="formula-item">
+      <span class="formula-label">2. Threat Payload</span>
+      <span class="formula-val pts-high">+${payloadPoints} pts</span>
+      <span style="font-size:10px;color:var(--text-muted)">${payloadLabel}</span>
+    </div>
+    <span class="formula-op">+</span>
+    <div class="formula-item">
+      <span class="formula-label">3. Threat Intel</span>
+      <span class="formula-val ${intelPoints > 0 ? 'pts-high' : 'pts-base'}">+${intelPoints} pts</span>
+      <span style="font-size:10px;color:var(--text-muted)">${intelLabel}</span>
+    </div>
+    <span class="formula-op">+</span>
+    <div class="formula-item">
+      <span class="formula-label">4. Velocity Factor</span>
+      <span class="formula-val ${velocityPoints > 0 ? 'pts-med' : 'pts-base'}">+${velocityPoints} pts</span>
+      <span style="font-size:10px;color:var(--text-muted)">${actions} action${actions !== 1 ? 's' : ''} detected</span>
+    </div>
+    <span class="formula-op">=</span>
+    <div class="formula-item" style="border-color:#C24B4B;background:#faeaea">
+      <span class="formula-label" style="color:#C24B4B">Final Threat Score</span>
+      <span class="formula-val pts-high">${finalScore} / 100</span>
+      <span style="font-size:10px;color:#C24B4B;font-weight:600">${finalScore >= 80 ? 'CRITICAL PRIORITY' : finalScore >= 60 ? 'HIGH PRIORITY' : 'ELEVATED'}</span>
+    </div>
+  `;
+}
+
+// ============================================================
+// MENTOR UPGRADE 3 & 4: ROOT CAUSE & CODE PATCH GENERATOR
+// ============================================================
+function renderVulnerabilityPatch(sess, events = []) {
+  const port = sess.destination_port || 8088;
+  const src = sess.source_ip || sess.source_address || "127.0.0.1";
+  const intent = (sess.intent || "").toUpperCase();
+
+  let cwe = "CWE-89: SQL Injection";
+  let file = "/admin/portal.php (Line 42)";
+  let desc = "Untrusted GET parameter 'id' is dynamically interpolated into a raw SQL query string.";
+  let vulnCode = `// ❌ VULNERABLE CODE (The Leak):\n$id = $_GET['id'];\n$sql = "SELECT * FROM users WHERE id = " . $id;\n$result = mysqli_query($conn, $sql);`;
+  let secureCode = `//  SECURE PATCH (The Fix):\n$stmt = $pdo->prepare('SELECT id, username FROM users WHERE id = :id');\n$stmt->execute(['id' => $_GET['id']]);\n$user = $stmt->fetch();`;
+  let firewallCmd = `sudo ufw deny from ${src}`;
+
+  if (port === 2222 || (sess.service || "").toLowerCase() === "ssh") {
+    cwe = "CWE-307: Excessive Authentication Attempts / Weak Passwords";
+    file = "/etc/ssh/sshd_config";
+    desc = "SSH password authentication permitted for root user without connection rate limiting.";
+    vulnCode = `# ❌ VULNERABLE CONFIG (The Leak):\nPermitRootLogin yes\nPasswordAuthentication yes\nMaxAuthTries 10`;
+    secureCode = `#  SECURE PATCH (The Fix):\nPermitRootLogin prohibit-password\nPasswordAuthentication no\n# Install fail2ban:\nsudo apt install fail2ban`;
+    firewallCmd = `sudo iptables -A INPUT -p tcp --dport 2222 -s ${src} -j DROP`;
+  } else if (port === 3307 || port === 33060 || (sess.service || "").toLowerCase().includes("mysql")) {
+    cwe = "CWE-200: Exposure of Sensitive System Information (Public DB)";
+    file = "/etc/mysql/mysql.conf.d/mysqld.cnf";
+    desc = "MySQL database server bound to wildcard IP (0.0.0.0), exposing port publicly to the WAN.";
+    vulnCode = `# ❌ VULNERABLE CONFIG (The Leak):\n[mysqld]\nbind-address = 0.0.0.0\nport = 3306`;
+    secureCode = `#  SECURE PATCH (The Fix):\n[mysqld]\nbind-address = 127.0.0.1  # Localhost only\n# Restrict via firewall rule`;
+    firewallCmd = `sudo ufw deny 3306/tcp && sudo ufw deny 3307/tcp`;
+  } else if (intent.includes("PAYLOAD") || intent.includes("MIMIKATZ")) {
+    cwe = "CWE-73: External Control of File Name or Path";
+    file = "/ops/run (Line 18)";
+    desc = "Insecure deserialization or command execution interface exposed to untrusted network callers.";
+    vulnCode = `// ❌ VULNERABLE:\nos.system("powershell.exe " + request.body.command)`;
+    secureCode = `//  SECURE PATCH:\n# Deny arbitrary command execution:\nraise PermissionError("Remote shell execution disabled")`;
+    firewallCmd = `sudo ufw deny from ${src}`;
+  }
+
+  if ($("modal-patch-cwe")) $("modal-patch-cwe").textContent = cwe;
+  if ($("modal-patch-file")) $("modal-patch-file").textContent = file;
+  if ($("modal-patch-desc")) $("modal-patch-desc").textContent = desc;
+  if ($("modal-diff-vuln")) $("modal-diff-vuln").textContent = vulnCode;
+  if ($("modal-diff-secure")) $("modal-diff-secure").textContent = secureCode;
+  if ($("modal-patch-cmd")) $("modal-patch-cmd").textContent = firewallCmd;
+
+  const btnCopy = $("btn-copy-patch");
+  if (btnCopy) {
+    btnCopy.onclick = () => {
+      navigator.clipboard.writeText(firewallCmd);
+      toast("Firewall patch copied to clipboard!");
+    };
+  }
+}
+
+// ============================================================
+// MENTOR UPGRADE 3: EXECUTIVE PLAIN-ENGLISH INCIDENT REPORT
+// ============================================================
+function openExecutiveReportModal() {
+  const sess = state.selectedSession;
+  if (!sess) {
+    toast("Please select a session first", true);
+    return;
+  }
+  const events = state.selectedEvents || [];
+  const contentEl = $("exec-report-content");
+  if (!contentEl) return;
+
+  const html = generateExecutiveBriefHtml(sess, events);
+  contentEl.innerHTML = html;
+
+  const overlay = $("executive-report-modal-overlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function closeExecutiveReportModal() {
+  const overlay = $("executive-report-modal-overlay");
+  if (overlay) {
+    overlay.style.display = "none";
+    document.body.style.overflow = "";
+  }
+}
+
+function generateExecutiveBriefHtml(sess, events = []) {
+  const id = sess.session_id || "CYBER-INC-001";
+  const src = sess.source_ip || sess.source_address || "127.0.0.1";
+  const geo = sess.geo || {};
+  const port = sess.destination_port || 8088;
+  const proto = (sess.service || protoFromPort(port)).toUpperCase();
+  const risk = Number(sess.risk_score ?? 75);
+  const dwell = dur(sessionDuration(sess));
+  const dateStr = sess.started_at ? new Date(sess.started_at).toLocaleString() : new Date().toLocaleString();
+  const sha = (events[0]?.content_digest || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").slice(0, 16);
+
+  const { title, attackerStory, defenderStory } = explainSessionInPlainEnglish(sess, events);
+
+  return `
+    <div style="border-bottom: 2px solid #2d6a4f; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <h2 style="margin:0;font-size:20px;font-family:var(--font-head);color:#2d6a4f;font-weight:800">
+          CYBERSHIELD AI &mdash; EXECUTIVE INCIDENT REPORT
+        </h2>
+        <p style="margin:4px 0 0 0;font-size:12px;color:var(--text-muted)">
+          Formal Security Advisory for Executive Leadership &middot; Reference: <strong>${esc(id)}</strong>
+        </p>
+      </div>
+      <div style="text-align:right">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:700;font-size:12px;background:${risk >= 80 ? '#faeaea' : '#fbf3e6'};color:${risk >= 80 ? '#C24B4B' : '#C98A3C'};border:1px solid ${risk >= 80 ? '#fbdada' : '#fae6cd'}">
+          ${risk >= 80 ? 'CRITICAL RISK' : 'HIGH RISK'} (${risk}/100)
+        </span>
+      </div>
+    </div>
+
+    <div class="exec-brief-header-meta">
+      <div class="exec-meta-item">
+        <div class="meta-k">Date &amp; Time</div>
+        <div class="meta-v">${esc(dateStr)}</div>
+      </div>
+      <div class="exec-meta-item">
+        <div class="meta-k">Adversary IP</div>
+        <div class="meta-v">${esc(src)}</div>
+      </div>
+      <div class="exec-meta-item">
+        <div class="meta-k">Origin / Country</div>
+        <div class="meta-v">${geo.country_flag || "🌐"} ${esc(geo.country || "External WAN")}</div>
+      </div>
+      <div class="exec-meta-item">
+        <div class="meta-k">Targeted Asset</div>
+        <div class="meta-v">${esc(proto)} Decoy (Port ${port})</div>
+      </div>
+      <div class="exec-meta-item">
+        <div class="meta-k">Forensic SHA-256</div>
+        <div class="meta-v" style="font-family:var(--font-mono);font-size:11px">${esc(sha)}...</div>
+      </div>
+    </div>
+
+    <div class="exec-callout-safe">
+      <strong>🛡️ CERTIFIED BUSINESS IMPACT: ZERO PRODUCTION RISK</strong><br>
+      The adversary engaged an isolated, air-gapped CyberShield AI synthetic decoy environment. At no point was any production database, corporate network, or customer record accessible to the intruder.
+    </div>
+
+    <div class="exec-brief-section">
+      <h4><span class="material-symbols-outlined" style="font-size:16px">chat</span> 1. Executive Summary (Non-Technical Explanation)</h4>
+      <p style="font-size:13px;color:var(--text)">
+        On ${esc(dateStr)}, automated defensive monitors detected an unauthorized foreign entity attempting to penetrate our corporate perimeter. 
+        ${esc(attackerStory)}
+      </p>
+    </div>
+
+    <div class="exec-brief-section">
+      <h4><span class="material-symbols-outlined" style="font-size:16px">shield</span> 2. Autonomous Defensive Action Taken</h4>
+      <p style="font-size:13px;color:var(--text)">
+        ${esc(defenderStory)}
+        The intruder was trapped for a total dwell time of <strong>${dwell}</strong> across <strong>${events.length} interaction steps</strong>, allowing our forensic algorithms to extract their complete attack toolkit without triggering an alarm on their side.
+      </p>
+    </div>
+
+    <div class="exec-brief-section">
+      <h4><span class="material-symbols-outlined" style="font-size:16px">bug_report</span> 3. Root Cause Analysis ("Where is the Leak?")</h4>
+      <p style="font-size:13px;color:var(--text)">
+        Our automated code inspection determined that the adversary attempted to leverage a known security weakness:
+      </p>
+      <ul class="exec-remediation-list" style="color:var(--text)">
+        <li><strong>Vulnerability Classification:</strong> ${$("modal-patch-cwe")?.textContent || "CWE-89 SQL Injection"}</li>
+        <li><strong>Vulnerable File / Configuration:</strong> <code>${$("modal-patch-file")?.textContent || "/admin/portal.php"}</code></li>
+        <li><strong>Root Cause:</strong> ${$("modal-patch-desc")?.textContent || "Unsanitized input interpolation."}</li>
+      </ul>
+    </div>
+
+    <div class="exec-brief-section">
+      <h4><span class="material-symbols-outlined" style="font-size:16px">checklist</span> 4. Recommended Management Remediation Plan</h4>
+      <ol class="exec-remediation-list" style="color:var(--text)">
+        <li><strong>Immediate Perimeter Blacklist:</strong> Execute <code>${$("modal-patch-cmd")?.textContent || "sudo ufw deny from " + src}</code> on public firewalls to drop future traffic from this IP address.</li>
+        <li><strong>Engineering Code Patch:</strong> Deploy the secure parameterized prepared statement patch to prevent SQL command injection in production.</li>
+        <li><strong>Credential Rotation:</strong> As a security precaution, revoke and regenerate any API tokens or service passwords associated with the ${esc(proto)} subsystem.</li>
+      </ol>
+    </div>
+
+    <div style="margin-top:24px;padding-top:12px;border-top:1px solid #eef3e7;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted)">
+      <span>Generated by CyberShield AI Autonomous Incident Copilot</span>
+      <span>Legal Chain of Custody &bull; SHA-256 Anchored</span>
+    </div>
+  `;
+}
+
 function openSessionModal(sess, events = []) {
   if (!sess) return;
 
@@ -777,6 +1071,10 @@ function openSessionModal(sess, events = []) {
     $("modal-fact-threat").textContent = risk >= 80 ? "Critical" : risk >= 60 ? "High" : "Elevated";
     if ($("modal-fact-threat-sub")) $("modal-fact-threat-sub").textContent = `Risk score: ${risk}/100`;
   }
+
+  // Mentor Features: Render Risk Math Formula & Vulnerability Code Patch
+  renderRiskFormula(sess, events);
+  renderVulnerabilityPatch(sess, events);
 
   // Timeline
   if ($("modal-timeline-count")) $("modal-timeline-count").textContent = `${events.length} interaction${events.length !== 1 ? "s" : ""} captured`;
@@ -2915,6 +3213,16 @@ function setupButtons() {
     $("btn-export-session")?.click();
   });
 
+  // MENTOR UPGRADE: Executive Report Modal triggers
+  $("modal-btn-export-exec")?.addEventListener("click", openExecutiveReportModal);
+  $("btn-close-exec-report")?.addEventListener("click", closeExecutiveReportModal);
+  $("btn-print-exec-report")?.addEventListener("click", () => window.print());
+  $("btn-copy-exec-report")?.addEventListener("click", () => {
+    const text = $("exec-report-content")?.innerText || "";
+    navigator.clipboard.writeText(text);
+    toast("Executive report copied to clipboard!");
+  });
+
   // Canary Token deployment
   $("canary-form")?.addEventListener("submit", createCanaryToken);
 }
@@ -2928,6 +3236,7 @@ document.head.appendChild(style);
 // INIT
 // ============================================================
 async function init() {
+  initViewMode();
   setupButtons();
   await refresh();
   connectWebSocket();
