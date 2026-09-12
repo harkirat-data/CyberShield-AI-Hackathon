@@ -539,3 +539,7 @@ class TelemetryStore:
         except (json.JSONDecodeError, TypeError, KeyError):
             result["metadata"] = {}
         return result
+
+
+# Alias for backward and forward compatibility
+HoneypotStore = TelemetryStore
