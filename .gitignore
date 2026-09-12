@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+Ai/venv/
+venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+win.log/
+
+# Python version
+.python-version
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Superdesign temporary working files
+.superdesign/tmp/
