@@ -77,7 +77,7 @@ def default_services() -> Tuple[ServiceProfile, ...]:
             key="mysql",
             name="MySQL",
             protocol="mysql",
-            port=33060,
+            port=3307,
             public_port=3306,
             product="MySQL 8.0.33",
             persona="finance reporting database",
