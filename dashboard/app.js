@@ -3272,9 +3272,14 @@ function setupButtons() {
         termBody.scrollTop = termBody.scrollHeight;
       }
 
-      toast("Synthetic response injected into session transcript.");
+      if (data && data.executed) {
+        toast("⚡ Attack probe executed against honeypot socket! Live telemetry captured.");
+        setTimeout(() => refresh(), 600);
+      } else {
+        toast("Synthetic response injected into session transcript.");
+      }
     } catch (e) {
-      toast("Injection failed: " + e.message, true);
+      toast("Action failed: " + e.message, true);
     } finally {
       if (btn) {
         btn.disabled = false;
