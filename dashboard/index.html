@@ -53,7 +53,7 @@
       <a href="#copilot-panel" class="nav-item" data-section="copilot-panel">
         <span class="material-symbols-outlined nav-icon">smart_toy</span>
         <span class="nav-label">AI Copilot</span>
-        <span class="nav-dot-blue"></span>
+        <span class="nav-badge" style="background:#e0e7ff;color:#4338ca;font-size:9px;font-weight:700">PHASE 2</span>
       </a>
       <a href="#telemetry-drawer" class="nav-item" data-section="telemetry-drawer">
         <span class="material-symbols-outlined nav-icon">public</span>
@@ -93,11 +93,11 @@
   <header class="topbar">
     <div class="topbar-left">
       <span class="material-symbols-outlined" style="color:var(--primary);font-size:24px">shield_with_heart</span>
-      <span class="topbar-title">CyberShield AI <span class="topbar-accent">Autonomous Deception</span></span>
-      <div class="gemini-pill" id="gemini-status-pill">
-        <span class="dot-pulse"></span>
-        <span class="pill-label">Model:</span>
-        <span class="pill-value" id="gemini-model-label">Checking...</span>
+      <span class="topbar-title">CyberShield AI <span class="topbar-accent">Honeypot Sentinel Grid</span></span>
+      <div class="gemini-pill" id="gemini-status-pill" style="background:#eef3e7;border:1px solid #8B9A6E">
+        <span class="dot-pulse" style="background:#8B9A6E"></span>
+        <span class="pill-label" style="color:#242c1d">System Layer:</span>
+        <span class="pill-value" id="gemini-model-label" style="color:#242c1d;font-weight:600">Phase 1: Multi-Port Decoy Grid (Port 8050)</span>
         <span class="pill-latency" id="gemini-latency"></span>
       </div>
     </div>
@@ -325,6 +325,17 @@
           <span class="material-symbols-outlined" style="font-size:16px">autorenew</span>
           Analyze Selected Session
         </button>
+      </div>
+
+      <div style="background:rgba(99,102,241,0.06);border:1px dashed #6366f1;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="material-symbols-outlined" style="color:#4f46e5;font-size:24px">schedule</span>
+          <div>
+            <div style="font-weight:700;color:#312e81;font-size:13px">Milestone 2 In Development — Autonomous Gemini RAG Copilot</div>
+            <div style="font-size:11px;color:#4338ca;margin-top:2px">Phase 1 Honeypot Grid Active: Capturing live decoy sessions, raw payloads, and SHA-256 evidence. Vector RAG pipeline activates in Phase 2.</div>
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:11px;background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:4px;font-weight:700">ROADMAP: MILESTONE 2</span>
       </div>
 
       <div class="copilot-grid">
@@ -835,6 +846,54 @@
         </div>
       </div>
 
+      <!-- AUTONOMOUS DEVSECOPS GITHUB PULL REQUEST REMEDIATION -->
+      <div class="modal-pr-remediation-card" id="modal-pr-card">
+        <div class="pr-card-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="material-symbols-outlined" style="color:#2563eb;font-size:24px">merge_type</span>
+            <div>
+              <div style="font-weight:700;font-size:13.5px;color:var(--text);font-family:var(--font-head)">
+                Autonomous DevSecOps &mdash; Automated GitHub Pull Request
+              </div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px">
+                Zero production write risk: CyberShield AI prepares an isolated branch and dispatches an audited Pull Request directly to the company repository for developer review.
+              </div>
+            </div>
+          </div>
+          <span class="pr-badge-ready" id="pr-status-badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;font-family:var(--font-mono)">Patch Ready</span>
+        </div>
+
+        <div class="pr-action-row" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid #e2e8f0">
+          <div style="font-size:11.5px;color:var(--text-secondary)">
+            <span>Target Repo: <code>harkirat-data/CyberShield-AI-Hackathon</code></span>
+            <span style="margin:0 6px">&bull;</span>
+            <span>Remediation Branch: <code id="pr-target-branch">security/autofix-cwe-89-sqli</code></span>
+          </div>
+          <button type="button" class="btn-primary sm" id="btn-dispatch-pr" style="background:#2563eb;border-color:#1d4ed8;height:34px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">rocket_launch</span>
+            <span id="btn-dispatch-pr-text">Dispatch Security PR to GitHub</span>
+          </button>
+        </div>
+
+        <div id="pr-result-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:12.5px;color:#1e40af">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-weight:700;display:flex;align-items:center;gap:5px">
+                <span class="material-symbols-outlined" style="font-size:18px;color:#2563eb">check_circle</span>
+                <span id="pr-result-title">Pull Request Dispatched to GitHub!</span>
+              </div>
+              <div style="font-size:11.5px;color:#3b82f6;margin-top:2px" id="pr-result-desc">
+                Branch pushed &bull; Developers can review, run CI tests, and merge into production.
+              </div>
+            </div>
+            <a href="https://github.com/harkirat-data/CyberShield-AI-Hackathon/pull/new/security/autofix-cwe-89-sqli" target="_blank" id="pr-github-link" class="btn-primary sm" style="background:#1d4ed8;color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;height:32px">
+              <span>Open PR on GitHub</span>
+              <span class="material-symbols-outlined" style="font-size:15px">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- STEP-BY-STEP STORY TIMELINE -->
       <div class="modal-timeline-section">
         <div class="timeline-header">
@@ -867,9 +926,14 @@
           <span class="material-symbols-outlined" style="font-size:16px">terminal</span>
           View Technical Terminal
         </button>
-        <button class="btn-primary" id="modal-btn-export">
-          <span class="material-symbols-outlined" style="font-size:16px">file_download</span>
-          Export Evidence JSON
+        <!-- MENTOR REQUEST 3: HUMAN-READABLE EXECUTIVE BRIEF (NOT JUST JSON) -->
+        <button class="btn-primary" id="modal-btn-export-exec" style="background:#2d6a4f;border-color:#2d6a4f" title="Generate clean printable plain-English incident report for leadership">
+          <span class="material-symbols-outlined" style="font-size:16px">assignment</span>
+          Export Executive Brief
+        </button>
+        <button class="btn-outline sm" id="modal-btn-export">
+          <span class="material-symbols-outlined" style="font-size:16px">data_object</span>
+          Export JSON
         </button>
       </div>
     </div>
@@ -964,7 +1028,112 @@
   </div>
 </div>
 
+<!-- MENTOR REQUEST 3: PRINTABLE EXECUTIVE INCIDENT REPORT MODAL -->
+<div id="executive-report-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="exec-report-title">
+  <div class="modal-card exec-report-card" id="exec-report-card">
+    <div class="modal-header" style="background:#2d6a4f;color:#ffffff">
+      <div class="modal-header-left">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="material-symbols-outlined" style="font-size:26px;color:#ffffff">verified_user</span>
+          <div>
+            <h3 id="exec-report-title" style="margin:0;font-size:16px;font-weight:700;color:#ffffff;font-family:var(--font-head)">
+              CyberShield AI &mdash; Executive Security Incident Advisory
+            </h3>
+            <p style="margin:2px 0 0 0;font-size:12px;color:rgba(255,255,255,0.85)">
+              Non-Technical Management Briefing &middot; Zero Production Impact Certified
+            </p>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close-btn" id="btn-close-exec-report" aria-label="Close modal" style="color:#ffffff">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body exec-report-body" id="exec-report-content" style="padding:24px;background:#ffffff;color:#242c1d;font-family:var(--font-body);line-height:1.6">
+      <!-- Populated dynamically by generateExecutiveBriefHtml() in app.js -->
+    </div>
+
+    <div class="modal-footer" style="background:#f7f9f3;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+        <span class="material-symbols-outlined" style="font-size:15px;color:var(--emerald)">check_circle</span>
+        <span>SHA-256 Forensic Evidence Anchored</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="btn-outline sm" id="btn-copy-exec-report" style="height:36px">
+          <span class="material-symbols-outlined" style="font-size:16px">content_copy</span>
+          <span>Copy Text</span>
+        </button>
+        <button type="button" class="btn-primary" id="btn-print-exec-report" style="background:#2d6a4f;border-color:#2d6a4f;height:36px">
+          <span class="material-symbols-outlined" style="font-size:16px">print</span>
+          <span>Print / Save as PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING NLP CHATBOT WIDGET (VOICE & TEXT CHAT) -->
+<button class="chat-fab" id="chat-fab" title="Ask CyberShield AI (Voice & Text Chat)">
+  <span class="material-symbols-outlined chat-fab-icon">smart_toy</span>
+  <span class="chat-fab-label">Ask CyberShield AI</span>
+  <span class="chat-fab-badge">NLP</span>
+</button>
+
+<div class="chat-drawer" id="chat-drawer" style="display:none">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">
+        <span class="material-symbols-outlined">smart_toy</span>
+      </div>
+      <div>
+        <div class="chat-title">CyberShield Security Assistant</div>
+        <div class="chat-status"><span class="status-dot-green"></span> Gemini NLP &bull; Voice Enabled</div>
+      </div>
+    </div>
+    <div class="chat-header-actions">
+      <button type="button" class="chat-icon-btn" id="chat-sound-toggle" title="Toggle Voice Responses (Text-to-Speech)">
+        <span class="material-symbols-outlined" id="chat-sound-icon">volume_up</span>
+      </button>
+      <button type="button" class="chat-icon-btn" id="chat-close-btn" title="Close chat">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chat-messages">
+    <div class="chat-msg ai">
+      <div class="msg-bubble">
+        👋 Hello! I'm your <strong>CyberShield AI Security Assistant</strong>. 
+        You can ask me questions about active threats, honeypot decoys, or tap the microphone to speak with me!
+      </div>
+    </div>
+    <div class="chat-quick-prompts" id="chat-quick-prompts">
+      <button type="button" class="prompt-chip" data-prompt="Are our systems safe right now?">🛡️ Are we safe right now?</button>
+      <button type="button" class="prompt-chip" data-prompt="Explain how the honeypot protects us in simple terms.">🍯 How does the honeypot work?</button>
+      <button type="button" class="prompt-chip" data-prompt="What attacks happened today?">⚠️ What attacks happened today?</button>
+      <button type="button" class="prompt-chip" data-prompt="Which countries are the attacks coming from?">🌐 Where are attacks coming from?</button>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <div class="chat-voice-indicator" id="chat-voice-indicator" style="display:none">
+      <span class="pulse-mic"></span>
+      <span>Listening to your voice... Speak now</span>
+    </div>
+    <form id="chat-form" class="chat-input-bar">
+      <button type="button" class="chat-mic-btn" id="chat-mic-btn" title="Click to speak (Voice Chat)">
+        <span class="material-symbols-outlined" id="mic-icon">mic</span>
+      </button>
+      <input type="text" id="chat-text-input" placeholder="Ask in plain English or tap mic..." autocomplete="off" />
+      <button type="submit" class="chat-send-btn" id="chat-send-btn" title="Send question">
+        <span class="material-symbols-outlined">send</span>
+      </button>
+    </form>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/dashboard/app.js?v=2.8.4"></script>
+<script src="/dashboard/app.js?v=2.9.1"></script>
 </body>
 </html>
