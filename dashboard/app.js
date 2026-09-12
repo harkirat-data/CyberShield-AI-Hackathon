@@ -721,37 +721,7 @@ function renderSessionTimelineSimple(events = []) {
   }).join("");
 }
 
-// ============================================================
-// AUTONOMOUS DEVSECOPS: GITHUB PULL REQUEST REMEDIATION
-// ============================================================
-function setupPrRemediation() {
-  const btn = $("btn-dispatch-pr");
-  if (!btn) return;
 
-  btn.onclick = () => {
-    const sess = state.selectedSession;
-    const btnText = $("btn-dispatch-pr-text");
-    const banner = $("pr-result-banner");
-    const link = $("pr-github-link");
-
-    if (btnText) btnText.textContent = "Pushing Branch & Preparing PR...";
-    btn.disabled = true;
-
-    const port = sess?.destination_port || 8088;
-    const branchName = (port === 2222 || (sess?.service || "").toLowerCase() === "ssh") 
-      ? "security/autofix-cwe-307-ssh" 
-      : "security/autofix-cwe-89-sqli";
-    const prUrl = `https://github.com/harkirat-data/CyberShield-AI-Hackathon/pull/new/${branchName}`;
-
-    setTimeout(() => {
-      if (btnText) btnText.textContent = "Dispatched!";
-      if (banner) banner.style.display = "block";
-      if (link) link.href = prUrl;
-      toast("Security Remediation Pull Request dispatched to GitHub!");
-      window.open(prUrl, "_blank");
-    }, 700);
-  };
-}
 
 // ============================================================
 // NLP CHATBOT WITH VOICE & TEXT CHAT
@@ -1190,20 +1160,7 @@ function openSessionModal(sess, events = []) {
     if ($("modal-fact-threat-sub")) $("modal-fact-threat-sub").textContent = `Risk score: ${risk}/100`;
   }
 
-  // Setup Autonomous PR Remediation card
-  const prBranchEl = $("pr-target-branch");
-  if (prBranchEl) {
-    const p = sess.destination_port || 8088;
-    prBranchEl.textContent = (p === 2222 || (sess.service || "").toLowerCase() === "ssh") 
-      ? "security/autofix-cwe-307-ssh" 
-      : "security/autofix-cwe-89-sqli";
-  }
-  const prBanner = $("pr-result-banner");
-  if (prBanner) prBanner.style.display = "none";
-  const btnPrText = $("btn-dispatch-pr-text");
-  if (btnPrText) btnPrText.textContent = "Dispatch Security PR to GitHub";
-  const btnPr = $("btn-dispatch-pr");
-  if (btnPr) btnPr.disabled = false;
+
 
   // Timeline
   if ($("modal-timeline-count")) $("modal-timeline-count").textContent = `${events.length} interaction${events.length !== 1 ? "s" : ""} captured`;
@@ -3352,8 +3309,7 @@ function setupButtons() {
     toast("Executive report copied to clipboard!");
   });
 
-  // Autonomous PR Remediation setup
-  setupPrRemediation();
+
 
   // Canary Token deployment
   $("canary-form")?.addEventListener("submit", createCanaryToken);
