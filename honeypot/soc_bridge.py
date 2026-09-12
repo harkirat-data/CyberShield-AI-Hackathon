@@ -15,16 +15,20 @@ AI_ROOT = Path(__file__).resolve().parents[1] / "Ai"
 if str(AI_ROOT) not in sys.path:
     sys.path.insert(0, str(AI_ROOT))
 
-from agents import (  # noqa: E402
-    add_correlation_event,
-    correlate,
-    map_mitre,
-    score_risk,
-    threat_intel_check,
-    get_alert_manager,
-    SecurityAlert,
-)
-from schema import Event  # noqa: E402
+try:
+    from agents import (  # noqa: E402
+        add_correlation_event,
+        correlate,
+        map_mitre,
+        score_risk,
+        threat_intel_check,
+        get_alert_manager,
+        SecurityAlert,
+    )
+    from schema import Event  # noqa: E402
+    HAVE_SOC_AGENTS = True
+except ImportError:
+    HAVE_SOC_AGENTS = False
 
 
 class SocBridge:
@@ -51,6 +55,30 @@ class SocBridge:
             if telemetry.event_type not in {"HONEYPOT_INTERACTION", "DECOY_COMMAND"}
             else intent.event_type
         )
+        if not HAVE_SOC_AGENTS:
+            score = 85 if intent.severity == "critical" else (65 if intent.severity == "high" else (45 if intent.severity == "medium" else 20))
+            level = intent.severity or "info"
+            techniques = ["T1046: Network Service Discovery", "T1110: Brute Force"] if "Brute" in intent.label else ["T1046: Network Service Discovery"]
+            rationale = f"Phase 1 Honeypot Intent Classifier: {intent.label} ({intent.confidence:.0%}) detected on service '{session.get('service')}'"
+            result = {
+                "event": {"event_id": telemetry.event_id, "event_type": event_type, "severity": level},
+                "risk": {"score": score, "level": level, "rationale": rationale},
+                "intent": {"label": intent.label, "confidence": intent.confidence},
+                "mitre": {"techniques": techniques, "tactics": ["Discovery"]},
+                "safety": {"sandboxed": True, "executed": False},
+            }
+            self.store.save_investigation(
+                event_id=telemetry.event_id,
+                session_id=telemetry.session_id,
+                risk_score=score,
+                risk_level=level,
+                intent=intent.label,
+                intent_confidence=intent.confidence,
+                mitre=techniques,
+                rationale=rationale,
+                investigation=result,
+            )
+            return result
         event = Event.from_dict(
             {
                 "event_id": telemetry.event_id,
