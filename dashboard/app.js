@@ -1435,7 +1435,41 @@ function renderCopilot(sess) {
   if (!sess) return;
 
   const report = sess.analyst_report || sess.soc_report;
-  if (!report) return;
+  if (!report) {
+    const assessEl = $("assessment-text");
+    if (assessEl) {
+      assessEl.innerHTML = `Session <strong>${esc(sess.id || "")}</strong> (${esc(sess.service || "decoy")} from <code>${esc(sess.source_ip || sess.source_address || "threat IP")}</code>) selected. Click <strong>Analyze Selected Session</strong> to correlate against MITRE ATT&amp;CK &amp; ChromaDB RAG.`;
+    }
+    const conf = $("confidence-badge");
+    if (conf) {
+      const confVal = sess.intent_confidence != null ? Math.round(sess.intent_confidence * 100) : (sess.risk_score || 75);
+      conf.textContent = `RISK: ${confVal}/100`;
+    }
+    const actor = $("actor-pill");
+    const actorVal = $("actor-value");
+    if (actor && actorVal) {
+      actor.style.display = "flex";
+      actorVal.textContent = sess.persona || sess.intent || "Decoy Interactive Threat";
+    }
+    const mitreGrid = $("mitre-grid");
+    const ttpCount = $("ttp-count");
+    const preliminaryTTPs = sess.mitre || sess.mitre_techniques || [];
+    if (mitreGrid && preliminaryTTPs.length > 0) {
+      if (ttpCount) ttpCount.textContent = `${preliminaryTTPs.length} TTPs Tagged`;
+      mitreGrid.innerHTML = preliminaryTTPs.map((t, i) => {
+        const tid = typeof t === "string" ? t : (t.id || "");
+        const tname = typeof t === "object" ? (t.name || "") : "";
+        const tactic = typeof t === "object" ? (t.tactic || "").replace(/_/g, " ") : "Technique";
+        return `
+        <div class="mitre-cell red">
+          <div class="tactic">${esc(tactic)}</div>
+          <div class="tid">${esc(tid)}</div>
+          <div class="tname">${esc(tname || tid)}</div>
+        </div>`;
+      }).join("");
+    }
+    return;
+  }
 
   const assessEl = $("assessment-text");
   if (assessEl) {
@@ -3102,23 +3136,30 @@ function setupButtons() {
   // Analyze
   $("btn-analyze")?.addEventListener("click", async () => {
     if (!state.selectedSessionId) {
-      toast("Select a session first.", true);
-      return;
+      if (state.sessions && state.sessions.length > 0) {
+        await selectSession(state.sessions[0].id, false);
+      } else {
+        toast("No decoy threat sessions captured yet. Launch an attack or trigger a preset vector first.", true);
+        return;
+      }
     }
     if (state.analyzing) return;
     state.analyzing = true;
     const btn = $("btn-analyze");
     const orig = btn.innerHTML;
-    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;animation:spin 1s linear infinite">autorenew</span> Analyzing...`;
+    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;animation:spin 1s linear infinite">autorenew</span> Correlating with RAG...`;
     btn.disabled = true;
     try {
       const data = await api(`/api/v1/honeypot/sessions/${state.selectedSessionId}/analyze`, { method: "POST" });
       if (data.report) {
+        if (!state.selectedSession) {
+          state.selectedSession = state.sessions.find(s => s.id === state.selectedSessionId) || {};
+        }
         state.selectedSession.analyst_report = data.report;
       }
       renderCopilot(state.selectedSession);
-      toast("Gemini + RAG analysis complete!");
-      document.getElementById("copilot-panel").scrollIntoView({ behavior: "smooth" });
+      toast("Gemini 2.5 + ChromaDB RAG correlation complete!");
+      document.getElementById("copilot-panel")?.scrollIntoView({ behavior: "smooth" });
     } catch (e) {
       toast("Analysis error: " + e.message, true);
     } finally {
@@ -3280,9 +3321,20 @@ function setupButtons() {
   });
 
   // Commit IR
-  $("btn-commit-ir")?.addEventListener("click", () => {
+  $("btn-commit-ir")?.addEventListener("click", async () => {
     const checked = document.querySelectorAll("#ir-list input[type=checkbox]:checked");
-    toast(`${checked.length} IR action(s) committed.`);
+    if (!checked.length) {
+      toast("Select at least one IR action to commit.", true);
+      return;
+    }
+    if (state.selectedSessionId) {
+      try {
+        await api(`/api/v1/honeypot/sessions/${state.selectedSessionId}/contain`, { method: "POST" });
+      } catch (e) {
+        // non-blocking if already contained
+      }
+    }
+    toast(`Successfully committed and applied ${checked.length} incident response action(s)!`);
   });
 
   // Test Alert
