@@ -204,6 +204,61 @@ async def contain_session(session_id: str) -> Dict[str, Any]:
     return {"ok": True, "session_id": session_id, "status": "contained"}
 
 
+@app.post("/api/v1/honeypot/sessions/{session_id}/inject")
+async def inject_into_session(session_id: str, body: Dict[str, Any]) -> Dict[str, Any]:
+    sess = store.get_session(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    content = str(body.get("content", "")).strip()
+    direction = str(body.get("direction", "operator"))
+    
+    cmd_lower = content.lower()
+    is_attack_cmd = (
+        cmd_lower.startswith("curl") 
+        or cmd_lower.startswith("http") 
+        or cmd_lower.startswith("get ") 
+        or cmd_lower.startswith("post ")
+    )
+    
+    exec_output = None
+    if is_attack_cmd:
+        try:
+            cmd = content
+            if not cmd_lower.startswith("curl"):
+                cmd = f"curl.exe -k -s {content}"
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=4.0)
+            exec_output = (stdout or stderr).decode("utf-8", errors="ignore") or "Probe executed successfully."
+        except Exception as exc:
+            exec_output = f"Executed probe: {exc}"
+        
+        evt = TelemetryEvent(
+            session_id=session_id,
+            event_type="attacker_action",
+            severity="high",
+            direction="inbound",
+            content=f"{content}\n[Decoy Response]: {exec_output[:300]}",
+        )
+        stored_dict = store.record_event(evt)
+        return {"ok": True, "executed": True, "event": stored_dict, "output": exec_output}
+
+    evt = TelemetryEvent(
+        session_id=session_id,
+        event_type="operator_injection",
+        severity="info",
+        direction="operator",
+        content=content,
+        metadata={"operator": "SOC Analyst", "manual_injection": True},
+    )
+    stored_dict = store.record_event(evt)
+    return {"ok": True, "executed": False, "event": stored_dict}
+
+
 @app.post("/api/v1/honeypot/block-source")
 async def block_source_ip(body: Dict[str, Any]) -> Dict[str, Any]:
     ip = body.get("source_ip") or body.get("ip")
