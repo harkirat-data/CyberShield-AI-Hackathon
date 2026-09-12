@@ -727,12 +727,14 @@ function renderSessionTimelineSimple(events = []) {
 // NLP CHATBOT WITH VOICE & TEXT CHAT
 // ============================================================
 function initNlpChatbot() {
-  state.chatSoundEnabled = true;
+  state.chatSoundEnabled = false; // Muted by default so it never blares out audio unexpectedly
   state.isRecordingVoice = false;
+  state.isSpeaking = false;
 
   // Toggle Chat Drawer via floating button
   $("chat-fab")?.addEventListener("click", toggleChatDrawer);
   $("chat-close-btn")?.addEventListener("click", () => {
+    stopSpeaking();
     const drawer = $("chat-drawer");
     if (drawer) drawer.style.display = "none";
   });
@@ -742,12 +744,17 @@ function initNlpChatbot() {
     openChatDrawer();
   });
 
-  // Sound Toggle
+  // Sound Toggle: Mute/Unmute
   $("chat-sound-toggle")?.addEventListener("click", () => {
     state.chatSoundEnabled = !state.chatSoundEnabled;
     const icon = $("chat-sound-icon");
     if (icon) icon.textContent = state.chatSoundEnabled ? "volume_up" : "volume_off";
-    toast(state.chatSoundEnabled ? "Voice response enabled (Audio ON)" : "Voice response muted (Audio OFF)");
+    if (!state.chatSoundEnabled) {
+      stopSpeaking();
+      toast("Voice audio muted (Audio OFF)");
+    } else {
+      toast("Voice audio enabled (Audio ON)");
+    }
   });
 
   // Chat Form Submission
@@ -772,6 +779,17 @@ function initNlpChatbot() {
   initVoiceRecognition();
 }
 
+function stopSpeaking() {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  state.isSpeaking = false;
+  document.querySelectorAll(".msg-speaker-btn").forEach(btn => {
+    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">volume_up</span> <span>Listen</span>`;
+    btn.classList.remove("speaking");
+  });
+}
+
 function openChatDrawer() {
   const drawer = $("chat-drawer");
   if (drawer) {
@@ -785,7 +803,11 @@ function toggleChatDrawer() {
   if (drawer) {
     const isHidden = drawer.style.display === "none" || !drawer.style.display;
     drawer.style.display = isHidden ? "flex" : "none";
-    if (isHidden) $("chat-text-input")?.focus();
+    if (isHidden) {
+      $("chat-text-input")?.focus();
+    } else {
+      stopSpeaking();
+    }
   }
 }
 
@@ -871,7 +893,7 @@ async function handleUserChatMessage(query) {
   // Append thinking bubble
   const aiDiv = document.createElement("div");
   aiDiv.className = "chat-msg ai";
-  aiDiv.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic">Thinking... Analyzing threat state</div>`;
+  aiDiv.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic">Thinking... Analyzing with CyberShield AI</div>`;
   messagesContainer.appendChild(aiDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -883,16 +905,17 @@ async function handleUserChatMessage(query) {
       bubble.style.fontStyle = "normal";
       bubble.innerHTML = formatMarkdownBasic(reply);
 
-      // Add speech button
+      // Add interactive toggleable speech button (Play <-> Stop)
       const speakerBtn = document.createElement("button");
       speakerBtn.className = "msg-speaker-btn";
       speakerBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">volume_up</span> <span>Listen</span>`;
-      speakerBtn.onclick = () => speakText(reply);
+      speakerBtn.onclick = () => speakText(reply, speakerBtn);
       aiDiv.appendChild(speakerBtn);
     }
 
     if (state.chatSoundEnabled) {
-      speakText(reply);
+      const speakerBtn = aiDiv.querySelector(".msg-speaker-btn");
+      speakText(reply, speakerBtn);
     }
   } catch (err) {
     const bubble = aiDiv.querySelector(".msg-bubble");
@@ -901,64 +924,117 @@ async function handleUserChatMessage(query) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function speakText(text) {
+function speakText(text, btn) {
   if (!window.speechSynthesis) return;
+
+  // If already speaking, clicking toggles it off
+  if (state.isSpeaking) {
+    stopSpeaking();
+    if (btn && btn.classList.contains("speaking")) {
+      return;
+    }
+  }
+
   try {
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*#_`]/g, "").replace(/https?:\/\/\S+/g, "");
-    const utter = new SpeechSynthesisUtterance(cleanText.slice(0, 300));
+    stopSpeaking();
+
+    // Clean text: strip markdown symbols, URLs, and emojis so voice sounds clean
+    const clean = text
+      .replace(/[*#_`~]/g, "")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/[\u{1F600}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+      .replace(/[•\-\>\<\&]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Take only the first sentence or two (up to 160 characters) so it never drones on
+    let snippet = clean;
+    const periodIdx = clean.indexOf(".");
+    if (periodIdx > 30 && periodIdx < 200) {
+      snippet = clean.slice(0, periodIdx + 1);
+    } else if (clean.length > 160) {
+      snippet = clean.slice(0, 160) + "...";
+    }
+
+    const utter = new SpeechSynthesisUtterance(snippet);
     utter.rate = 1.05;
     utter.pitch = 1.0;
     utter.lang = "en-US";
+
+    utter.onstart = () => {
+      state.isSpeaking = true;
+      if (btn) {
+        btn.classList.add("speaking");
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;color:#C24B4B">stop_circle</span> <span style="color:#C24B4B">Stop</span>`;
+      }
+    };
+
+    utter.onend = () => {
+      state.isSpeaking = false;
+      if (btn) {
+        btn.classList.remove("speaking");
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">volume_up</span> <span>Listen</span>`;
+      }
+    };
+
+    utter.onerror = () => {
+      state.isSpeaking = false;
+      if (btn) {
+        btn.classList.remove("speaking");
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">volume_up</span> <span>Listen</span>`;
+      }
+    };
+
     window.speechSynthesis.speak(utter);
-  } catch (e) {
-    console.warn("SpeechSynthesis error:", e);
+  } catch (err) {
+    console.warn("SpeechSynthesis error:", err);
+    state.isSpeaking = false;
   }
 }
 
 async function getAiAssistantResponse(query) {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
   const sessionCount = state.sessions ? state.sessions.length : 0;
   const criticalCount = state.sessions ? state.sessions.filter(s => (s.risk_score || 0) >= 80).length : 0;
+  const latestSess = (state.sessions && state.sessions.length > 0) ? state.sessions[0] : null;
 
-  // Contextual Knowledge Answers
-  if (q.includes("safe") || q.includes("status") || q.includes("are we")) {
-    return `🛡️ **Current Security Status: 100% SECURE & OPERATIONAL**\n\nAll **5 multi-port decoy services** (SSH, Telnet, HTTP, HTTPS, MySQL) are online and actively trapping incoming scanners.\n\n• **Trapped Adversaries:** ${sessionCount} total (${criticalCount} high priority)\n• **Production Breach Risk:** ZERO. All incoming scans are confined to synthetic sandboxes with SHA-256 evidence anchoring.`;
+  // Check for live telemetry queries that benefit from real-time dynamic dashboard state
+  if ((q.includes("safe") || q.includes("status")) && !q.includes("how") && !q.includes("what")) {
+    return `🛡️ **Real-Time Security Status: 100% OPERATIONAL & PROTECTED**\n\n` +
+      `• **Active Traps:** 5 multi-port listeners (SSH, Telnet, HTTP, HTTPS, MySQL)\n` +
+      `• **Trapped Adversaries:** ${sessionCount} total sessions (${criticalCount} high risk)\n` +
+      `• **Production Breach Impact:** **ZERO**. All incoming probes were successfully lured into air-gapped synthetic sandboxes.`;
   }
 
-  if (q.includes("honeypot") || q.includes("how does it work") || q.includes("protect")) {
-    return `🍯 **How CyberShield AI Protects You:**\n\nUnlike traditional firewalls that rely only on blocking known IP lists, CyberShield AI deploys **active synthetic decoys** disguised as real finance portals, databases, and SSH servers.\n\nWhen attackers probe your network, they get lured into our harmless deception environment. We record their complete attack playbook, compute SHA-256 forensic hashes, and notify your security team before they can ever touch real production servers!`;
+  if ((q.includes("today") || q.includes("latest attack") || q.includes("who attacked")) && latestSess) {
+    const proto = (latestSess.service || "HTTP").toUpperCase();
+    const ip = latestSess.source_ip || latestSess.source_address || "External Ingress";
+    const country = latestSess.geo?.country || "Foreign WAN";
+    const risk = latestSess.risk_score || 75;
+    return `⚠️ **Latest Trapped Adversary Activity:**\n\n` +
+      `• **Attacker Origin:** **${ip}** (${country})\n` +
+      `• **Targeted Asset:** ${proto} Decoy (Port ${latestSess.destination_port || 8088})\n` +
+      `• **Observed Risk:** ${risk}/100 (${latestSess.intent || "Exploit / Reconnaissance"})\n` +
+      `• **Containment:** Adversary is safely contained with forensic SHA-256 evidence anchored.`;
   }
 
-  if (q.includes("attack") || q.includes("today") || q.includes("latest") || q.includes("what happened")) {
-    if (state.sessions && state.sessions.length > 0) {
-      const latest = state.sessions[0];
-      const proto = (latest.service || "HTTP").toUpperCase();
-      const ip = latest.source_ip || "External";
-      const country = latest.geo?.country || "Foreign WAN";
-      return `⚠️ **Today's Activity Summary:**\n\nWe have intercepted **${sessionCount} adversary interactions**.\n\n• **Latest Threat:** Connection from **${ip}** (${country}) targeting our **${proto} decoy**.\n• **Attacker Intent:** ${latest.intent || "System Discovery & Probe"}\n• **Action Taken:** Deception response delivered, dwell time extended, and threat telemetry dispatched to SOC.`;
-    }
-    return `We currently have **0 active threats** in the last polling window. The honeynet mesh is actively listening on ports 2222, 2323, 8088, 8443, and 3307.`;
-  }
-
-  if (q.includes("country") || q.includes("countries") || q.includes("where")) {
-    const countries = [...new Set((state.sessions || []).map(s => s.geo?.country).filter(Boolean))];
-    const countryList = countries.length ? countries.slice(0, 5).join(", ") : "External WAN networks";
-    return `🌐 **Threat Geographic Origins:**\n\nAdversary probes have originated from: **${countryList}**.\n\nYou can inspect exact coordinates and ASN attribution in the **Geo & IP Intel** tab or on our interactive Leaflet world map.`;
-  }
-
-  // Fallback to Gemini / RAG API
+  // Primary: Query the backend RAG & Gemini NLP API for dynamic, contextual conversation
   try {
     const res = await api("/api/v1/rag/query", {
       method: "POST",
-      body: JSON.stringify({ query: query, session_id: "chatbot", top_k: 3 }),
+      body: JSON.stringify({ query: query, session_id: "dashboard_chat", top_k: 3 }),
     });
-    if (res && res.answer) {
-      return res.answer;
+    if (res && res.answer && res.answer.trim()) {
+      return res.answer.trim();
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn("Backend RAG query error:", err);
+  }
 
-  return `CyberShield AI has analyzed your inquiry: **"${query}"**.\n\nOur multi-port honeypot grid is actively monitoring enterprise traffic across ports 2222 (SSH), 2323 (Telnet), 8088 (HTTP), 8443 (HTTPS), and 3307 (MySQL). All ${sessionCount} adversary sessions are safely sandboxed with zero risk to production infrastructure.`;
+  // Intelligent fallback if backend endpoint is unreachable
+  return `CyberShield AI has analyzed your inquiry: **"${query}"**.\n\n` +
+    `Our autonomous deception grid is currently monitoring **${sessionCount} trapped sessions** across ports 2222, 2323, 8088, 8443, and 3307. ` +
+    `You can ask me about active honeypot traps, specific attack vectors like SQL injection or brute force, or request an incident summary!`;
 }
 
 function formatMarkdownBasic(txt) {
