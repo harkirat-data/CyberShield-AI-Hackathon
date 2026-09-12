@@ -73,20 +73,34 @@ class HoneypotRuntime:
             return self.status()
         self._service_state = {}
         for profile in self.settings.services:
-            try:
-                tls = self._tls_context() if profile.protocol == "https" else None
-                server = await asyncio.start_server(
-                    lambda reader, writer, selected=profile: self._handle_connection(
-                        selected, reader, writer
-                    ),
-                    host=self.settings.bind_host,
-                    port=profile.port,
-                    ssl=tls,
-                    limit=max(self.settings.max_input_bytes * 2, 65_536),
-                )
+            tls = self._tls_context() if profile.protocol == "https" else None
+            ports_to_try = [profile.port]
+            if profile.protocol == "mysql" and 33061 not in ports_to_try:
+                ports_to_try.extend([33061, 3307])
+
+            server = None
+            bound_port = profile.port
+            last_exc = None
+            for p in ports_to_try:
+                try:
+                    server = await asyncio.start_server(
+                        lambda reader, writer, selected=profile: self._handle_connection(
+                            selected, reader, writer
+                        ),
+                        host=self.settings.bind_host,
+                        port=p,
+                        ssl=tls,
+                        limit=max(self.settings.max_input_bytes * 2, 65_536),
+                    )
+                    sockets = server.sockets or []
+                    bound_port = sockets[0].getsockname()[1] if sockets else p
+                    break
+                except Exception as exc:
+                    last_exc = exc
+                    server = None
+
+            if server is not None:
                 self._servers[profile.key] = server
-                sockets = server.sockets or []
-                bound_port = sockets[0].getsockname()[1] if sockets else profile.port
                 self._service_state[profile.key] = {
                     "key": profile.key,
                     "name": profile.name,
@@ -99,7 +113,7 @@ class HoneypotRuntime:
                     "status": "listening",
                     "error": None,
                 }
-            except Exception as exc:
+            else:
                 self._service_state[profile.key] = {
                     "key": profile.key,
                     "name": profile.name,
@@ -110,9 +124,9 @@ class HoneypotRuntime:
                     "product": profile.product,
                     "persona": profile.persona,
                     "status": "failed",
-                    "error": str(exc),
+                    "error": str(last_exc),
                 }
-                print(f"[honeypot] failed to bind {profile.name}:{profile.port}: {exc}")
+                print(f"[honeypot] failed to bind {profile.name}:{profile.port}: {last_exc}")
         return self.status()
 
     async def stop(self) -> Dict[str, Any]:
@@ -163,10 +177,11 @@ class HoneypotRuntime:
         return len(matching)
 
     def status(self) -> Dict[str, Any]:
-        active = self.store.list_sessions(limit=500, status="active")
         active_counts: Dict[str, int] = defaultdict(int)
-        for session in active:
-            active_counts[str(session["service"])] += 1
+        for session_id in list(self._writers.keys()):
+            session = self.store.get_session(session_id)
+            if session:
+                active_counts[str(session.get("service", ""))] += 1
         services = []
         known = self._service_state or {
             profile.key: {
