@@ -102,18 +102,6 @@
       </div>
     </div>
     <div class="topbar-right">
-      <!-- MENTOR REQUEST 4: EXECUTIVE VS TECHNICAL VIEW TOGGLE -->
-      <div class="view-mode-toggle" id="view-mode-toggle" title="Switch between Executive Layman View and Technical SOC View">
-        <button type="button" class="view-mode-btn active" id="btn-mode-executive" data-mode="executive">
-          <span class="material-symbols-outlined" style="font-size:14px">sentiment_satisfied</span>
-          <span>Executive Layman</span>
-        </button>
-        <button type="button" class="view-mode-btn" id="btn-mode-technical" data-mode="technical">
-          <span class="material-symbols-outlined" style="font-size:14px">terminal</span>
-          <span>Technical SOC</span>
-        </button>
-      </div>
-
       <div class="search-box">
         <span class="material-symbols-outlined" style="font-size:17px;color:#8ca4ac">search</span>
         <input type="text" id="search-input" placeholder="Filter honeypots, IPs, IOC hashes..." autocomplete="off">
@@ -858,50 +846,51 @@
         </div>
       </div>
 
-      <!-- MENTOR REQUEST 2: MATHEMATICAL RISK CALCULATION BREAKDOWN -->
-      <div class="modal-risk-breakdown-section" id="modal-risk-breakdown-section">
-        <div class="breakdown-header">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="material-symbols-outlined" style="color:var(--rose);font-size:18px">calculate</span>
-            <span class="breakdown-title">Explainable Risk Calculation Formula</span>
+      <!-- AUTONOMOUS DEVSECOPS GITHUB PULL REQUEST REMEDIATION -->
+      <div class="modal-pr-remediation-card" id="modal-pr-card">
+        <div class="pr-card-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="material-symbols-outlined" style="color:#2563eb;font-size:24px">merge_type</span>
+            <div>
+              <div style="font-weight:700;font-size:13.5px;color:var(--text);font-family:var(--font-head)">
+                Autonomous DevSecOps &mdash; Automated GitHub Pull Request
+              </div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px">
+                Zero production write risk: CyberShield AI prepares an isolated branch and dispatches an audited Pull Request directly to the company repository for developer review.
+              </div>
+            </div>
           </div>
-          <span class="breakdown-badge" id="modal-risk-formula-total">Total: 90 / 100</span>
+          <span class="pr-badge-ready" id="pr-status-badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;font-family:var(--font-mono)">Patch Ready</span>
         </div>
-        <p class="breakdown-sub" style="font-size:11px;color:var(--text-muted);margin:4px 0 10px 0">
-          Deterministic additive point model: Base Severity + Attack Payload + Threat Intel Feed + Velocity + Correlation
-        </p>
-        <div class="breakdown-formula-grid" id="modal-risk-formula-grid">
-          <!-- Populated by JS -->
-        </div>
-      </div>
 
-      <!-- MENTOR REQUEST 4: ROOT CAUSE & SECURE CODE PATCH ("FIXING THE LEAK") -->
-      <div class="modal-patch-section" id="modal-patch-section">
-        <div class="patch-header">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">build_circle</span>
-            <span class="patch-title">Vulnerability Root Cause &amp; Remediation Patch</span>
+        <div class="pr-action-row" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid #e2e8f0">
+          <div style="font-size:11.5px;color:var(--text-secondary)">
+            <span>Target Repo: <code>harkirat-data/CyberShield-AI-Hackathon</code></span>
+            <span style="margin:0 6px">&bull;</span>
+            <span>Remediation Branch: <code id="pr-target-branch">security/autofix-cwe-89-sqli</code></span>
           </div>
-          <span class="cwe-pill" id="modal-patch-cwe">CWE-89: SQL Injection</span>
+          <button type="button" class="btn-primary sm" id="btn-dispatch-pr" style="background:#2563eb;border-color:#1d4ed8;height:34px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">rocket_launch</span>
+            <span id="btn-dispatch-pr-text">Dispatch Security PR to GitHub</span>
+          </button>
         </div>
-        <div class="patch-leak-location" id="modal-patch-location" style="margin:8px 0;font-size:12px;color:var(--text-secondary)">
-          <strong>Leak Location:</strong> <code id="modal-patch-file" style="background:#eee;padding:2px 5px;border-radius:3px">/admin/portal.php (Line 42)</code>
-          &mdash; <span id="modal-patch-desc">Untrusted query parameter concatenation allows arbitrary SQL command injection.</span>
-        </div>
-        <div class="code-diff-grid">
-          <div class="code-diff-col vulnerable">
-            <div class="diff-title"><span class="material-symbols-outlined" style="font-size:14px;color:var(--rose)">cancel</span> Vulnerable Code (The Leak)</div>
-            <pre class="diff-code" id="modal-diff-vuln"></pre>
+
+        <div id="pr-result-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:12.5px;color:#1e40af">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-weight:700;display:flex;align-items:center;gap:5px">
+                <span class="material-symbols-outlined" style="font-size:18px;color:#2563eb">check_circle</span>
+                <span id="pr-result-title">Pull Request Dispatched to GitHub!</span>
+              </div>
+              <div style="font-size:11.5px;color:#3b82f6;margin-top:2px" id="pr-result-desc">
+                Branch pushed &bull; Developers can review, run CI tests, and merge into production.
+              </div>
+            </div>
+            <a href="https://github.com/harkirat-data/CyberShield-AI-Hackathon/pull/new/security/autofix-cwe-89-sqli" target="_blank" id="pr-github-link" class="btn-primary sm" style="background:#1d4ed8;color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;height:32px">
+              <span>Open PR on GitHub</span>
+              <span class="material-symbols-outlined" style="font-size:15px">open_in_new</span>
+            </a>
           </div>
-          <div class="code-diff-col secure">
-            <div class="diff-title"><span class="material-symbols-outlined" style="font-size:14px;color:var(--emerald)">check_circle</span> Secure Patched Code (The Fix)</div>
-            <pre class="diff-code" id="modal-diff-secure"></pre>
-          </div>
-        </div>
-        <div class="patch-firewall-action">
-          <span style="font-size:12px;color:var(--text-secondary);font-weight:600">Perimeter Firewall Patch:</span>
-          <code id="modal-patch-cmd">sudo ufw deny from &lt;ATTACKER_IP&gt;</code>
-          <button type="button" class="btn-copy-patch" id="btn-copy-patch" title="Copy patch command">Copy</button>
         </div>
       </div>
 
@@ -1084,7 +1073,67 @@
   </div>
 </div>
 
+<!-- FLOATING NLP CHATBOT WIDGET (VOICE & TEXT CHAT) -->
+<button class="chat-fab" id="chat-fab" title="Ask CyberShield AI (Voice & Text Chat)">
+  <span class="material-symbols-outlined chat-fab-icon">smart_toy</span>
+  <span class="chat-fab-label">Ask CyberShield AI</span>
+  <span class="chat-fab-badge">NLP</span>
+</button>
+
+<div class="chat-drawer" id="chat-drawer" style="display:none">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">
+        <span class="material-symbols-outlined">smart_toy</span>
+      </div>
+      <div>
+        <div class="chat-title">CyberShield Security Assistant</div>
+        <div class="chat-status"><span class="status-dot-green"></span> Gemini NLP &bull; Voice Enabled</div>
+      </div>
+    </div>
+    <div class="chat-header-actions">
+      <button type="button" class="chat-icon-btn" id="chat-sound-toggle" title="Toggle Voice Responses (Text-to-Speech)">
+        <span class="material-symbols-outlined" id="chat-sound-icon">volume_up</span>
+      </button>
+      <button type="button" class="chat-icon-btn" id="chat-close-btn" title="Close chat">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chat-messages">
+    <div class="chat-msg ai">
+      <div class="msg-bubble">
+        👋 Hello! I'm your <strong>CyberShield AI Security Assistant</strong>. 
+        You can ask me questions about active threats, honeypot decoys, or tap the microphone to speak with me!
+      </div>
+    </div>
+    <div class="chat-quick-prompts" id="chat-quick-prompts">
+      <button type="button" class="prompt-chip" data-prompt="Are our systems safe right now?">🛡️ Are we safe right now?</button>
+      <button type="button" class="prompt-chip" data-prompt="Explain how the honeypot protects us in simple terms.">🍯 How does the honeypot work?</button>
+      <button type="button" class="prompt-chip" data-prompt="What attacks happened today?">⚠️ What attacks happened today?</button>
+      <button type="button" class="prompt-chip" data-prompt="Which countries are the attacks coming from?">🌐 Where are attacks coming from?</button>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <div class="chat-voice-indicator" id="chat-voice-indicator" style="display:none">
+      <span class="pulse-mic"></span>
+      <span>Listening to your voice... Speak now</span>
+    </div>
+    <form id="chat-form" class="chat-input-bar">
+      <button type="button" class="chat-mic-btn" id="chat-mic-btn" title="Click to speak (Voice Chat)">
+        <span class="material-symbols-outlined" id="mic-icon">mic</span>
+      </button>
+      <input type="text" id="chat-text-input" placeholder="Ask in plain English or tap mic..." autocomplete="off" />
+      <button type="submit" class="chat-send-btn" id="chat-send-btn" title="Send question">
+        <span class="material-symbols-outlined">send</span>
+      </button>
+    </form>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/dashboard/app.js?v=2.9.0"></script>
+<script src="/dashboard/app.js?v=2.9.1"></script>
 </body>
 </html>

@@ -2237,230 +2237,328 @@ body {
 }
 
 /* =============================================
-   MENTOR REQUEST UPGRADES (CSS)
+   AUTONOMOUS DEVSECOPS GITHUB PR REMEDIATION
    ============================================= */
-
-/* 1. View Mode Switch in Header */
-.view-mode-toggle {
+.modal-pr-remediation-card {
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-top: 14px;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+}
+.pr-card-header {
   display: flex;
   align-items: center;
-  background: var(--surface-low);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2px;
-  gap: 2px;
+  justify-content: space-between;
 }
-.view-mode-btn {
+
+/* =============================================
+   NLP CHATBOT WITH VOICE & TEXT CHAT (CSS)
+   ============================================= */
+.chat-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #242c1d;
+  color: #ffffff;
+  border: 1px solid #8B9A6E;
+  border-radius: 30px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(36, 44, 29, 0.28);
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-body);
+}
+.chat-fab:hover {
+  background: #2d3824;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(36, 44, 29, 0.35);
+  border-color: #a3b284;
+}
+.chat-fab-icon {
+  font-size: 20px;
+  color: #8B9A6E;
+}
+.chat-fab-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: var(--font-head);
+  letter-spacing: -0.2px;
+}
+.chat-fab-badge {
+  background: #8B9A6E;
+  color: #242c1d;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Chat Drawer Window */
+.chat-drawer {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 390px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 110px);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(36, 44, 29, 0.25);
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  overflow: hidden;
+  animation: chatSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes chatSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chat-header {
+  background: #242c1d;
+  color: #ffffff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #3b4731;
+}
+.chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chat-avatar {
+  width: 34px;
+  height: 34px;
+  background: #3b4731;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8B9A6E;
+  border: 1px solid #8B9A6E;
+}
+.chat-title {
+  font-family: var(--font-head);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.chat-status {
+  font-size: 11px;
+  color: #a3b284;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-dot-green {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8B9A6E;
+  display: inline-block;
+}
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-icon-btn {
+  background: transparent;
+  border: none;
+  color: #c7d1be;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.chat-icon-btn:hover {
+  background: #3b4731;
+  color: #ffffff;
+}
+
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fdfcf9;
+}
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 86%;
+}
+.chat-msg.ai {
+  align-self: flex-start;
+}
+.chat-msg.user {
+  align-self: flex-end;
+}
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.48;
+}
+.chat-msg.ai .msg-bubble {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-top-left-radius: 3px;
+  box-shadow: 0 1px 3px rgba(36, 44, 29, 0.05);
+}
+.chat-msg.user .msg-bubble {
+  background: #242c1d;
+  color: #ffffff;
+  border-top-right-radius: 3px;
+}
+.msg-speaker-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-body);
+  gap: 3px;
+}
+.msg-speaker-btn:hover {
+  color: var(--primary);
+}
+
+.chat-quick-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.prompt-chip {
+  background: #ffffff;
+  border: 1px solid #dfd7c9;
+  border-radius: 20px;
+  padding: 7px 12px;
   font-size: 11.5px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 16px;
+  color: var(--text);
+  text-align: left;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.view-mode-btn:hover {
-  color: var(--text);
-}
-.view-mode-btn.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 3px rgba(36, 44, 29, 0.12);
-}
-.view-mode-btn.active[data-mode="executive"] {
-  color: #2d6a4f;
-}
-
-/* 2. Mathematical Risk Formula Breakdown */
-.modal-risk-breakdown-section {
-  background: #fdfaf6;
-  border: 1px solid #f0e6d6;
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-top: 14px;
-}
-.breakdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.breakdown-title {
-  font-family: var(--font-head);
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-}
-.breakdown-badge {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  background: #faeaea;
-  color: #C24B4B;
-  padding: 2px 8px;
-  border-radius: 12px;
-  border: 1px solid #fbdada;
-}
-.breakdown-formula-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-.formula-item {
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 10px;
-  min-width: 100px;
-}
-.formula-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.formula-val {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin-top: 2px;
-}
-.formula-val.pts-high { color: #C24B4B; }
-.formula-val.pts-med { color: #C98A3C; }
-.formula-val.pts-base { color: #2d6a4f; }
-.formula-op {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-/* 3. Vulnerability Root Cause & Code Patch */
-.modal-patch-section {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-top: 14px;
-}
-.patch-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.patch-title {
-  font-family: var(--font-head);
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-}
-.cwe-pill {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  background: #eef3e7;
-  color: #2d6a4f;
-  padding: 2px 8px;
-  border-radius: 12px;
-  border: 1px solid #8B9A6E;
-}
-.code-diff-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin: 10px 0;
-}
-@media (min-width: 640px) {
-  .code-diff-grid { grid-template-columns: 1fr 1fr; }
-}
-.code-diff-col {
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-  background: #1e1e1e;
-}
-.code-diff-col.vulnerable {
-  border-color: #fbdada;
-}
-.code-diff-col.secure {
-  border-color: #cce3de;
-}
-.diff-title {
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #252526;
-  color: #cccccc;
-  border-bottom: 1px solid #333333;
-}
-.code-diff-col.vulnerable .diff-title {
-  background: #3b181a;
-  color: #fca5a5;
-  border-color: #4c1d1f;
-}
-.code-diff-col.secure .diff-title {
-  background: #132e27;
-  color: #86efac;
-  border-color: #194339;
-}
-.diff-code {
-  margin: 0;
-  padding: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.45;
-  color: #e2e8f0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 130px;
-  overflow-y: auto;
-}
-.patch-firewall-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.prompt-chip:hover {
   background: #f7f9f3;
-  border: 1px dashed var(--primary);
-  border-radius: 6px;
-  padding: 8px 12px;
-  flex-wrap: wrap;
-}
-.patch-firewall-action code {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  border-color: #8B9A6E;
   color: #242c1d;
-  background: #eef3e7;
-  padding: 3px 7px;
-  border-radius: 4px;
 }
-.btn-copy-patch {
-  margin-left: auto;
+
+.chat-footer {
+  padding: 10px 14px;
   background: #ffffff;
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 4px;
-  cursor: pointer;
+  border-top: 1px solid var(--border);
 }
-.btn-copy-patch:hover {
-  background: var(--surface-low);
+.chat-voice-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 8px;
+  font-size: 11.5px;
+  color: #C24B4B;
+  font-weight: 600;
+}
+.pulse-mic {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #C24B4B;
+  animation: pulseMic 1s infinite alternate;
+}
+@keyframes pulseMic {
+  from { transform: scale(0.9); opacity: 0.5; }
+  to { transform: scale(1.4); opacity: 1; }
+}
+
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-mic-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #dfd7c9;
+  background: #f7f9f3;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.chat-mic-btn:hover {
+  background: #eef3e7;
+  color: #242c1d;
+  border-color: #8B9A6E;
+}
+.chat-mic-btn.recording {
+  background: #faeaea;
+  border-color: #C24B4B;
+  color: #C24B4B;
+  animation: recordingGlow 1s infinite alternate;
+}
+@keyframes recordingGlow {
+  from { box-shadow: 0 0 4px rgba(194, 75, 75, 0.4); }
+  to { box-shadow: 0 0 12px rgba(194, 75, 75, 0.8); }
+}
+
+#chat-text-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  outline: none;
+  background: #fdfcf9;
+}
+#chat-text-input:focus {
+  border-color: #8B9A6E;
+  background: #ffffff;
+}
+.chat-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #242c1d;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.chat-send-btn:hover {
+  background: #8B9A6E;
 }
 
 /* 4. Executive Incident Report Modal */
