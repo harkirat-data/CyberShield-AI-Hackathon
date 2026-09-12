@@ -261,6 +261,7 @@ def simulate_attack() -> Dict[str, Any]:
 # WEBSOCKET STREAM
 # ============================================================
 @app.websocket("/ws/dashboard")
+@app.websocket("/api/v1/ws/dashboard")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
