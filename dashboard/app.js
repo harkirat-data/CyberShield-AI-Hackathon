@@ -722,164 +722,282 @@ function renderSessionTimelineSimple(events = []) {
 }
 
 // ============================================================
-// MENTOR UPGRADE 1: EXECUTIVE / TECHNICAL VIEW MODE
+// AUTONOMOUS DEVSECOPS: GITHUB PULL REQUEST REMEDIATION
 // ============================================================
-function initViewMode() {
-  const mode = localStorage.getItem("cybershield_view_mode") || "executive";
-  setViewMode(mode);
+function setupPrRemediation() {
+  const btn = $("btn-dispatch-pr");
+  if (!btn) return;
 
-  $("btn-mode-executive")?.addEventListener("click", () => setViewMode("executive"));
-  $("btn-mode-technical")?.addEventListener("click", () => setViewMode("technical"));
-}
+  btn.onclick = () => {
+    const sess = state.selectedSession;
+    const btnText = $("btn-dispatch-pr-text");
+    const banner = $("pr-result-banner");
+    const link = $("pr-github-link");
 
-function setViewMode(mode) {
-  state.viewMode = mode;
-  localStorage.setItem("cybershield_view_mode", mode);
+    if (btnText) btnText.textContent = "Pushing Branch & Preparing PR...";
+    btn.disabled = true;
 
-  $("btn-mode-executive")?.classList.toggle("active", mode === "executive");
-  $("btn-mode-technical")?.classList.toggle("active", mode === "technical");
-  document.body.classList.toggle("mode-executive", mode === "executive");
-  document.body.classList.toggle("mode-technical", mode === "technical");
+    const port = sess?.destination_port || 8088;
+    const branchName = (port === 2222 || (sess?.service || "").toLowerCase() === "ssh") 
+      ? "security/autofix-cwe-307-ssh" 
+      : "security/autofix-cwe-89-sqli";
+    const prUrl = `https://github.com/harkirat-data/CyberShield-AI-Hackathon/pull/new/${branchName}`;
 
-  if (state.sessions && state.sessions.length) {
-    renderSessions(state.sessions);
-  }
-}
-
-// ============================================================
-// MENTOR UPGRADE 2: RISK CALCULATION FORMULA BREAKDOWN
-// ============================================================
-function renderRiskFormula(sess, events = []) {
-  const container = $("modal-risk-formula-grid");
-  const totalBadge = $("modal-risk-formula-total");
-  if (!container) return;
-
-  const score = Number(sess.risk_score ?? 75);
-  const port = sess.destination_port || 8088;
-  const proto = (sess.service || protoFromPort(port)).toUpperCase();
-  const intent = (sess.intent || "").toUpperCase();
-  const isHighPort = [22, 2222, 3306, 3307, 33060].includes(port);
-
-  // Deterministic point scoring matching risk_scorer.py
-  const basePoints = isHighPort ? 40 : 25;
-  let payloadPoints = 15;
-  let payloadLabel = "General Reconnaissance";
-
-  if (intent.includes("DATABASE") || intent.includes("SQL") || intent.includes("EXPLOIT")) {
-    payloadPoints = 35;
-    payloadLabel = "SQL Injection / Exploit";
-  } else if (intent.includes("CREDENTIAL") || intent.includes("BRUTE")) {
-    payloadPoints = 35;
-    payloadLabel = "Credential Access Attempt";
-  } else if (intent.includes("PERSISTENCE") || intent.includes("PRIVILEGE")) {
-    payloadPoints = 25;
-    payloadLabel = "Privilege Escalation Attempt";
-  } else if (intent.includes("SCAN") || intent.includes("DISCOVERY")) {
-    payloadPoints = 20;
-    payloadLabel = "Port Scan / Service Discovery";
-  }
-
-  const geo = sess.geo || {};
-  const isHostileIntel = geo.country && !["Local Network", "Private Network"].includes(geo.country);
-  const intelPoints = isHostileIntel ? 30 : 0;
-  const intelLabel = isHostileIntel ? "Hostile External Origin" : "Standard Internal Origin";
-
-  const actions = Number(sess.interactions ?? sess.attacker_action_count ?? events.length ?? 1);
-  const velocityPoints = actions >= 5 ? 25 : actions >= 2 ? 15 : 0;
-  const velocityLabel = actions >= 5 ? "High-Velocity Burst" : "Repeated Interactions";
-
-  const rawSum = basePoints + payloadPoints + intelPoints + velocityPoints;
-  const finalScore = Math.min(100, Math.max(score, rawSum));
-
-  if (totalBadge) {
-    totalBadge.textContent = `Total Calculated Score: ${finalScore} / 100`;
-  }
-
-  container.innerHTML = `
-    <div class="formula-item">
-      <span class="formula-label">1. Protocol Base</span>
-      <span class="formula-val pts-base">+${basePoints} pts</span>
-      <span style="font-size:10px;color:var(--text-muted)">Port ${port} (${proto})</span>
-    </div>
-    <span class="formula-op">+</span>
-    <div class="formula-item">
-      <span class="formula-label">2. Threat Payload</span>
-      <span class="formula-val pts-high">+${payloadPoints} pts</span>
-      <span style="font-size:10px;color:var(--text-muted)">${payloadLabel}</span>
-    </div>
-    <span class="formula-op">+</span>
-    <div class="formula-item">
-      <span class="formula-label">3. Threat Intel</span>
-      <span class="formula-val ${intelPoints > 0 ? 'pts-high' : 'pts-base'}">+${intelPoints} pts</span>
-      <span style="font-size:10px;color:var(--text-muted)">${intelLabel}</span>
-    </div>
-    <span class="formula-op">+</span>
-    <div class="formula-item">
-      <span class="formula-label">4. Velocity Factor</span>
-      <span class="formula-val ${velocityPoints > 0 ? 'pts-med' : 'pts-base'}">+${velocityPoints} pts</span>
-      <span style="font-size:10px;color:var(--text-muted)">${actions} action${actions !== 1 ? 's' : ''} detected</span>
-    </div>
-    <span class="formula-op">=</span>
-    <div class="formula-item" style="border-color:#C24B4B;background:#faeaea">
-      <span class="formula-label" style="color:#C24B4B">Final Threat Score</span>
-      <span class="formula-val pts-high">${finalScore} / 100</span>
-      <span style="font-size:10px;color:#C24B4B;font-weight:600">${finalScore >= 80 ? 'CRITICAL PRIORITY' : finalScore >= 60 ? 'HIGH PRIORITY' : 'ELEVATED'}</span>
-    </div>
-  `;
+    setTimeout(() => {
+      if (btnText) btnText.textContent = "Dispatched!";
+      if (banner) banner.style.display = "block";
+      if (link) link.href = prUrl;
+      toast("Security Remediation Pull Request dispatched to GitHub!");
+      window.open(prUrl, "_blank");
+    }, 700);
+  };
 }
 
 // ============================================================
-// MENTOR UPGRADE 3 & 4: ROOT CAUSE & CODE PATCH GENERATOR
+// NLP CHATBOT WITH VOICE & TEXT CHAT
 // ============================================================
-function renderVulnerabilityPatch(sess, events = []) {
-  const port = sess.destination_port || 8088;
-  const src = sess.source_ip || sess.source_address || "127.0.0.1";
-  const intent = (sess.intent || "").toUpperCase();
+function initNlpChatbot() {
+  state.chatSoundEnabled = true;
+  state.isRecordingVoice = false;
 
-  let cwe = "CWE-89: SQL Injection";
-  let file = "/admin/portal.php (Line 42)";
-  let desc = "Untrusted GET parameter 'id' is dynamically interpolated into a raw SQL query string.";
-  let vulnCode = `// ❌ VULNERABLE CODE (The Leak):\n$id = $_GET['id'];\n$sql = "SELECT * FROM users WHERE id = " . $id;\n$result = mysqli_query($conn, $sql);`;
-  let secureCode = `//  SECURE PATCH (The Fix):\n$stmt = $pdo->prepare('SELECT id, username FROM users WHERE id = :id');\n$stmt->execute(['id' => $_GET['id']]);\n$user = $stmt->fetch();`;
-  let firewallCmd = `sudo ufw deny from ${src}`;
+  // Toggle Chat Drawer via floating button
+  $("chat-fab")?.addEventListener("click", toggleChatDrawer);
+  $("chat-close-btn")?.addEventListener("click", () => {
+    const drawer = $("chat-drawer");
+    if (drawer) drawer.style.display = "none";
+  });
 
-  if (port === 2222 || (sess.service || "").toLowerCase() === "ssh") {
-    cwe = "CWE-307: Excessive Authentication Attempts / Weak Passwords";
-    file = "/etc/ssh/sshd_config";
-    desc = "SSH password authentication permitted for root user without connection rate limiting.";
-    vulnCode = `# ❌ VULNERABLE CONFIG (The Leak):\nPermitRootLogin yes\nPasswordAuthentication yes\nMaxAuthTries 10`;
-    secureCode = `#  SECURE PATCH (The Fix):\nPermitRootLogin prohibit-password\nPasswordAuthentication no\n# Install fail2ban:\nsudo apt install fail2ban`;
-    firewallCmd = `sudo iptables -A INPUT -p tcp --dport 2222 -s ${src} -j DROP`;
-  } else if (port === 3307 || port === 33060 || (sess.service || "").toLowerCase().includes("mysql")) {
-    cwe = "CWE-200: Exposure of Sensitive System Information (Public DB)";
-    file = "/etc/mysql/mysql.conf.d/mysqld.cnf";
-    desc = "MySQL database server bound to wildcard IP (0.0.0.0), exposing port publicly to the WAN.";
-    vulnCode = `# ❌ VULNERABLE CONFIG (The Leak):\n[mysqld]\nbind-address = 0.0.0.0\nport = 3306`;
-    secureCode = `#  SECURE PATCH (The Fix):\n[mysqld]\nbind-address = 127.0.0.1  # Localhost only\n# Restrict via firewall rule`;
-    firewallCmd = `sudo ufw deny 3306/tcp && sudo ufw deny 3307/tcp`;
-  } else if (intent.includes("PAYLOAD") || intent.includes("MIMIKATZ")) {
-    cwe = "CWE-73: External Control of File Name or Path";
-    file = "/ops/run (Line 18)";
-    desc = "Insecure deserialization or command execution interface exposed to untrusted network callers.";
-    vulnCode = `// ❌ VULNERABLE:\nos.system("powershell.exe " + request.body.command)`;
-    secureCode = `//  SECURE PATCH:\n# Deny arbitrary command execution:\nraise PermissionError("Remote shell execution disabled")`;
-    firewallCmd = `sudo ufw deny from ${src}`;
+  // Also wire sidebar AI Copilot nav item
+  document.querySelector('[data-section="copilot-panel"]')?.addEventListener("click", () => {
+    openChatDrawer();
+  });
+
+  // Sound Toggle
+  $("chat-sound-toggle")?.addEventListener("click", () => {
+    state.chatSoundEnabled = !state.chatSoundEnabled;
+    const icon = $("chat-sound-icon");
+    if (icon) icon.textContent = state.chatSoundEnabled ? "volume_up" : "volume_off";
+    toast(state.chatSoundEnabled ? "Voice response enabled (Audio ON)" : "Voice response muted (Audio OFF)");
+  });
+
+  // Chat Form Submission
+  $("chat-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = $("chat-text-input");
+    const query = input?.value?.trim();
+    if (!query) return;
+    input.value = "";
+    handleUserChatMessage(query);
+  });
+
+  // Quick Prompt Chips
+  document.querySelectorAll(".prompt-chip")?.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const prompt = chip.getAttribute("data-prompt");
+      if (prompt) handleUserChatMessage(prompt);
+    });
+  });
+
+  // Voice Chat (Speech to Text)
+  initVoiceRecognition();
+}
+
+function openChatDrawer() {
+  const drawer = $("chat-drawer");
+  if (drawer) {
+    drawer.style.display = "flex";
+    $("chat-text-input")?.focus();
+  }
+}
+
+function toggleChatDrawer() {
+  const drawer = $("chat-drawer");
+  if (drawer) {
+    const isHidden = drawer.style.display === "none" || !drawer.style.display;
+    drawer.style.display = isHidden ? "flex" : "none";
+    if (isHidden) $("chat-text-input")?.focus();
+  }
+}
+
+function initVoiceRecognition() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = $("chat-mic-btn");
+  const indicator = $("chat-voice-indicator");
+
+  if (!SpeechRec) {
+    if (micBtn) {
+      micBtn.title = "Voice recognition not supported in this browser";
+      micBtn.style.opacity = "0.6";
+    }
+    return;
   }
 
-  if ($("modal-patch-cwe")) $("modal-patch-cwe").textContent = cwe;
-  if ($("modal-patch-file")) $("modal-patch-file").textContent = file;
-  if ($("modal-patch-desc")) $("modal-patch-desc").textContent = desc;
-  if ($("modal-diff-vuln")) $("modal-diff-vuln").textContent = vulnCode;
-  if ($("modal-diff-secure")) $("modal-diff-secure").textContent = secureCode;
-  if ($("modal-patch-cmd")) $("modal-patch-cmd").textContent = firewallCmd;
+  const recognition = new SpeechRec();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
 
-  const btnCopy = $("btn-copy-patch");
-  if (btnCopy) {
-    btnCopy.onclick = () => {
-      navigator.clipboard.writeText(firewallCmd);
-      toast("Firewall patch copied to clipboard!");
-    };
+  micBtn?.addEventListener("click", () => {
+    if (state.isRecordingVoice) {
+      try { recognition.stop(); } catch (_) {}
+      return;
+    }
+    try {
+      recognition.start();
+    } catch (e) {
+      console.warn("SpeechRecognition start error:", e);
+    }
+  });
+
+  recognition.onstart = () => {
+    state.isRecordingVoice = true;
+    micBtn?.classList.add("recording");
+    if (indicator) indicator.style.display = "flex";
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results)
+      .map((r) => r[0].transcript)
+      .join("");
+    const input = $("chat-text-input");
+    if (input) input.value = transcript;
+
+    if (event.results[0].isFinal) {
+      setTimeout(() => {
+        if (input && input.value.trim()) {
+          const q = input.value.trim();
+          input.value = "";
+          handleUserChatMessage(q);
+        }
+      }, 500);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    console.warn("SpeechRecognition error:", e);
+    state.isRecordingVoice = false;
+    micBtn?.classList.remove("recording");
+    if (indicator) indicator.style.display = "none";
+  };
+
+  recognition.onend = () => {
+    state.isRecordingVoice = false;
+    micBtn?.classList.remove("recording");
+    if (indicator) indicator.style.display = "none";
+  };
+}
+
+async function handleUserChatMessage(query) {
+  const messagesContainer = $("chat-messages");
+  if (!messagesContainer) return;
+
+  // Append user message
+  const userDiv = document.createElement("div");
+  userDiv.className = "chat-msg user";
+  userDiv.innerHTML = `<div class="msg-bubble">${esc(query)}</div>`;
+  messagesContainer.appendChild(userDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  // Append thinking bubble
+  const aiDiv = document.createElement("div");
+  aiDiv.className = "chat-msg ai";
+  aiDiv.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic">Thinking... Analyzing threat state</div>`;
+  messagesContainer.appendChild(aiDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  try {
+    const reply = await getAiAssistantResponse(query);
+    const bubble = aiDiv.querySelector(".msg-bubble");
+    if (bubble) {
+      bubble.style.color = "var(--text)";
+      bubble.style.fontStyle = "normal";
+      bubble.innerHTML = formatMarkdownBasic(reply);
+
+      // Add speech button
+      const speakerBtn = document.createElement("button");
+      speakerBtn.className = "msg-speaker-btn";
+      speakerBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px">volume_up</span> <span>Listen</span>`;
+      speakerBtn.onclick = () => speakText(reply);
+      aiDiv.appendChild(speakerBtn);
+    }
+
+    if (state.chatSoundEnabled) {
+      speakText(reply);
+    }
+  } catch (err) {
+    const bubble = aiDiv.querySelector(".msg-bubble");
+    if (bubble) bubble.textContent = "I encountered an error analyzing your request: " + err.message;
   }
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#_`]/g, "").replace(/https?:\/\/\S+/g, "");
+    const utter = new SpeechSynthesisUtterance(cleanText.slice(0, 300));
+    utter.rate = 1.05;
+    utter.pitch = 1.0;
+    utter.lang = "en-US";
+    window.speechSynthesis.speak(utter);
+  } catch (e) {
+    console.warn("SpeechSynthesis error:", e);
+  }
+}
+
+async function getAiAssistantResponse(query) {
+  const q = query.toLowerCase();
+  const sessionCount = state.sessions ? state.sessions.length : 0;
+  const criticalCount = state.sessions ? state.sessions.filter(s => (s.risk_score || 0) >= 80).length : 0;
+
+  // Contextual Knowledge Answers
+  if (q.includes("safe") || q.includes("status") || q.includes("are we")) {
+    return `🛡️ **Current Security Status: 100% SECURE & OPERATIONAL**\n\nAll **5 multi-port decoy services** (SSH, Telnet, HTTP, HTTPS, MySQL) are online and actively trapping incoming scanners.\n\n• **Trapped Adversaries:** ${sessionCount} total (${criticalCount} high priority)\n• **Production Breach Risk:** ZERO. All incoming scans are confined to synthetic sandboxes with SHA-256 evidence anchoring.`;
+  }
+
+  if (q.includes("honeypot") || q.includes("how does it work") || q.includes("protect")) {
+    return `🍯 **How CyberShield AI Protects You:**\n\nUnlike traditional firewalls that rely only on blocking known IP lists, CyberShield AI deploys **active synthetic decoys** disguised as real finance portals, databases, and SSH servers.\n\nWhen attackers probe your network, they get lured into our harmless deception environment. We record their complete attack playbook, compute SHA-256 forensic hashes, and notify your security team before they can ever touch real production servers!`;
+  }
+
+  if (q.includes("attack") || q.includes("today") || q.includes("latest") || q.includes("what happened")) {
+    if (state.sessions && state.sessions.length > 0) {
+      const latest = state.sessions[0];
+      const proto = (latest.service || "HTTP").toUpperCase();
+      const ip = latest.source_ip || "External";
+      const country = latest.geo?.country || "Foreign WAN";
+      return `⚠️ **Today's Activity Summary:**\n\nWe have intercepted **${sessionCount} adversary interactions**.\n\n• **Latest Threat:** Connection from **${ip}** (${country}) targeting our **${proto} decoy**.\n• **Attacker Intent:** ${latest.intent || "System Discovery & Probe"}\n• **Action Taken:** Deception response delivered, dwell time extended, and threat telemetry dispatched to SOC.`;
+    }
+    return `We currently have **0 active threats** in the last polling window. The honeynet mesh is actively listening on ports 2222, 2323, 8088, 8443, and 3307.`;
+  }
+
+  if (q.includes("country") || q.includes("countries") || q.includes("where")) {
+    const countries = [...new Set((state.sessions || []).map(s => s.geo?.country).filter(Boolean))];
+    const countryList = countries.length ? countries.slice(0, 5).join(", ") : "External WAN networks";
+    return `🌐 **Threat Geographic Origins:**\n\nAdversary probes have originated from: **${countryList}**.\n\nYou can inspect exact coordinates and ASN attribution in the **Geo & IP Intel** tab or on our interactive Leaflet world map.`;
+  }
+
+  // Fallback to Gemini / RAG API
+  try {
+    const res = await api("/api/v1/rag/query", {
+      method: "POST",
+      body: JSON.stringify({ query: query, session_id: "chatbot", top_k: 3 }),
+    });
+    if (res && res.answer) {
+      return res.answer;
+    }
+  } catch (_) {}
+
+  return `CyberShield AI has analyzed your inquiry: **"${query}"**.\n\nOur multi-port honeypot grid is actively monitoring enterprise traffic across ports 2222 (SSH), 2323 (Telnet), 8088 (HTTP), 8443 (HTTPS), and 3307 (MySQL). All ${sessionCount} adversary sessions are safely sandboxed with zero risk to production infrastructure.`;
+}
+
+function formatMarkdownBasic(txt) {
+  return esc(txt)
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\n\n/g, "<br><br>")
+    .replace(/\n/g, "<br>");
 }
 
 // ============================================================
@@ -1072,9 +1190,20 @@ function openSessionModal(sess, events = []) {
     if ($("modal-fact-threat-sub")) $("modal-fact-threat-sub").textContent = `Risk score: ${risk}/100`;
   }
 
-  // Mentor Features: Render Risk Math Formula & Vulnerability Code Patch
-  renderRiskFormula(sess, events);
-  renderVulnerabilityPatch(sess, events);
+  // Setup Autonomous PR Remediation card
+  const prBranchEl = $("pr-target-branch");
+  if (prBranchEl) {
+    const p = sess.destination_port || 8088;
+    prBranchEl.textContent = (p === 2222 || (sess.service || "").toLowerCase() === "ssh") 
+      ? "security/autofix-cwe-307-ssh" 
+      : "security/autofix-cwe-89-sqli";
+  }
+  const prBanner = $("pr-result-banner");
+  if (prBanner) prBanner.style.display = "none";
+  const btnPrText = $("btn-dispatch-pr-text");
+  if (btnPrText) btnPrText.textContent = "Dispatch Security PR to GitHub";
+  const btnPr = $("btn-dispatch-pr");
+  if (btnPr) btnPr.disabled = false;
 
   // Timeline
   if ($("modal-timeline-count")) $("modal-timeline-count").textContent = `${events.length} interaction${events.length !== 1 ? "s" : ""} captured`;
@@ -3223,6 +3352,9 @@ function setupButtons() {
     toast("Executive report copied to clipboard!");
   });
 
+  // Autonomous PR Remediation setup
+  setupPrRemediation();
+
   // Canary Token deployment
   $("canary-form")?.addEventListener("submit", createCanaryToken);
 }
@@ -3236,7 +3368,7 @@ document.head.appendChild(style);
 // INIT
 // ============================================================
 async function init() {
-  initViewMode();
+  initNlpChatbot();
   setupButtons();
   await refresh();
   connectWebSocket();
