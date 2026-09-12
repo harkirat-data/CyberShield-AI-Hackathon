@@ -106,11 +106,15 @@ class GeminiClient:
             except APIError as ae:
                 self.last_error = self._safe_error(ae)
                 print(f"[llm] Gemini API Error (attempt {attempt + 1}): {self.last_error}")
+                if "API_KEY_INVALID" in self.last_error or "400" in self.last_error:
+                    break
                 if attempt < max_retries - 1:
                     self._sleep_backoff(attempt)
             except Exception as e:
                 self.last_error = self._safe_error(e)
                 print(f"[llm] generation failed (attempt {attempt + 1}): {self.last_error}")
+                if "API_KEY_INVALID" in self.last_error or "400" in self.last_error:
+                    break
                 if attempt < max_retries - 1:
                     self._sleep_backoff(attempt)
 
