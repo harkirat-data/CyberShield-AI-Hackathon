@@ -120,7 +120,32 @@ class TelemetryStore:
             self._connection.execute("""UPDATE sessions 
                 SET status = 'closed', ended_at = COALESCE(ended_at, started_at)
                 WHERE status = 'active' OR ended_at IS NULL""")
+            self._prune_old_sessions(50)
             self._connection.commit()
+
+    def _prune_old_sessions(self, max_limit: int = 50) -> None:
+        """Maintains a strict FIFO ring-buffer of the latest sessions (default 50).
+        Automatically removes earliest records beyond max_limit."""
+        self._connection.execute(
+            f"""DELETE FROM telemetry WHERE session_id NOT IN (
+                SELECT session_id FROM sessions ORDER BY started_at DESC LIMIT {max_limit}
+            )"""
+        )
+        self._connection.execute(
+            f"""DELETE FROM investigations WHERE session_id NOT IN (
+                SELECT session_id FROM sessions ORDER BY started_at DESC LIMIT {max_limit}
+            )"""
+        )
+        self._connection.execute(
+            f"""DELETE FROM analyst_reports WHERE session_id NOT IN (
+                SELECT session_id FROM sessions ORDER BY started_at DESC LIMIT {max_limit}
+            )"""
+        )
+        self._connection.execute(
+            f"""DELETE FROM sessions WHERE session_id NOT IN (
+                SELECT session_id FROM sessions ORDER BY started_at DESC LIMIT {max_limit}
+            )"""
+        )
 
     def close(self) -> None:
         with self._lock:
@@ -135,6 +160,7 @@ class TelemetryStore:
             self._connection.execute(
                 f"INSERT INTO sessions ({columns}) VALUES ({placeholders})", values
             )
+            self._prune_old_sessions(50)
             self._connection.commit()
         return session.to_dict()
 
@@ -275,7 +301,7 @@ class TelemetryStore:
 
     def list_sessions(
         self,
-        limit: int = 100,
+        limit: int = 50,
         status: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         query = "SELECT * FROM sessions"
@@ -284,7 +310,7 @@ class TelemetryStore:
             query += " WHERE status = ?"
             parameters.append(status)
         query += " ORDER BY started_at DESC LIMIT ?"
-        parameters.append(max(1, min(limit, 500)))
+        parameters.append(max(1, min(limit, 50)))
         with self._lock:
             rows = self._connection.execute(query, parameters).fetchall()
         return [self._session_dict(row) for row in rows]

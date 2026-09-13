@@ -148,8 +148,8 @@ def honeypot_metrics() -> Dict[str, Any]:
 
 
 @app.get("/api/v1/honeypot/sessions")
-def list_sessions(limit: int = Query(default=100, ge=1, le=500)) -> Dict[str, Any]:
-    sessions = store.list_sessions(limit=limit)
+def list_sessions(limit: int = Query(default=50, ge=1, le=50)) -> Dict[str, Any]:
+    sessions = store.list_sessions(limit=50)
     return {"sessions": sessions}
 
 
