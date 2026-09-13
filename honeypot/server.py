@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -282,11 +283,40 @@ async def inject_into_session(session_id: str, body: Dict[str, Any]) -> Dict[str
         evt = TelemetryEvent(
             session_id=session_id,
             event_type="attacker_action",
-            severity="high",
+            severity="critical",
             direction="inbound",
             content=f"{content}\n[Decoy Response]: {exec_output[:300]}",
         )
         stored_dict = store.record_event(evt)
+
+        # Automated alert dispatch if score > 85
+        if get_alert_manager and SecurityAlert:
+            try:
+                mgr = get_alert_manager()
+                src_ip = sess.get("source_ip") or sess.get("source_address") or "127.0.0.1"
+                alert = SecurityAlert(
+                    event_id=evt.event_id,
+                    timestamp=evt.timestamp,
+                    severity="critical",
+                    risk_score=90,
+                    source_ip=src_ip,
+                    host=str(sess.get("persona") or "cybershield-decoy"),
+                    service=str(sess.get("service") or "HTTP"),
+                    event_type="ATTACK_PROBE_DETECTED",
+                    intent="Live Exploitation Attempt",
+                    mitre_techniques=["T1059", "T1190"],
+                    mitre_tactics=["Execution", "Initial Access"],
+                    ai_summary=f"Automated Intrusion Alert: Live exploit probe '{content[:60]}' executed against {sess.get('service')} (Score 90 > 85 threshold).",
+                    recommended_remediation=[
+                        f"Enforce containment rule for {src_ip}",
+                        "Inspect decoy execution stream",
+                    ],
+                    details={"session_id": session_id, "command": content},
+                )
+                mgr.send_alert(alert, sync=False)
+            except Exception:
+                pass
+
         return {"ok": True, "executed": True, "event": stored_dict, "output": exec_output}
 
     evt = TelemetryEvent(
@@ -680,26 +710,54 @@ def get_attackers() -> Dict[str, Any]:
 def simulate_attack() -> Dict[str, Any]:
     sim_ip = "185.220.101.5"
     sim_session = DecoySession(
-        session_id=f"sim_{int(asyncio.get_event_loop().time() * 1000)}",
+        session_id=f"sim_{int(time.time() * 1000)}",
         source_ip=sim_ip,
         source_port=54321,
         destination_port=2222,
         service="SSH",
         protocol="ssh",
         persona="finance-prod shell gateway",
-        risk_score=75,
-        risk_level="high",
-        intent="Brute Force",
+        risk_score=92,
+        risk_level="critical",
+        intent="Adversary Shell Injection & Credential Harvesting",
     )
     store.create_session(sim_session)
     event = TelemetryEvent(
         session_id=sim_session.session_id,
-        event_type="AUTH_FAILED",
-        severity="high",
+        event_type="AUTH_FAILED_EXPLOIT",
+        severity="critical",
         direction="inbound",
-        content="SSH-2.0-paramiko_2.8.0 - Failed login: admin / password123",
+        content="SSH-2.0-paramiko_2.8.0 - Failed root exploit attempt & credential harvesting from 185.220.101.5",
     )
     store.record_event(event)
+
+    # AUTOMATED MULTI-CHANNEL DISPATCH (Risk score 92 > 85)
+    if sim_session.risk_score > 85 and get_alert_manager and SecurityAlert:
+        try:
+            mgr = get_alert_manager()
+            sec_alert = SecurityAlert(
+                event_id=event.event_id,
+                timestamp=event.timestamp,
+                severity=sim_session.risk_level,
+                risk_score=sim_session.risk_score,
+                source_ip=sim_session.source_ip,
+                host=sim_session.persona,
+                service=sim_session.service,
+                event_type=event.event_type,
+                intent=sim_session.intent,
+                mitre_techniques=["T1110", "T1078"],
+                mitre_tactics=["Initial Access", "Credential Access"],
+                ai_summary=f"Automated Intrusion Alert: {sim_session.intent} detected against {sim_session.service} ({sim_session.persona}) from {sim_session.source_ip}. Risk score: {sim_session.risk_score}/100 exceeds critical 85 threshold.",
+                recommended_remediation=[
+                    f"Autonomous perimeter containment active for {sim_session.source_ip}",
+                    f"Review decoy session {sim_session.session_id} audit logs",
+                ],
+                details={"session_id": sim_session.session_id, "content": event.content},
+            )
+            mgr.send_alert(sec_alert, sync=False)
+        except Exception:
+            pass
+
     return {"ok": True, "session": sim_session.to_dict()}
 
 

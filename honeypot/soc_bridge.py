@@ -16,14 +16,21 @@ if str(AI_ROOT) not in sys.path:
     sys.path.insert(0, str(AI_ROOT))
 
 try:
+    from Ai.agents.alerter import get_alert_manager, SecurityAlert
+except ImportError:
+    try:
+        from alerter import get_alert_manager, SecurityAlert
+    except ImportError:
+        get_alert_manager = None
+        SecurityAlert = None
+
+try:
     from agents import (  # noqa: E402
         add_correlation_event,
         correlate,
         map_mitre,
         score_risk,
         threat_intel_check,
-        get_alert_manager,
-        SecurityAlert,
     )
     from schema import Event  # noqa: E402
     HAVE_SOC_AGENTS = True
@@ -56,7 +63,7 @@ class SocBridge:
             else intent.event_type
         )
         if not HAVE_SOC_AGENTS:
-            score = 85 if intent.severity == "critical" else (65 if intent.severity == "high" else (45 if intent.severity == "medium" else 20))
+            score = 90 if intent.severity == "critical" else (70 if intent.severity == "high" else (45 if intent.severity == "medium" else 20))
             level = intent.severity or "info"
             techniques = ["T1046: Network Service Discovery", "T1110: Brute Force"] if "Brute" in intent.label else ["T1046: Network Service Discovery"]
             rationale = f"Phase 1 Honeypot Intent Classifier: {intent.label} ({intent.confidence:.0%}) detected on service '{session.get('service')}'"
@@ -78,6 +85,34 @@ class SocBridge:
                 rationale=rationale,
                 investigation=result,
             )
+
+            # AUTOMATED DISPATCH: If risk_score > 85, alert configured Slack, Discord, and Email channels
+            if score > 85 and get_alert_manager and SecurityAlert:
+                try:
+                    mgr = get_alert_manager()
+                    sec_alert = SecurityAlert(
+                        event_id=telemetry.event_id,
+                        timestamp=telemetry.timestamp,
+                        severity=level,
+                        risk_score=score,
+                        source_ip=str(session.get("source_ip", "unknown")),
+                        host=str(session.get("persona", "cybershield-decoy")),
+                        service=str(session.get("service", "honeypot")),
+                        event_type=event_type,
+                        intent=intent.label,
+                        mitre_techniques=techniques,
+                        mitre_tactics=["Execution", "Initial Access"],
+                        ai_summary=f"Automated Honeypot Alert: {intent.label} ({intent.confidence:.0%}) detected on service '{session.get('service')}'. Threat score {score}/100 exceeds threshold 85.",
+                        recommended_remediation=[
+                            f"Enforce perimeter firewall isolation for IP {session.get('source_ip')}",
+                            f"Inspect correlated honeypot activity for session {telemetry.session_id}",
+                        ],
+                        details={"session_id": telemetry.session_id, "command": telemetry.content[:500]},
+                    )
+                    mgr.send_alert(sec_alert, sync=False)
+                except Exception:
+                    pass
+
             return result
         event = Event.from_dict(
             {
