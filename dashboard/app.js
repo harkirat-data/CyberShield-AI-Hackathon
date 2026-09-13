@@ -378,8 +378,10 @@ function renderSessions(sessionsArr) {
   const grid = $("session-grid");
   if (!grid) return;
 
+  // Strict 50-session FIFO history buffer
+  const boundedSessions = (sessionsArr || []).slice(0, 50);
   const filter = state.filter;
-  let filtered = sessionsArr || [];
+  let filtered = boundedSessions;
 
   if (filter === "critical") {
     filtered = filtered.filter(s => (s.risk_score || 0) >= 80);
@@ -409,26 +411,26 @@ function renderSessions(sessionsArr) {
     if (q) {
       caption.textContent = `${filtered.length} matching session${filtered.length !== 1 ? "s" : ""} for "${esc(q)}"`;
     } else {
-      caption.textContent = `${filtered.length} session${filtered.length !== 1 ? "s" : ""} engaged across decoy mesh`;
+      caption.textContent = `${filtered.length} session${filtered.length !== 1 ? "s" : ""} engaged across decoy mesh (Latest 50)`;
     }
   }
 
   const badge = $("nav-badge-sessions");
   if (badge) {
-    badge.textContent = `${sessionsArr.length} TRAP`;
-    badge.classList.toggle("danger", sessionsArr.length > 0);
+    badge.textContent = `${boundedSessions.length} TRAP`;
+    badge.classList.toggle("danger", boundedSessions.length > 0);
   }
 
   const stat = $("stat-sessions");
-  if (stat) stat.textContent = sessionsArr.length;
+  if (stat) stat.textContent = boundedSessions.length;
 
-  const crit = sessionsArr.filter(s => (s.risk_score || 0) >= 80).length;
+  const crit = boundedSessions.filter(s => (s.risk_score || 0) >= 80).length;
   const critBadge = $("stat-critical");
   if (critBadge) critBadge.textContent = `${crit} Critical`;
 
   const sub = $("stat-sessions-sub");
   const liveCount = (state.status?.services || []).reduce((acc, s) => acc + (s.active_sessions || 0), 0);
-  if (sub) sub.textContent = `${liveCount} currently live`;
+  if (sub) sub.textContent = `${liveCount} currently live • Latest 50 history`;
 
   if (filtered.length === 0) {
     const icon = q ? "search_off" : (sessionsArr.length === 0 ? "wifi_off" : "filter_alt_off");
@@ -2241,13 +2243,13 @@ async function refresh() {
   try {
     const [statusData, sessData, evtsData] = await Promise.all([
       api("/api/v1/honeypot/status"),
-      api("/api/v1/honeypot/sessions?limit=100"),
+      api("/api/v1/honeypot/sessions?limit=50"),
       api("/api/v1/honeypot/events?limit=500").catch(() => ({ events: [] })),
     ]);
 
     updateStatusUI(statusData);
 
-    const sessions = sessData.sessions || [];
+    const sessions = (sessData.sessions || []).slice(0, 50);
     const events = evtsData.events || [];
     state.sessions = sessions;
     state.events = events;
