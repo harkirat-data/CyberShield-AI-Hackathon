@@ -3429,7 +3429,7 @@ function setupButtons() {
   // 1-Click GitHub PR creation
   const handleTriggerGitPR = async (clickedBtn) => {
     const sessionId = state.selectedSessionId || state.selectedSession?.session_id || state.selectedSession?.id || (state.sessions && state.sessions[0]?.session_id) || "ses_demo_sqli";
-    const btn = clickedBtn || $("btn-trigger-git-pr") || $("btn-trigger-git-pr-top");
+    const btn = clickedBtn || $("btn-trigger-git-pr");
     const origHtml = btn ? btn.innerHTML : "⚡ Create GitHub PR";
     if (btn) {
       btn.disabled = true;
@@ -3504,7 +3504,6 @@ function setupButtons() {
   };
 
   $("btn-trigger-git-pr")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr")));
-  $("btn-trigger-git-pr-top")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr-top")));
 
   // Modal Tab navigation
   $("modal-tab-btn-breakdown")?.addEventListener("click", () => switchModalTab("breakdown"));
