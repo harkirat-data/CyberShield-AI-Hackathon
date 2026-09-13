@@ -998,48 +998,33 @@ function speakText(text, btn) {
 }
 
 async function getAiAssistantResponse(query) {
-  const q = query.toLowerCase().trim();
-  const sessionCount = state.sessions ? state.sessions.length : 0;
-  const criticalCount = state.sessions ? state.sessions.filter(s => (s.risk_score || 0) >= 80).length : 0;
-  const latestSess = (state.sessions && state.sessions.length > 0) ? state.sessions[0] : null;
+  const isHindi = /[\u0900-\u097F]/.test(query);
+  const lang = isHindi ? "hi" : "en";
 
-  // Check for live telemetry queries that benefit from real-time dynamic dashboard state
-  if ((q.includes("safe") || q.includes("status")) && !q.includes("how") && !q.includes("what")) {
-    return `🛡️ **Real-Time Security Status: 100% OPERATIONAL & PROTECTED**\n\n` +
-      `• **Active Traps:** 5 multi-port listeners (SSH, Telnet, HTTP, HTTPS, MySQL)\n` +
-      `• **Trapped Adversaries:** ${sessionCount} total sessions (${criticalCount} high risk)\n` +
-      `• **Production Breach Impact:** **ZERO**. All incoming probes were successfully lured into air-gapped synthetic sandboxes.`;
-  }
-
-  if ((q.includes("today") || q.includes("latest attack") || q.includes("who attacked")) && latestSess) {
-    const proto = (latestSess.service || "HTTP").toUpperCase();
-    const ip = latestSess.source_ip || latestSess.source_address || "External Ingress";
-    const country = latestSess.geo?.country || "Foreign WAN";
-    const risk = latestSess.risk_score || 75;
-    return `⚠️ **Latest Trapped Adversary Activity:**\n\n` +
-      `• **Attacker Origin:** **${ip}** (${country})\n` +
-      `• **Targeted Asset:** ${proto} Decoy (Port ${latestSess.destination_port || 8088})\n` +
-      `• **Observed Risk:** ${risk}/100 (${latestSess.intent || "Exploit / Reconnaissance"})\n` +
-      `• **Containment:** Adversary is safely contained with forensic SHA-256 evidence anchored.`;
-  }
-
-  // Primary: Query the backend RAG & Gemini NLP API for dynamic, contextual conversation
   try {
-    const res = await api("/api/v1/rag/query", {
+    const res = await api("/api/v1/chat", {
       method: "POST",
-      body: JSON.stringify({ query: query, session_id: "dashboard_chat", top_k: 3 }),
+      body: JSON.stringify({ query: query, lang: lang, session_id: "dashboard_chat" }),
     });
     if (res && res.answer && res.answer.trim()) {
       return res.answer.trim();
     }
   } catch (err) {
-    console.warn("Backend RAG query error:", err);
+    console.warn("Backend chat query error, trying fallback:", err);
+    try {
+      const res = await api("/api/v1/rag/query", {
+        method: "POST",
+        body: JSON.stringify({ query: query, lang: lang, session_id: "dashboard_chat" }),
+      });
+      if (res && res.answer && res.answer.trim()) {
+        return res.answer.trim();
+      }
+    } catch (_) {}
   }
 
-  // Intelligent fallback if backend endpoint is unreachable
-  return `CyberShield AI has analyzed your inquiry: **"${query}"**.\n\n` +
-    `Our autonomous deception grid is currently monitoring **${sessionCount} trapped sessions** across ports 2222, 2323, 8088, 8443, and 3307. ` +
-    `You can ask me about active honeypot traps, specific attack vectors like SQL injection or brute force, or request an incident summary!`;
+  return isHindi
+    ? "क्षमा करें, तंत्रिका बैकएंड से संपर्क करने में समस्या आ रही है। कृपया सुनिश्चित करें कि सर्वर चालू है।"
+    : "I'm having trouble communicating with the CyberShield AI neural backend right now. Please ensure the backend server is active and try again.";
 }
 
 function formatMarkdownBasic(txt) {
