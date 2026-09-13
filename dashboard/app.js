@@ -1184,6 +1184,75 @@ function generateExecutiveBriefHtml(sess, events = []) {
   `;
 }
 
+function switchModalTab(activeTab) {
+  const breakdownBtn = $("modal-tab-btn-breakdown");
+  const codefixBtn = $("modal-tab-btn-codefix");
+  const breakdownPane = $("modal-pane-breakdown");
+  const codefixPane = $("modal-pane-codefix");
+
+  if (activeTab === "codefix") {
+    if (breakdownBtn) {
+      breakdownBtn.style.background = "transparent";
+      breakdownBtn.style.borderColor = "transparent";
+      breakdownBtn.style.color = "var(--text-secondary)";
+      breakdownBtn.style.boxShadow = "none";
+    }
+    if (codefixBtn) {
+      codefixBtn.style.background = "#fff";
+      codefixBtn.style.borderColor = "#dcd7cd";
+      codefixBtn.style.color = "var(--text)";
+      codefixBtn.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
+    }
+    if (breakdownPane) breakdownPane.style.display = "none";
+    if (codefixPane) codefixPane.style.display = "flex";
+  } else {
+    if (codefixBtn) {
+      codefixBtn.style.background = "transparent";
+      codefixBtn.style.borderColor = "transparent";
+      codefixBtn.style.color = "var(--text-secondary)";
+      codefixBtn.style.boxShadow = "none";
+    }
+    if (breakdownBtn) {
+      breakdownBtn.style.background = "#fff";
+      breakdownBtn.style.borderColor = "#dcd7cd";
+      breakdownBtn.style.color = "var(--text)";
+      breakdownBtn.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
+    }
+    if (breakdownPane) breakdownPane.style.display = "flex";
+    if (codefixPane) codefixPane.style.display = "none";
+  }
+}
+
+function populateModalCodeFix(sess, events = []) {
+  if (!sess) return;
+  const proto = (sess.service || protoFromPort(sess.destination_port) || "HTTP").toUpperCase();
+  const intent = (sess.intent || "").toLowerCase();
+  const src = sess.source_ip || sess.source_address || "127.0.0.1";
+  const port = sess.destination_port || 8088;
+
+  let safeCode = "";
+  let wafCode = "";
+
+  if (proto.includes("MYSQL") || port === 3306 || port === 33060 || intent.includes("sql") || intent.includes("auth")) {
+    safeCode = `# SAFE: DB-API Parameterized Query placeholder\nquery = "SELECT * FROM records WHERE user_input = %s"\ncursor.execute(query, (request.args.get('q'),))`;
+    wafCode = `# Nginx WAF Block Rule against SQLi payload\nlocation /api/v1/resource {\n  if ($query_string ~* "(select|union|concat|information_schema|insert|drop|sleep)") {\n    return 403;\n  }\n}`;
+  } else if (proto.includes("SSH") || port === 2222 || intent.includes("brute") || intent.includes("credential")) {
+    safeCode = `# SAFE: Adaptive Rate Limiting & Account Lockout (CWE-307)\nfrom app.middleware.rate_limiter import apply_rate_limit\n\n# Enforce 5 attempts per 60s window before temporary lockout\nif not apply_rate_limit(request.client.host, max_attempts=5, window_sec=60):\n    raise HTTPException(status_code=429, detail="Too Many Authentication Attempts")`;
+    wafCode = `# Perimeter Firewall & Fail2Ban Drop Rule\nsudo iptables -A INPUT -s ${src} -p tcp --dport 2222 -j DROP\nsudo ufw deny from ${src} to any port 2222 proto tcp comment "CyberShield AI Auto-Quarantine"`;
+  } else if (proto.includes("TELNET") || port === 2323) {
+    safeCode = `# SAFE: Enforce Encrypted SSHv2 Channel & Disable Plaintext Telnet (CWE-319)\nimport ssl\ncontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)\ncontext.load_cert_chain(certfile="/etc/ssl/certs/server.crt", keyfile="/etc/ssl/private/server.key")`;
+    wafCode = `# Perimeter Ingress Drop Rule for Telnet\nsudo iptables -A INPUT -s ${src} -p tcp --dport 2323 -j DROP\nsudo ufw deny 2323/tcp comment "Block Plaintext Ingress"`;
+  } else {
+    safeCode = `# SAFE: DB-API Parameterized Query placeholder\nquery = "SELECT * FROM records WHERE user_input = %s"\ncursor.execute(query, (request.args.get('q'),))`;
+    wafCode = `# Nginx WAF Block Rule against SQLi payload\nlocation /api/v1/resource {\n  if ($query_string ~* "(select|union|concat|information_schema|insert|drop|sleep)") {\n    return 403;\n  }\n}`;
+  }
+
+  const codeEl = $("modal-codefix-code");
+  if (codeEl) codeEl.textContent = safeCode;
+  const wafEl = $("modal-codefix-waf");
+  if (wafEl) wafEl.textContent = wafCode;
+}
+
 function openSessionModal(sess, events = []) {
   if (!sess) return;
 
@@ -1197,6 +1266,10 @@ function openSessionModal(sess, events = []) {
     const dynamicErr = prBanner.querySelector(".pr-result-text p");
     if (dynamicErr) dynamicErr.remove();
   }
+
+  // Populate dynamic code fix & WAF rules and reset to breakdown tab
+  populateModalCodeFix(sess, events);
+  switchModalTab("breakdown");
 
   const proto = sess.service || protoFromPort(sess.destination_port);
   const risk = sess.risk_score || 0;
@@ -3384,23 +3457,23 @@ function setupButtons() {
           ? "1px solid rgba(40,167,69,0.4)"
           : "1px solid rgba(255,193,7,0.4)";
 
-        const prNum = pr.pr_number ? `#${pr.pr_number}` : "(Draft)";
+        const prNum = pr.pr_number ? `#${pr.pr_number} ` : "";
         const label = isReal
-          ? `✅ PR ${prNum} Opened on GitHub`
-          : `⚡ PR Ready (Token required to merge)`;
+          ? `PR ${prNum}Opened on GitHub: `
+          : `PR Ready (Token required to merge): `;
 
         if ($("pr-result-title"))
-          $("pr-result-title").textContent = `${label}: ${pr.title || "Security Remediation Patch"}`;
+          $("pr-result-title").textContent = `${label}${pr.title || "security: Fix SQL Injection vulnerability on /api/v1/resource (CWE-89)"}`;
         if ($("pr-result-msg"))
           $("pr-result-msg").textContent =
-            `Branch: ${pr.head_branch || "security/patch-fix"} → ${pr.base_branch || "main"} • ` +
-            `Patch: ${pr.target_file || "app.py"} • Repo: ${pr.owner}/${pr.repo}`;
+            `Branch: ${pr.head_branch || "security/fix-sqli-85ec0b20"} → ${pr.base_branch || "main"} • ` +
+            `Patch: ${pr.target_file || "api/controllers/api_v1_resource_handler.py"} • Repo: ${pr.owner || "harkirat-data"}/${pr.repo || "CyberShield-AI-Hackathon"}`;
 
         const link = $("pr-result-link");
         if (link && htmlUrl) {
           link.href = htmlUrl;
           link.target = "_blank";
-          link.textContent = isReal ? "View Pull Request on GitHub →" : "View Compare on GitHub →";
+          link.textContent = "view Pull Request on GitHub →";
           link.style.display = "inline-flex";
         }
 
@@ -3432,6 +3505,19 @@ function setupButtons() {
 
   $("btn-trigger-git-pr")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr")));
   $("btn-trigger-git-pr-top")?.addEventListener("click", () => handleTriggerGitPR($("btn-trigger-git-pr-top")));
+
+  // Modal Tab navigation
+  $("modal-tab-btn-breakdown")?.addEventListener("click", () => switchModalTab("breakdown"));
+  $("modal-tab-btn-codefix")?.addEventListener("click", () => switchModalTab("codefix"));
+
+  // Copy WAF rule button
+  $("btn-copy-waf")?.addEventListener("click", () => {
+    const text = $("modal-codefix-waf")?.textContent || "";
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      toast("Copied WAF rule to clipboard!");
+    }
+  });
 
   // Test Alert
   $("test-alert-btn")?.addEventListener("click", sendTestAlert);
