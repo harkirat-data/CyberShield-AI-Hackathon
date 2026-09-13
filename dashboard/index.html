@@ -392,6 +392,16 @@
               <div class="ir-empty">No IR actions until session is analyzed</div>
             </div>
             <button class="btn-primary full-width" id="btn-commit-ir" disabled>Commit Selected Actions</button>
+            <div class="ir-audit-terminal" id="ir-audit-terminal" style="display:none; margin-top:12px; padding:12px 14px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; font-family:var(--font-mono); font-size:11.5px; color:#94a3b8; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #1e293b; padding-bottom:6px;">
+                <div style="color:#22c55e; font-weight:700; display:flex; align-items:center; gap:6px;">
+                  <span class="material-symbols-outlined" style="font-size:15px; color:#22c55e;">terminal</span>
+                  <span>Autonomous SOC Enforcement Terminal</span>
+                </div>
+                <span style="font-size:10px; color:#4ade80; background:rgba(34,197,94,0.15); padding:2px 6px; border-radius:4px; font-weight:600;">ACTIVE IN PERIMETER</span>
+              </div>
+              <div id="ir-audit-log-lines" style="line-height:1.6; color:#cbd5e1;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1167,6 +1177,6 @@ location /api/v1/resource {
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/dashboard/app.js?v=2.9.2"></script>
+<script src="/dashboard/app.js?v=3.0.0"></script>
 </body>
 </html>

@@ -221,6 +221,7 @@ class HoneypotRuntime:
                 "last_error": self.brain.last_error,
             },
             "blocked_sources": len(self._blocked_sources),
+            "blocked_ips": list(self._blocked_sources),
             "services": services,
         }
 
