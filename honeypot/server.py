@@ -105,6 +105,25 @@ def serve_script() -> FileResponse:
     return FileResponse(js_file, media_type="application/javascript", headers=NO_CACHE_HEADERS)
 
 
+@app.get("/dashboard/{file_path:path}", include_in_schema=False)
+def serve_dashboard_static(file_path: str) -> FileResponse:
+    target = DASHBOARD_ROOT / file_path
+    if target.is_file():
+        media_types = {
+            ".svg": "image/svg+xml",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".ico": "image/x-icon",
+            ".css": "text/css",
+            ".js": "application/javascript",
+            ".html": "text/html",
+        }
+        media = media_types.get(target.suffix.lower(), None)
+        return FileResponse(target, media_type=media, headers=NO_CACHE_HEADERS)
+    raise HTTPException(status_code=404, detail=f"Dashboard asset {file_path} not found")
+
+
 # ============================================================
 # HEALTH & HONEYPOT TELEMETRY API
 # ============================================================
