@@ -709,14 +709,14 @@ class AlertManager:
         self.discord = discord if discord is not None else DiscordAlerter()
         self.email = email if email is not None else EmailAlerter()
 
-        # Configurable alert threshold
+        # Configurable alert threshold (default 85 as requested)
         if min_risk_score is not None:
             self.min_risk_score = min_risk_score
         else:
             try:
-                self.min_risk_score = int(os.environ.get("ALERT_MIN_RISK_SCORE", "80"))
+                self.min_risk_score = int(os.environ.get("ALERT_MIN_RISK_SCORE", "85"))
             except ValueError:
-                self.min_risk_score = 80
+                self.min_risk_score = 85
 
         if min_severity is not None:
             self.min_severity = min_severity.lower()
@@ -762,14 +762,14 @@ class AlertManager:
 
     def should_alert(self, alert: SecurityAlert, record: bool = False) -> bool:
         """
-        Evaluate if alert meets severity/risk thresholds and is not a duplicate.
+        Evaluate if alert meets severity/risk thresholds (> 85) and is not a duplicate.
         If record=True, records this event in the deduplication cache if accepted.
         """
         sev_rank = SEVERITY_RANKS.get(alert.severity.lower(), 0)
         min_sev_rank = SEVERITY_RANKS.get(self.min_severity.lower(), 3)  # default 'high' = 3
 
-        # Match policy if risk_score >= threshold OR severity rank meets minimum
-        score_meets = alert.risk_score >= self.min_risk_score
+        # Match policy if risk_score > 85 OR risk_score >= threshold
+        score_meets = alert.risk_score > 85 or alert.risk_score >= self.min_risk_score
         severity_meets = sev_rank >= min_sev_rank
 
         if not (score_meets or severity_meets):

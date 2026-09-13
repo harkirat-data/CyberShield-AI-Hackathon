@@ -2586,7 +2586,7 @@ function renderAlerts(data) {
   const policy = data.policy || {};
   const policyText = $("policy-status-text");
   if (policyText) {
-    policyText.textContent = `Score ≥ ${policy.min_risk_score || 80} or ${(policy.min_severity || "high").toUpperCase()} • Cooldown: ${policy.dedup_window_seconds || 300}s`;
+    policyText.textContent = `Score > ${policy.min_risk_score || 85} (Auto Dispatch) • Cooldown: ${policy.dedup_window_seconds || 300}s`;
   }
 
   // History Table
