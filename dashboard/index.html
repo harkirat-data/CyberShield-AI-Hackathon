@@ -808,100 +808,136 @@
       </button>
     </div>
 
+    <!-- MODAL TABS NAV -->
+    <div class="modal-tab-nav" style="display:flex;align-items:center;gap:12px;padding:12px 24px;background:var(--surface-low);border-bottom:1px solid var(--border)">
+      <button class="modal-tab-btn active" id="modal-tab-btn-breakdown" type="button" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #dcd7cd;background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,0.04);transition:all 0.15s">
+        <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-secondary)">description</span>
+        <span>Incident Breakdown</span>
+      </button>
+      <button class="modal-tab-btn" id="modal-tab-btn-codefix" type="button" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--text-secondary);transition:all 0.15s">
+        <span class="material-symbols-outlined" style="font-size:18px;color:#d97706">handyman</span>
+        <span>⚡ Code Fix &amp; ⚡ Create GitHub PR</span>
+        <span style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:0.04em">AUTO-FIX</span>
+      </button>
+    </div>
+
     <div class="modal-body">
-      <!-- PLAIN-ENGLISH EXECUTIVE EXPLANATION -->
-      <div class="modal-story-grid">
-        <div class="story-box attacker-box">
-          <div class="story-box-head">
-            <span class="material-symbols-outlined" style="color:var(--rose)">warning</span>
-            <span>What the Attacker Tried to Do</span>
-          </div>
-          <p class="story-text" id="modal-attacker-story">
-            Loading attack story...
-          </p>
-        </div>
-
-        <div class="story-box defender-box">
-          <div class="story-box-head">
-            <span class="material-symbols-outlined" style="color:var(--primary)">shield</span>
-            <span>What CyberShield AI Did (How We Protected You)</span>
-          </div>
-          <p class="story-text" id="modal-defender-story">
-            Loading defense response...
-          </p>
-        </div>
-      </div>
-
-      <!-- QUICK FACTS TILES -->
-      <div class="modal-facts-grid">
-        <div class="fact-card">
-          <span class="fact-label">Adversary Actions</span>
-          <span class="fact-val" id="modal-fact-actions">0</span>
-          <span class="fact-sub" id="modal-fact-actions-sub">Commands &amp; requests</span>
-        </div>
-        <div class="fact-card">
-          <span class="fact-label">Time Entrapped</span>
-          <span class="fact-val" id="modal-fact-duration">0s</span>
-          <span class="fact-sub" id="modal-fact-duration-sub">Attacker dwell time</span>
-        </div>
-        <div class="fact-card">
-          <span class="fact-label">AI Believability</span>
-          <span class="fact-val" id="modal-fact-ai">Gemini Deception</span>
-          <span class="fact-sub" id="modal-fact-ai-sub">Adaptive lure responses</span>
-        </div>
-        <div class="fact-card">
-          <span class="fact-label">Threat Severity</span>
-          <span class="fact-val" id="modal-fact-threat">Critical</span>
-          <span class="fact-sub" id="modal-fact-threat-sub">Risk score: 0/100</span>
-        </div>
-      </div>
-
-
-
-      <!-- STEP-BY-STEP STORY TIMELINE -->
-      <div class="modal-timeline-section">
-        <div class="timeline-header">
-          <span class="timeline-title">What Happened Step-by-Step (Plain English)</span>
-          <span class="timeline-count" id="modal-timeline-count">0 events recorded</span>
-        </div>
-        <div class="modal-timeline-list" id="modal-timeline-list">
-          <!-- Populated dynamically with friendly step-by-step translations -->
-        </div>
-      </div>
-
-      <!-- AUTONOMOUS CODE REMEDIATION & 1-CLICK PULL REQUEST -->
-      <div class="pr-remediation-box" id="modal-pr-remediation-box" style="margin-top:20px;padding:16px 20px;background:#fcfbf7;border:1px solid #e2ded4;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:36px;height:36px;border-radius:8px;background:rgba(70,95,44,0.12);display:flex;align-items:center;justify-content:center">
-              <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">terminal</span>
+      <!-- PANE 1: INCIDENT BREAKDOWN -->
+      <div id="modal-pane-breakdown" style="display:flex;flex-direction:column;gap:20px">
+        <!-- PLAIN-ENGLISH EXECUTIVE EXPLANATION -->
+        <div class="modal-story-grid">
+          <div class="story-box attacker-box">
+            <div class="story-box-head">
+              <span class="material-symbols-outlined" style="color:var(--rose)">warning</span>
+              <span>What the Attacker Tried to Do</span>
             </div>
-            <div>
-              <div style="font-weight:700;font-size:14px;color:var(--text);font-family:var(--font-head)">Autonomous Code Patch &amp; Git Remediation</div>
-              <div style="font-size:11px;color:var(--text-muted)">Generate defense patch and open a Pull Request directly on GitHub repository</div>
-            </div>
+            <p class="story-text" id="modal-attacker-story">
+              Loading attack story...
+            </p>
           </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <select id="remed-stack-select" style="background:#fff;border:1px solid #cfc9be;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text);outline:none;cursor:pointer">
-              <option value="python">Python (SQLAlchemy / FastAPI)</option>
-              <option value="javascript">Node.js (Express / Knex)</option>
-              <option value="php">PHP (PDO Prepared)</option>
-              <option value="go">Go (database/sql)</option>
-            </select>
-            <button class="btn-primary" id="btn-trigger-git-pr" style="padding:8px 18px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#1f6feb,#238636);border-color:#238636;cursor:pointer;border-radius:6px;color:#fff">
-              <span class="material-symbols-outlined" style="font-size:16px">merge</span>
-              <span>⚡ Create GitHub Pull Request</span>
+
+          <div class="story-box defender-box">
+            <div class="story-box-head">
+              <span class="material-symbols-outlined" style="color:var(--primary)">shield</span>
+              <span>What CyberShield AI Did (How We Protected You)</span>
+            </div>
+            <p class="story-text" id="modal-defender-story">
+              Loading defense response...
+            </p>
+          </div>
+        </div>
+
+        <!-- QUICK FACTS TILES -->
+        <div class="modal-facts-grid">
+          <div class="fact-card">
+            <span class="fact-label">Adversary Actions</span>
+            <span class="fact-val" id="modal-fact-actions">0</span>
+            <span class="fact-sub" id="modal-fact-actions-sub">Commands &amp; requests</span>
+          </div>
+          <div class="fact-card">
+            <span class="fact-label">Time Entrapped</span>
+            <span class="fact-val" id="modal-fact-duration">0s</span>
+            <span class="fact-sub" id="modal-fact-duration-sub">Attacker dwell time</span>
+          </div>
+          <div class="fact-card">
+            <span class="fact-label">AI Believability</span>
+            <span class="fact-val" id="modal-fact-ai">Gemini Deception</span>
+            <span class="fact-sub" id="modal-fact-ai-sub">Adaptive lure responses</span>
+          </div>
+          <div class="fact-card">
+            <span class="fact-label">Threat Severity</span>
+            <span class="fact-val" id="modal-fact-threat">Critical</span>
+            <span class="fact-sub" id="modal-fact-threat-sub">Risk score: 0/100</span>
+          </div>
+        </div>
+
+        <!-- STEP-BY-STEP STORY TIMELINE -->
+        <div class="modal-timeline-section">
+          <div class="timeline-header">
+            <span class="timeline-title">What Happened Step-by-Step (Plain English)</span>
+            <span class="timeline-count" id="modal-timeline-count">0 events recorded</span>
+          </div>
+          <div class="modal-timeline-list" id="modal-timeline-list">
+            <!-- Populated dynamically with friendly step-by-step translations -->
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 2: CODE FIX & AUTONOMOUS GITHUB PULL REQUEST -->
+      <div id="modal-pane-codefix" style="display:none;flex-direction:column;gap:16px">
+        <!-- CODE FIX SNIPPET -->
+        <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px 20px;font-family:var(--font-mono);font-size:12px;color:#c9d1d9;overflow-x:auto;line-height:1.6;white-space:pre" id="modal-codefix-code"># SAFE: DB-API Parameterized Query placeholder
+query = "SELECT * FROM records WHERE user_input = %s"
+cursor.execute(query, (request.args.get('q'),))</div>
+
+        <!-- PERIMETER FIREWALL & WAF RULE -->
+        <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden">
+          <div style="background:#161b22;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #30363d">
+            <div style="display:flex;align-items:center;gap:8px;color:#8b949e;font-size:12px;font-weight:600">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#f97316">local_fire_department</span>
+              <span>Perimeter Firewall &amp; WAF Rule</span>
+            </div>
+            <button id="btn-copy-waf" type="button" style="background:rgba(255,255,255,0.08);border:1px solid #30363d;border-radius:4px;padding:4px 10px;font-size:11px;color:#c9d1d9;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:600">
+              <span class="material-symbols-outlined" style="font-size:14px">content_copy</span>
+              <span>Copy WAF</span>
             </button>
           </div>
+          <div style="padding:14px 18px;font-family:var(--font-mono);font-size:12px;color:#79c0ff;overflow-x:auto;line-height:1.5;white-space:pre" id="modal-codefix-waf"># Nginx WAF Block Rule against SQLi payload
+location /api/v1/resource {
+  if ($query_string ~* "(select|union|concat|information_schema|insert|drop|sleep)") {
+    return 403;
+  }
+}</div>
         </div>
 
-        <div id="pr-result-banner" style="display:none;padding:12px 16px;border-radius:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:14px">
-          <div class="pr-result-text">
-            <div id="pr-result-title" style="font-weight:700;font-size:13px;color:var(--text)"></div>
-            <div id="pr-result-msg" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+        <!-- 1-CLICK AUTOMATED GITHUB PULL REQUEST (PR) -->
+        <div style="background:#f0f6ff;border:1px solid #c8ddfa;border-radius:8px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:42px;height:42px;border-radius:6px;background:#e0edfe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="color:#1a73e8;font-size:24px">alt_route</span>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#1e293b">1-Click Automated GitHub Pull Request (PR)</div>
+              <div style="font-size:12px;color:#64748b;margin-top:3px">CyberShield AI will automatically create a new branch security/patch-fix with line diffs and submit a Pull Request to your GitHub repository.</div>
+            </div>
           </div>
-          <a id="pr-result-link" href="#" target="_blank" style="display:none;font-size:12px;font-weight:700;color:var(--primary);text-decoration:none;border-bottom:1px dashed var(--primary);align-items:center;gap:4px">
-            View on GitHub &rarr;
+          <button class="btn-primary" id="btn-trigger-git-pr" type="button" style="background:#1a73e8;border-color:#1a73e8;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(26,115,232,0.3);flex-shrink:0">
+            <span class="material-symbols-outlined" style="font-size:18px">bolt</span>
+            <span>Create GitHub Pull Request</span>
+          </button>
+        </div>
+
+        <!-- GREEN RESULT / SUCCESS BANNER -->
+        <div id="pr-result-banner" style="display:none;background:#edfcf2;border:1px solid #a7f3d0;border-radius:8px;padding:14px 20px;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="material-symbols-outlined" style="color:#16a34a;font-size:26px;flex-shrink:0">check_circle</span>
+            <div class="pr-result-text">
+              <div id="pr-result-title" style="font-size:13px;font-weight:700;color:#14532d"></div>
+              <div id="pr-result-msg" style="font-size:11px;color:#4b5563;margin-top:3px"></div>
+            </div>
+          </div>
+          <a id="pr-result-link" href="#" target="_blank" style="display:none;color:#15803d;font-size:12px;font-weight:700;text-decoration:underline;white-space:nowrap">
+            view Pull Request on GitHub &rarr;
           </a>
         </div>
       </div>
@@ -934,7 +970,7 @@
         </button>
         <button class="btn-outline sm" id="modal-btn-export">
           <span class="material-symbols-outlined" style="font-size:16px">data_object</span>
-          Export JSON
+          Export Evidence JSON
         </button>
       </div>
     </div>
