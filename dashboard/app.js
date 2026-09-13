@@ -1187,6 +1187,17 @@ function generateExecutiveBriefHtml(sess, events = []) {
 function openSessionModal(sess, events = []) {
   if (!sess) return;
 
+  state.selectedSession = sess;
+  state.selectedSessionId = sess.session_id || sess.id;
+
+  // Reset PR result banner for this newly opened session
+  const prBanner = $("pr-result-banner");
+  if (prBanner) {
+    prBanner.style.display = "none";
+    const dynamicErr = prBanner.querySelector(".pr-result-text p");
+    if (dynamicErr) dynamicErr.remove();
+  }
+
   const proto = sess.service || protoFromPort(sess.destination_port);
   const risk = sess.risk_score || 0;
   const actions = sess.interactions ?? sess.attacker_action_count ?? events.filter(e => e.direction === "inbound").length;
