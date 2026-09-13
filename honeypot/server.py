@@ -299,8 +299,18 @@ class RemediationRequest(BaseModel):
 
 class ChatQueryRequest(BaseModel):
     query: str
-    lang: str = Field(default="en", pattern="^(en|hi)$")
+    lang: Optional[str] = "en"
     session_id: Optional[str] = "sme_chat"
+    top_k: Optional[int] = 3
+
+
+try:
+    from Ai.chatbot_engine import generate_chat_response
+except ImportError:
+    try:
+        from chatbot_engine import generate_chat_response
+    except ImportError:
+        generate_chat_response = None
 
 
 @app.get("/api/v1/honeypot/sessions/{session_id}/remediation")
@@ -354,7 +364,7 @@ def create_session_pr(
     pref = stack or (req.preferred_stack if req else None)
     patch = generate_remediation_patch(session, events, preferred_stack=pref)
 
-    # Call the REAL GitHub API
+    # Call the REAL GitHub API / git push
     pr_result = create_github_pr(patch, session_id)
 
     return {
@@ -369,36 +379,32 @@ def create_session_pr(
 
 
 @app.post("/api/v1/chat")
+@app.post("/api/v1/rag/query")
 def chat_with_assistant(request: ChatQueryRequest) -> Dict[str, Any]:
-    """SME Multilingual (English / Hindi) NLP Assistant Chatbot."""
-    recent_sessions = store.list_sessions(limit=5)
-    context_str = f"Active Grid Decoys: 5/5. Recent sessions: {len(recent_sessions)}."
-    
-    answer = None
-    try:
-        from Ai.rag.core.pipeline import RAGPipeline
-        pipeline = RAGPipeline(enable_retrieval=False, enable_llm=True)
-        if pipeline.llm:
-            lang_inst = "Respond in clear, polite Hindi or Hinglish." if request.lang == "hi" else "Respond in professional English."
-            prompt = f"You are CyberShield AI SOC Assistant. {lang_inst}\nContext: {context_str}\nQuestion: {request.query}"
-            answer = pipeline.llm.generate(prompt)
-    except Exception:
-        pass
-
-    if not answer:
-        if request.lang == "hi":
-            answer = f"CyberShield AI सक्रिय रूप से आपकी सुरक्षा कर रहा है। ग्रिड में 5 डेकोय पोर्ट सक्रिय हैं और {len(recent_sessions)} सत्र ट्रैक किए गए हैं।"
-        else:
-            answer = f"CyberShield AI is actively monitoring your honeypot perimeter. 5 decoy listeners online with {len(recent_sessions)} captured threat sessions."
+    """Human-Like Conversational LLM SOC Assistant (English & Hindi)."""
+    recent_sessions = store.list_sessions(limit=10)
+    if generate_chat_response:
+        res = generate_chat_response(
+            query=request.query,
+            lang=request.lang or "en",
+            sessions=recent_sessions,
+        )
+        return {
+            "ok": True,
+            "query": request.query,
+            "lang": request.lang,
+            "answer": res.get("answer", ""),
+            "model": res.get("model", "Gemini-LLM"),
+            "type": res.get("type", "llm"),
+            "sources": [
+                {"label": "CyberShield AI Cognitive Core", "source": "core/runtime", "score": 0.99}
+            ]
+        }
 
     return {
         "ok": True,
         "query": request.query,
-        "lang": request.lang,
-        "answer": answer,
-        "sources": [
-            {"label": "CyberShield AI Threat Engine", "source": "core/runtime", "score": 0.98}
-        ]
+        "answer": f"CyberShield AI Copilot received: '{request.query}'. Grid is actively monitoring {len(recent_sessions)} decoy sessions.",
     }
 
 
