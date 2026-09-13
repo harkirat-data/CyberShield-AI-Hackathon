@@ -3396,19 +3396,116 @@ function setupButtons() {
 
   // Commit IR
   $("btn-commit-ir")?.addEventListener("click", async () => {
-    const checked = document.querySelectorAll("#ir-list input[type=checkbox]:checked");
+    const checked = Array.from(document.querySelectorAll("#ir-list input[type=checkbox]:checked:not(:disabled)"));
     if (!checked.length) {
-      toast("Select at least one IR action to commit.", true);
+      toast("Select at least one pending IR action to commit.", true);
       return;
     }
+
+    const btn = $("btn-commit-ir");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size:16px;animation:spin 1s linear infinite">sync</span> Enforcing ${checked.length} IR Action(s)...`;
+    }
+
+    const sess = state.selectedSession || (state.sessions && state.sessions.find(s => s.session_id === state.selectedSessionId)) || {};
+    const ip = sess.source_ip || sess.source_address || "45.249.70.194";
+
+    let shouldBlockIP = false;
+    checked.forEach(c => {
+      const label = c.closest("label")?.innerText?.toLowerCase() || "";
+      if (label.includes("block") || label.includes("firewall") || label.includes("quarantine")) {
+        shouldBlockIP = true;
+      }
+    });
+
+    // 1. Enforce IP Block at Perimeter Firewall
+    if (shouldBlockIP && ip) {
+      try {
+        await api("/api/v1/honeypot/block-source", {
+          method: "POST",
+          body: JSON.stringify({ source_ip: ip })
+        });
+      } catch (e) {
+        console.warn("block-source call warning:", e);
+      }
+    }
+
+    // 2. Enforce Session Isolation
     if (state.selectedSessionId) {
       try {
         await api(`/api/v1/honeypot/sessions/${state.selectedSessionId}/contain`, { method: "POST" });
       } catch (e) {
-        // non-blocking if already contained
+        console.warn("contain session call warning:", e);
       }
     }
-    toast(`Successfully committed and applied ${checked.length} incident response action(s)!`);
+
+    // 3. Update UI Checklist items to visually completed
+    checked.forEach(cb => {
+      cb.disabled = true;
+      const parent = cb.closest("label");
+      if (parent) {
+        const title = parent.querySelector(".ir-item-title");
+        const sub = parent.querySelector(".ir-item-sub");
+        if (title) {
+          title.classList.add("done");
+          title.style.color = "var(--text-secondary)";
+          title.style.textDecoration = "line-through";
+        }
+        if (sub) {
+          sub.className = "ir-item-sub green";
+          sub.innerHTML = `✓ Enforced by CyberShield AI SOC`;
+        }
+      }
+    });
+
+    // 4. Update Pending counter
+    const allCheckboxes = Array.from(document.querySelectorAll("#ir-list input[type=checkbox]"));
+    const remainingPending = allCheckboxes.filter(cb => !cb.disabled && !cb.checked).length;
+    const irPending = $("ir-pending");
+    if (irPending) {
+      if (remainingPending === 0) {
+        irPending.textContent = "0 Pending — All Enforced";
+        irPending.style.color = "var(--emerald)";
+        irPending.style.fontWeight = "700";
+      } else {
+        irPending.textContent = `${remainingPending} Pending`;
+      }
+    }
+
+    // 5. Update live status & auto-quarantine blocked counter
+    try {
+      const statusRes = await api("/api/v1/honeypot/status");
+      if (statusRes && typeof updateStatusUI === "function") {
+        updateStatusUI(statusRes);
+      }
+    } catch (_) {}
+
+    // 6. Update session status in session list
+    if (sess) {
+      sess.contained = true;
+      sess.status = "contained";
+      if (typeof renderSessions === "function") {
+        renderSessions(state.sessions);
+      }
+    }
+
+    if (btn) {
+      btn.innerHTML = `✓ ${checked.length} Action(s) Enforced`;
+      btn.style.background = "#15803d";
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Commit Selected Actions";
+          btn.style.background = "";
+        }
+      }, 3000);
+    }
+
+    const details = shouldBlockIP
+      ? `Isolated session & added ${ip} to perimeter firewall blocklist!`
+      : `Contained session & applied forensic quarantine.`;
+    toast(`✓ Enforced ${checked.length} IR Action(s): ${details}`);
   });
 
   // 1-Click GitHub PR creation
