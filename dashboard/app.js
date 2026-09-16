@@ -3796,6 +3796,82 @@ style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
 document.head.appendChild(style);
 
 // ============================================================
+// PROTECTED APPLICATION (MEDICARE.AI) WAF STATUS UI
+// ============================================================
+async function pollProtectedStatus() {
+  try {
+    const res = await fetch("/api/v1/protected/status");
+    if (!res.ok) return;
+    const data = await res.json();
+    updateProtectedAppPanel(data);
+  } catch (_) {}
+}
+
+function updateProtectedAppPanel(data) {
+  if (!data) return;
+  const total = data.total_requests || 0;
+  const blocked = data.blocked_requests || 0;
+  const forwarded = data.forwarded_requests || 0;
+  const threats = data.total_threats_detected || 0;
+  const rate = data.block_rate_pct != null ? data.block_rate_pct : 0.0;
+
+  if ($("prot-total-requests")) $("prot-total-requests").textContent = total;
+  if ($("prot-forwarded-sub")) $("prot-forwarded-sub").textContent = `${forwarded} forwarded`;
+  if ($("prot-blocked-requests")) $("prot-blocked-requests").textContent = blocked;
+  if ($("prot-block-rate")) $("prot-block-rate").textContent = `${rate}% block rate`;
+  if ($("prot-threats")) $("prot-threats").textContent = threats;
+
+  if (data.latest_event) {
+    const ev = data.latest_event;
+    if ($("prot-latest-event")) {
+      $("prot-latest-event").textContent = `${ev.method} ${ev.path} — ${ev.intent} (risk: ${ev.risk_score})`;
+    }
+    if ($("prot-latest-time")) {
+      $("prot-latest-time").textContent = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "--";
+    }
+    const badge = $("prot-latest-badge");
+    if (badge) {
+      badge.style.display = "inline-block";
+      if (ev.blocked) {
+        badge.textContent = "BLOCKED";
+        badge.style.background = "#fee2e2";
+        badge.style.color = "#991b1b";
+      } else {
+        badge.textContent = "PASSED";
+        badge.style.background = "#dcfce7";
+        badge.style.color = "#166534";
+      }
+    }
+  }
+
+  if (data.latest_events && data.latest_events.length > 0) {
+    const feed = $("prot-events-feed");
+    const list = $("prot-events-list");
+    if (feed && list) {
+      feed.style.display = "block";
+      list.innerHTML = data.latest_events.slice(0, 5).map(e => {
+        const bg = e.blocked ? "rgba(239, 68, 68, 0.08)" : "rgba(34, 197, 94, 0.05)";
+        const border = e.blocked ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.15)";
+        const statusBadge = e.blocked 
+          ? `<span style="color:#ef4444;font-weight:700;font-size:10px;background:rgba(239,68,68,0.15);padding:1px 5px;border-radius:3px;">403 BLOCKED</span>`
+          : `<span style="color:#22c55e;font-weight:700;font-size:10px;background:rgba(34,197,94,0.15);padding:1px 5px;border-radius:3px;">${e.status_code || 200} FORWARDED</span>`;
+        return `<div style="background:${bg};border:1px solid ${border};border-radius:6px;padding:6px 10px;font-family:var(--font-mono);font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;overflow:hidden;">
+            <strong style="color:var(--text-main);">${esc(e.method)}</strong>
+            <span style="color:#0ea5e9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;">${esc(e.path)}</span>
+            <span style="color:var(--text-muted);font-size:10px;">(${esc(e.intent)})</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="font-size:10px;color:var(--text-muted);">${e.latency_ms || 0}ms</span>
+            ${statusBadge}
+          </div>
+        </div>`;
+      }).join("");
+    }
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function init() {
@@ -3804,6 +3880,9 @@ async function init() {
   await refresh();
   connectWebSocket();
   setInterval(refresh, 3000);
+  setInterval(pollProtectedStatus, 3000);
+  pollProtectedStatus();
 }
 
 document.addEventListener("DOMContentLoaded", init);
+

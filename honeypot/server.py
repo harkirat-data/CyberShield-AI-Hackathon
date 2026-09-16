@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -34,6 +34,7 @@ from honeypot.runtime import HoneypotRuntime
 from honeypot.store import HoneypotStore
 from honeypot.models import DecoySession, TelemetryEvent, utc_now
 from canary.manager import CanaryManager
+from honeypot.proxy import MedicareWAFProxy
 
 try:
     from Ai.remediation_engine import generate_remediation_patch
@@ -60,13 +61,24 @@ store = HoneypotStore(settings.database_path)
 runtime = HoneypotRuntime(settings=settings, store=store)
 canary_mgr = CanaryManager(store=store)
 
+# ── Medicare.AI WAF Reverse Proxy ──────────────────────────────────────────
+# Shares the runtime's live blocklist so honeypot-blocked IPs are also WAF-blocked.
+waf_proxy = MedicareWAFProxy(
+    store=store,
+    blocked_sources=runtime._blocked_sources,
+    settings=settings,
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Automatically start honeypot listeners on server startup
+    # Start honeypot decoy listeners
     await runtime.start()
+    # Start Medicare.AI WAF reverse-proxy client pool
+    await waf_proxy.start()
     yield
-    # Gracefully stop honeypot listeners on server shutdown
+    # Graceful shutdown
+    await waf_proxy.stop()
     await runtime.stop()
 
 
@@ -761,8 +773,46 @@ def simulate_attack() -> Dict[str, Any]:
     return {"ok": True, "session": sim_session.to_dict()}
 
 
+
+
+
+
 # ============================================================
-# WEBSOCKET STREAM
+# MEDICARE.AI PROTECTED APP — STATUS API
+# ============================================================
+@app.get("/api/v1/protected/status")
+async def protected_app_status() -> Dict[str, Any]:
+    """Live metrics for the Medicare.AI WAF integration — powers the dashboard panel."""
+    return waf_proxy.get_metrics()
+
+
+# ============================================================
+# MEDICARE.AI WAF REVERSE PROXY — CATCH-ALL
+# ============================================================
+# All HTTP methods on /proxy/{path} are inspected by CyberShield
+# and forwarded clean to Medicare.AI (http://127.0.0.1:5000 by default).
+#
+# Example:  GET  http://localhost:8050/proxy/api/hospitals?lat=22&lon=88
+#           POST http://localhost:8050/proxy/api/analyze-prescription
+#
+@app.api_route(
+    "/proxy/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    include_in_schema=True,
+    name="medicare_waf_proxy",
+    summary="CyberShield WAF → Medicare.AI reverse proxy",
+    description=(
+        "Inspects incoming requests through the CyberShield threat-detection pipeline "
+        "(IntentClassifier + TelemetryStore + runtime blocklist), then forwards clean "
+        "requests to Medicare.AI. Blocked requests receive a 403 WAF response."
+    ),
+)
+async def medicare_waf_proxy(request: Request) -> Response:
+    return await waf_proxy.inspect_and_forward(request)
+
+
+# ============================================================
+# WEBSOCKET STREAM (include protected metrics)
 # ============================================================
 @app.websocket("/ws/dashboard")
 @app.websocket("/api/v1/ws/dashboard")
@@ -778,6 +828,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "sessions": {"sessions": store.list_sessions(limit=50)},
                 "canaries": {"tokens": canary_mgr.list_tokens()},
                 "alerts": alerts_status,
+                "protected": waf_proxy.get_metrics(),
             }
             await websocket.send_json(payload)
             await asyncio.sleep(2)
@@ -791,3 +842,4 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", "8050"))
     uvicorn.run("honeypot.server:app", host="0.0.0.0", port=port, reload=True)
+
