@@ -193,6 +193,88 @@
           <div class="progress-bar"><div class="progress-fill primary" id="ai-bar" style="width:99%"></div></div>
         </div>
       </div>
+
+      <!-- ===== PROTECTED APPLICATION: MEDICARE.AI ===== -->
+      <div id="protected-app-panel" style="margin-top:20px;background:linear-gradient(135deg,rgba(14,165,233,0.07),rgba(99,102,241,0.07));border:1.5px solid rgba(14,165,233,0.28);border-radius:14px;padding:0;overflow:hidden;">
+        <!-- Header bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px;border-bottom:1px solid rgba(14,165,233,0.18);flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(14,165,233,0.35);">
+              <span class="material-symbols-outlined" style="color:#fff;font-size:20px;font-variation-settings:'FILL' 1">health_and_safety</span>
+            </div>
+            <div>
+              <div style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+                Protected Application
+                <span style="background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;font-family:var(--font-mono);">WAF ACTIVE</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:13px;color:#0ea5e9">link</span>
+                <span id="protected-app-name" style="font-weight:700;color:#0ea5e9">Medicare.AI</span>
+                <span style="color:var(--border-strong)">·</span>
+                <span id="protected-app-url" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">http://127.0.0.1:5000</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="protected-app-status-badge" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:6px;font-weight:700;border:1px solid #bbf7d0;">
+              <span style="width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 6px #22c55e"></span>
+              MONITORING
+            </span>
+            <a href="http://127.0.0.1:8050/proxy" target="_blank" id="protected-app-link" style="font-size:11px;font-family:var(--font-mono);color:#0ea5e9;background:rgba(14,165,233,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(14,165,233,0.25);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+              <span class="material-symbols-outlined" style="font-size:13px">open_in_new</span>Access via WAF
+            </a>
+          </div>
+        </div>
+
+        <!-- Metric tiles row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;border-bottom:1px solid rgba(14,165,233,0.12);">
+          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Requests Inspected</div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:var(--text-main)" id="prot-total-requests">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="prot-forwarded-sub">0 forwarded</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;color:#ef4444;">WAF Blocks</div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#ef4444" id="prot-blocked-requests">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="prot-block-rate">0.0% block rate</div>
+          </div>
+          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Threats Detected</div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#f59e0b" id="prot-threats">0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">High/critical severity</div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Architecture</div>
+            <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text-main);line-height:1.7;">
+              <span style="color:#0ea5e9">User</span>
+              <span style="color:var(--text-muted)"> → </span>
+              <span style="color:#8B9A6E">CyberShield</span>
+              <span style="color:var(--text-muted)"> → </span>
+              <span style="color:#6366f1">Medicare.AI</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">WAF Reverse Proxy · Port 8050→5000</div>
+          </div>
+        </div>
+
+        <!-- Latest security event strip -->
+        <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;min-height:46px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#0ea5e9">security</span>
+            <span style="font-size:12px;font-weight:600;color:var(--text-muted);">Latest Event:</span>
+            <span id="prot-latest-event" style="font-family:var(--font-mono);font-size:12px;color:var(--text-main);font-weight:600;">Awaiting traffic…</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="prot-latest-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">--</span>
+            <span id="prot-latest-badge" style="display:none;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--font-mono);">--</span>
+          </div>
+        </div>
+
+        <!-- Recent requests mini-feed (last 5 events) -->
+        <div id="prot-events-feed" style="display:none;border-top:1px solid rgba(14,165,233,0.12);padding:10px 20px;max-height:160px;overflow-y:auto;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Live Request Feed →  Medicare.AI</div>
+          <div id="prot-events-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== SECTION: DECOY SENSORS ===== -->
