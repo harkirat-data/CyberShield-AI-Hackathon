@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" type="image/svg+xml" href="/dashboard/logo.svg">
-  <link rel="stylesheet" href="/dashboard/styles.css?v=2.8.3">
+  <link rel="stylesheet" href="/dashboard/styles.css?v=2.8.4">
 </head>
 <body>
 
@@ -92,20 +92,13 @@
   <!-- TOP HEADER BAR -->
   <header class="topbar">
     <div class="topbar-left">
-      <img src="/dashboard/logo.svg" alt="CyberShield AI" class="topbar-pixel-logo">
-      <span class="topbar-title">CyberShield AI <span class="topbar-accent">Honeypot Sentinel Grid</span></span>
-      <div class="gemini-pill" id="gemini-status-pill" style="background:#eef3e7;border:1px solid #8B9A6E">
-        <span class="dot-pulse" style="background:#8B9A6E"></span>
-        <span class="pill-label" style="color:#242c1d">System Layer:</span>
-        <span class="pill-value" id="gemini-model-label" style="color:#242c1d;font-weight:600">Phase 1: Multi-Port Decoy Grid (Port 8050)</span>
-        <span class="pill-latency" id="gemini-latency"></span>
+      <div class="topbar-brand">
+        <img src="/dashboard/logo.svg" alt="CyberShield AI Logo" class="topbar-brand-logo">
+        <span class="topbar-brand-name">CyberShield AI</span>
+        <span class="topbar-brand-badge">Honeypot Sentinel Grid</span>
       </div>
     </div>
     <div class="topbar-right">
-      <div class="search-box">
-        <span class="material-symbols-outlined" style="font-size:17px;color:#8ca4ac">search</span>
-        <input type="text" id="search-input" placeholder="Filter honeypots, IPs, IOC hashes..." autocomplete="off">
-      </div>
       <div class="grid-badge" id="grid-status-badge">
         <span class="dot-green"></span>
         <span id="grid-badge-label">Checking...</span>
@@ -132,6 +125,10 @@
           <p class="section-sub">Real-time synthetic honeynet orchestrating dynamic kernel lures, high-interaction sandbox diversion, and adaptive Gemini generative responses to actively entrap persistent adversary campaigns.</p>
         </div>
         <div class="hero-actions">
+          <a href="http://127.0.0.1:8088/" target="_blank" class="btn-primary" id="btn-launch-finance-decoy" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#0284c7;color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600">
+            <span class="material-symbols-outlined" style="font-size:18px">open_in_new</span>
+            Target Decoy Portal (:8088)
+          </a>
           <button class="btn-outline" id="btn-pause-grid">
             <span class="material-symbols-outlined" id="pause-grid-icon" style="font-size:18px;color:#7d9cb7">pause_circle</span>
             <span id="pause-grid-label">Pause Grid</span>
