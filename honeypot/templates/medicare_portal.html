@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicare.AI — Clinical Intelligence &amp; Healthcare Operations Portal</title>
+  <meta name="description" content="Medicare.AI Clinical Portal protected by CyberShield AI Autonomous WAF and Deception Mesh.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --teal: #0d9488;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header.med-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .med-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .med-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 20px;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
+    }
+    .med-brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+    .med-brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .waf-shield-pill {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .waf-pulse {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .med-nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .med-nav a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .med-nav a.active, .med-nav a:hover {
+      color: var(--primary);
+    }
+
+    /* Main Container */
+    .med-container {
+      max-width: 1200px;
+      margin: 28px auto;
+      padding: 0 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Top stats row */
+    .med-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .med-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .med-card-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .med-card-val {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text);
+      margin: 4px 0 2px;
+    }
+    .med-card-note {
+      font-size: 11px;
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    /* Clinical Search Bar */
+    .search-panel {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .search-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .search-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .search-input-box {
+      display: flex;
+      gap: 12px;
+    }
+    .med-input {
+      flex: 1;
+      padding: 11px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .med-input:focus {
+      border-color: var(--primary);
+    }
+    .btn-search {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 22px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-search:hover {
+      background: var(--primary-dark);
+    }
+    .sample-prompts {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .sample-pill {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sample-pill:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .sample-pill.attack {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+    .sample-pill.attack:hover {
+      background: #fee2e2;
+    }
+
+    /* Patient Table */
+    .table-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .table-top {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    table.med-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.med-table th {
+      background: #f8fafc;
+      padding: 12px 18px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    table.med-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    table.med-table tr:last-child td {
+      border-bottom: none;
+    }
+    table.med-table tr:hover td {
+      background: #f8fafc;
+    }
+    .patient-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-stable { background: #dcfce7; color: #166534; }
+    .status-obs { background: #fef3c7; color: #92400e; }
+    .status-crit { background: #fee2e2; color: #991b1b; }
+
+    /* Alert Banner */
+    .med-alert {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      align-items: center;
+      gap: 10px;
+    }
+    .med-alert.danger {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+    .med-alert.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="med-header">
+    <div class="med-brand">
+      <div class="med-logo">
+        <span class="material-symbols-outlined">health_and_safety</span>
+      </div>
+      <div>
+        <div class="med-brand-title">Medicare.AI</div>
+        <div class="med-brand-sub">Clinical Decision Support &amp; Patient Records</div>
+      </div>
+    </div>
+
+    <div class="med-nav">
+      <a href="#records" class="active">Clinical Records</a>
+      <a href="#lab">AI Diagnostics</a>
+      <a href="#pharmacy">Pharmacy Ledger</a>
+    </div>
+
+    <div class="waf-shield-pill">
+      <span class="waf-pulse"></span>
+      <span>CYBERSHIELD AI WAF: IN-LINE ACTIVE</span>
+    </div>
+  </header>
+
+  <div class="med-container">
+    <!-- Stats Cards -->
+    <div class="med-stats-grid">
+      <div class="med-card">
+        <div class="med-card-label">Active Patients In-Care</div>
+        <div class="med-card-val">1,482</div>
+        <div class="med-card-note">↑ 4.2% admission volume</div>
+      </div>
+      <div class="med-card">
+        <div class="med-card-label">AI Diagnostic Confidence</div>
+        <div class="med-card-val">99.4%</div>
+        <div class="med-card-note">Gemini-Clinical fine-tuned</div>
+      </div>
+      <div class="med-card">
+        <div class="med-card-label">HIPAA Security Guard</div>
+        <div class="med-card-val" style="color:#0284c7">ENFORCED</div>
+        <div class="med-card-note">CyberShield Deception Mesh v2.5</div>
+      </div>
+      <div class="med-card">
+        <div class="med-card-label">Threats Intercepted</div>
+        <div class="med-card-val" style="color:#ef4444" id="stat-threats-count">14</div>
+        <div class="med-card-note">0 Data Breaches / 100% Contained</div>
+      </div>
+    </div>
+
+    <!-- Search / Diagnostic Lookup -->
+    <div class="search-panel">
+      <div class="search-header">
+        <div class="search-title">
+          <span class="material-symbols-outlined" style="color:var(--primary); font-size:18px;">person_search</span>
+          <span>Patient Electronic Health Record (EHR) Lookup</span>
+        </div>
+        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Protected by CyberShield In-Line Inspection</span>
+      </div>
+
+      <div class="search-input-box">
+        <input type="text" id="patient-search-input" class="med-input" placeholder="Search patient name, MRN, or diagnostic code..." value="Sarah Jenkins">
+        <button class="btn-search" id="btn-patient-search">
+          <span class="material-symbols-outlined" style="font-size:16px">search</span>
+          <span>Search Records</span>
+        </button>
+      </div>
+
+      <div class="sample-prompts">
+        <span>Quick Test Presets:</span>
+        <span class="sample-pill" onclick="setSearch('Sarah Jenkins')">Sarah Jenkins (Normal)</span>
+        <span class="sample-pill" onclick="setSearch('MRN-90412')">MRN-90412 (Normal)</span>
+        <span class="sample-pill attack" onclick="setSearch(`admin' OR '1'='1' --`)">⚡ SQL Injection (`admin' OR '1'='1' --`)</span>
+        <span class="sample-pill attack" onclick="setSearch(`<script>alert('XSS')</script>`)">⚡ XSS Probe (`&lt;script&gt;`)</span>
+        <span class="sample-pill attack" onclick="setSearch(`/../../etc/passwd`)">⚡ Path Traversal (`/../../etc/passwd`)</span>
+      </div>
+
+      <div class="med-alert" id="search-alert"></div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="table-card">
+      <div class="table-top">
+        <div class="table-title">Recent Clinical Consultations &amp; Diagnostic Ledger</div>
+        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">5 of 1,482 Active Cases</span>
+      </div>
+
+      <table class="med-table">
+        <thead>
+          <tr>
+            <th>Patient ID</th>
+            <th>Name</th>
+            <th>Age / Gender</th>
+            <th>Clinical Condition</th>
+            <th>Attending Physician</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="patient-table-body">
+          <tr>
+            <td class="patient-id">MED-89102-US</td>
+            <td><strong>Sarah Jenkins</strong></td>
+            <td>34 / F</td>
+            <td>Acute Bronchitis &amp; Respiratory Review</td>
+            <td>Dr. Marcus Vance, MD</td>
+            <td><span class="status-badge status-stable">Stable</span></td>
+          </tr>
+          <tr>
+            <td class="patient-id">MED-44192-US</td>
+            <td><strong>David Chen</strong></td>
+            <td>58 / M</td>
+            <td>Type 2 Diabetes Routine Monitoring</td>
+            <td>Dr. Elena Rostova, MD</td>
+            <td><span class="status-badge status-obs">Observation</span></td>
+          </tr>
+          <tr>
+            <td class="patient-id">MED-77120-US</td>
+            <td><strong>Amara Okafor</strong></td>
+            <td>29 / F</td>
+            <td>Post-Operative Orthopedic Assessment</td>
+            <td>Dr. Aris Thorne, MD</td>
+            <td><span class="status-badge status-stable">Stable</span></td>
+          </tr>
+          <tr>
+            <td class="patient-id">MED-12904-US</td>
+            <td><strong>Robert Gallagher</strong></td>
+            <td>67 / M</td>
+            <td>Cardiovascular Arrhythmia Telemetry</td>
+            <td>Dr. Marcus Vance, MD</td>
+            <td><span class="status-badge status-crit">Critical Ward</span></td>
+          </tr>
+          <tr>
+            <td class="patient-id">MED-99341-US</td>
+            <td><strong>Linda Martinez</strong></td>
+            <td>42 / F</td>
+            <td>Oncology Biomarker Panel AI Review</td>
+            <td>Dr. Sophia Patel, MD</td>
+            <td><span class="status-badge status-stable">Stable</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function setSearch(val) {
+      document.getElementById('patient-search-input').value = val;
+    }
+
+    document.getElementById('btn-patient-search').addEventListener('click', async () => {
+      const q = document.getElementById('patient-search-input').value.trim();
+      const alertBox = document.getElementById('search-alert');
+      alertBox.style.display = 'flex';
+
+      // Check if it matches an attack pattern
+      if (q.includes("'") || q.includes("--") || q.includes("<script") || q.includes("../")) {
+        alertBox.className = 'med-alert danger';
+        alertBox.innerHTML = `
+          <span class="material-symbols-outlined" style="font-size:18px">shield</span>
+          <span><strong>403 FORBIDDEN (WAF BLOCK):</strong> Malicious exploit payload intercepted by CyberShield Sentinel. Query contained unauthorized syntax signature.</span>
+        `;
+        // Trigger simulation in sentinel agent if loaded
+        const simBtn = document.getElementById('cs-sim-attack-btn');
+        if (simBtn) simBtn.click();
+      } else {
+        alertBox.className = 'med-alert success';
+        alertBox.innerHTML = `
+          <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
+          <span>Records queried successfully. 1 patient record matching "<strong>${q}</strong>" found. Clean request passed through CyberShield WAF.</span>
+        `;
+      }
+    });
+  </script>
+
+  <!-- Injected CyberShield Sentinel Extension Side Tab -->
+  <script src="/api/v1/sentinel/agent.js" data-site-id="medicare-ai" data-site-name="Medicare.AI Healthcare Platform"></script>
+</body>
+</html>
