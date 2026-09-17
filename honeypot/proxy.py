@@ -581,6 +581,14 @@ class MedicareWAFProxy:
             if not blocked and intent.severity in ("high", "critical"):
                 event_type = "WAF_THREAT_DETECTED"
 
+            remediation_patch = None
+            if intent.label.lower() in ("sqli", "sql injection"):
+                remediation_patch = "Use parameterized SQL queries / ORM binding in Medicare.AI endpoint code."
+            elif intent.label.lower() in ("xss", "cross-site scripting"):
+                remediation_patch = "Sanitize HTML inputs using bleach / escape untrusted variables before rendering in templates."
+            elif intent.label.lower() in ("rce", "command injection"):
+                remediation_patch = "Remove subprocess / shell execution functions; sanitize system input parameters."
+
             event = TelemetryEvent(
                 session_id=session_id,
                 event_type=event_type,
@@ -597,7 +605,9 @@ class MedicareWAFProxy:
                     "intent": intent.label,
                     "intent_confidence": intent.confidence,
                     "source_ip": source_ip,
+                    "remediation_advisory": remediation_patch,
                 },
+
                 timestamp=timestamp,
             )
             self.store.record_event(event)
