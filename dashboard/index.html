@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" type="image/svg+xml" href="/dashboard/logo.svg">
-  <link rel="stylesheet" href="/dashboard/styles.css?v=2.8.3">
+  <link rel="stylesheet" href="/dashboard/styles.css?v=2.8.4">
 </head>
 <body>
 
@@ -70,6 +70,11 @@
         <span class="nav-label">Security Alerts</span>
         <span class="nav-badge" id="nav-badge-alerts">0 / 3</span>
       </a>
+      <a href="#protected-apps-section" class="nav-item" data-section="protected-apps-section">
+        <span class="material-symbols-outlined nav-icon">apps</span>
+        <span class="nav-label">Protected Applications</span>
+        <span class="nav-badge" style="background:#e0f2fe;color:#0284c7;font-size:9px;font-weight:700" id="nav-badge-protected">3 ACTIVE</span>
+      </a>
     </nav>
   </div>
 
@@ -92,20 +97,13 @@
   <!-- TOP HEADER BAR -->
   <header class="topbar">
     <div class="topbar-left">
-      <img src="/dashboard/logo.svg" alt="CyberShield AI" class="topbar-pixel-logo">
-      <span class="topbar-title">CyberShield AI <span class="topbar-accent">Honeypot Sentinel Grid</span></span>
-      <div class="gemini-pill" id="gemini-status-pill" style="background:#eef3e7;border:1px solid #8B9A6E">
-        <span class="dot-pulse" style="background:#8B9A6E"></span>
-        <span class="pill-label" style="color:#242c1d">System Layer:</span>
-        <span class="pill-value" id="gemini-model-label" style="color:#242c1d;font-weight:600">Phase 1: Multi-Port Decoy Grid (Port 8050)</span>
-        <span class="pill-latency" id="gemini-latency"></span>
+      <div class="topbar-brand">
+        <img src="/dashboard/logo.svg" alt="CyberShield AI Logo" class="topbar-brand-logo">
+        <span class="topbar-brand-name">CyberShield AI</span>
+        <span class="topbar-brand-badge">Honeypot Sentinel Grid</span>
       </div>
     </div>
     <div class="topbar-right">
-      <div class="search-box">
-        <span class="material-symbols-outlined" style="font-size:17px;color:#8ca4ac">search</span>
-        <input type="text" id="search-input" placeholder="Filter honeypots, IPs, IOC hashes..." autocomplete="off">
-      </div>
       <div class="grid-badge" id="grid-status-badge">
         <span class="dot-green"></span>
         <span id="grid-badge-label">Checking...</span>
@@ -193,7 +191,6 @@
           <div class="progress-bar"><div class="progress-fill primary" id="ai-bar" style="width:99%"></div></div>
         </div>
       </div>
-
       <!-- ===== PROTECTED APPLICATION: MEDICARE.AI ===== -->
       <div id="protected-app-panel" style="margin-top:20px;background:linear-gradient(135deg,rgba(14,165,233,0.07),rgba(99,102,241,0.07));border:1.5px solid rgba(14,165,233,0.28);border-radius:14px;padding:0;overflow:hidden;">
         <!-- Header bar -->
@@ -274,7 +271,7 @@
 
         <!-- Recent requests mini-feed (last 5 events) -->
         <div id="prot-events-feed" style="display:none;border-top:1px solid rgba(14,165,233,0.12);padding:10px 20px;max-height:160px;overflow-y:auto;">
-          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Live Request Feed →  Medicare.AI</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Live Request Feed → Medicare.AI</div>
           <div id="prot-events-list" style="display:flex;flex-direction:column;gap:4px;"></div>
         </div>
       </div>
@@ -868,8 +865,271 @@
       </div>
     </section>
 
+    <!-- ===== SECTION: PROTECTED APPLICATIONS FLEET ===== -->
+    <section class="section pb-section" id="protected-apps-section">
+      <div class="section-title-row">
+        <div class="section-title-group">
+          <span class="section-eyebrow">Enterprise Fleet &amp; Customer Web Assets</span>
+          <h2 class="section-title">Protected Applications &amp; Deception Service Mesh</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="badge-green" id="fleet-active-badge">3 Applications Active</span>
+          <button class="btn-primary" id="btn-show-embed-modal" onclick="document.getElementById('embed-snippet-modal').style.display='flex'" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
+            <span class="material-symbols-outlined" style="font-size:16px">add_link</span>
+            <span>Register New Web Asset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Fleet Overview Stats Grid -->
+      <div class="stat-grid" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Protected Web Assets</span>
+            <span class="material-symbols-outlined" style="color:#0284c7;font-size:18px">domain</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" style="color:#0284c7">3</span>
+            <span class="badge-green">3 / 3 Online</span>
+          </div>
+          <p class="stat-sub">1 Healthcare · 1 FinTech · 1 IAM</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Deception Agents Active</span>
+            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">smart_toy</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" style="color:var(--emerald)">12</span>
+            <span class="badge-mono">12 Hooks</span>
+          </div>
+          <p class="stat-sub">Canaries &amp; WAF Reverse Proxy</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Threats Neutralized</span>
+            <span class="material-symbols-outlined" style="color:var(--rose);font-size:18px">security</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" id="fleet-threats-count" style="color:var(--rose)">14</span>
+            <span class="badge-red">100% Intercepted</span>
+          </div>
+          <p class="stat-sub">0 Data Breaches · 14 Neutralized</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Mesh Fleet Health</span>
+            <span class="material-symbols-outlined" style="color:#7c3aed;font-size:18px">verified_user</span>
+          </div>
+          <div class="stat-value">
+            <span class="metric" style="color:#7c3aed">99.8%</span>
+            <span class="badge-green">Optimal</span>
+          </div>
+          <p class="stat-sub emerald">
+            <span class="material-symbols-outlined" style="font-size:13px">check_circle</span>
+            Avg WAF latency 2.8ms
+          </p>
+        </div>
+      </div>
+
+      <!-- Fleet Asset Cards -->
+      <div class="fleet-grid">
+        
+        <!-- ASSET CARD 1: MEDICARE.AI -->
+        <div class="fleet-card">
+          <div class="fleet-accent-bar fleet-accent-medicare"></div>
+          
+          <div class="fleet-header-row">
+            <div class="fleet-brand-wrap">
+              <div class="fleet-brand-icon fleet-icon-medicare">
+                <span class="material-symbols-outlined" style="font-size:24px">health_and_safety</span>
+              </div>
+              <div class="fleet-title-group">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <h3>Medicare.AI</h3>
+                  <span class="badge-mono" style="background:#e0f2fe;color:#0284c7;font-size:10px;font-weight:700;">AI WAF + SENTINEL</span>
+                </div>
+                <div class="fleet-sub">Clinical Intelligence &amp; Electronic Health Records Portal</div>
+              </div>
+            </div>
+            <span class="badge-green" style="font-family:var(--font-mono);font-size:11px;font-weight:700;">
+              PROTECTED
+            </span>
+          </div>
+
+          <div class="fleet-stats-strip">
+            <div class="fleet-stat-col">
+              <div class="stat-k">Service Mode</div>
+              <div class="stat-v" style="color:#0ea5e9">AI Reverse Proxy</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Injected Layers</div>
+              <div class="stat-v">Sentinel Side Tab</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Interceptions</div>
+              <div class="stat-v" style="color:var(--rose)" id="fleet-medicare-blocked">14 Blocked</div>
+            </div>
+          </div>
+
+          <div class="fleet-footer-row">
+            <div class="fleet-url-text">
+              <span class="material-symbols-outlined" style="font-size:14px;color:#0ea5e9">link</span>
+              <span>http://127.0.0.1:8050/apps/medicare</span>
+            </div>
+            <a href="/apps/medicare" target="_blank" class="fleet-launch-btn fleet-btn-blue">
+              <span>Launch Website (with Sentinel Tab)</span>
+              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ASSET CARD 2: APEX GLOBAL FINANCIAL -->
+        <div class="fleet-card">
+          <div class="fleet-accent-bar fleet-accent-finance"></div>
+
+          <div class="fleet-header-row">
+            <div class="fleet-brand-wrap">
+              <div class="fleet-brand-icon fleet-icon-finance">
+                <span class="material-symbols-outlined" style="font-size:24px">account_balance</span>
+              </div>
+              <div class="fleet-title-group">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <h3>Apex Global Treasury</h3>
+                  <span class="badge-mono" style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;">DECOY MESH + EXTENSION</span>
+                </div>
+                <div class="fleet-sub">Institutional Liquidity &amp; FedWire / SWIFT Treasury Grid</div>
+              </div>
+            </div>
+            <span class="badge-amber" style="font-family:var(--font-mono);font-size:11px;font-weight:700;">
+              DECOY ARMED
+            </span>
+          </div>
+
+          <div class="fleet-stats-strip">
+            <div class="fleet-stat-col">
+              <div class="stat-k">Service Mode</div>
+              <div class="stat-v" style="color:#d97706">Decoy Mesh (:8088)</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Injected Layers</div>
+              <div class="stat-v">Mock SQL Ledger</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Threat Traps</div>
+              <div class="stat-v" style="color:var(--rose)" id="fleet-finance-traps">Active Lure</div>
+            </div>
+          </div>
+
+          <div class="fleet-footer-row">
+            <div class="fleet-url-text">
+              <span class="material-symbols-outlined" style="font-size:14px;color:#d97706">link</span>
+              <span>http://127.0.0.1:8088/ · :8050/finance-portal</span>
+            </div>
+            <a href="http://127.0.0.1:8088/" target="_blank" class="fleet-launch-btn fleet-btn-amber">
+              <span>Launch Website (with Sentinel Tab)</span>
+              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ASSET CARD 3: OMNICLOUD ENTERPRISE IAM & SSO -->
+        <div class="fleet-card">
+          <div class="fleet-accent-bar fleet-accent-iam"></div>
+
+          <div class="fleet-header-row">
+            <div class="fleet-brand-wrap">
+              <div class="fleet-brand-icon fleet-icon-iam">
+                <span class="material-symbols-outlined" style="font-size:24px">vpn_key</span>
+              </div>
+              <div class="fleet-title-group">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <h3>OmniCloud Enterprise IAM</h3>
+                  <span class="badge-mono" style="background:#ede9fe;color:#6d28d9;font-size:10px;font-weight:700;">CANARY GATEWAY</span>
+                </div>
+                <div class="fleet-sub">Zero-Trust Okta &amp; Azure AD Identity Federation Gateway</div>
+              </div>
+            </div>
+            <span class="badge-mono" style="background:#ede9fe;color:#5b21b6;border-color:#ddd6fe;font-family:var(--font-mono);font-size:11px;font-weight:700;">
+              TRIPWIRE ARMED
+            </span>
+          </div>
+
+          <div class="fleet-stats-strip">
+            <div class="fleet-stat-col">
+              <div class="stat-k">Service Mode</div>
+              <div class="stat-v" style="color:#7c3aed">Canary Gateway (:8050)</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Injected Layers</div>
+              <div class="stat-v">Decoy JWTs + Tokens</div>
+            </div>
+            <div class="fleet-stat-col">
+              <div class="stat-k">Threat Traps</div>
+              <div class="stat-v" style="color:var(--emerald)" id="fleet-omnicloud-traps">Armed &amp; Silent</div>
+            </div>
+          </div>
+
+          <div class="fleet-footer-row">
+            <div class="fleet-url-text">
+              <span class="material-symbols-outlined" style="font-size:14px;color:#7c3aed">link</span>
+              <span>http://127.0.0.1:8050/canary/tokens</span>
+            </div>
+            <a href="/canary/tokens" target="_blank" class="fleet-launch-btn fleet-btn-purple">
+              <span>Inspect Canary Tokens</span>
+              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </div><!-- end scroll-canvas -->
 </div><!-- end main-canvas -->
+
+<!-- REGISTER WEB ASSET MODAL -->
+<div id="embed-snippet-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width:560px;background:#ffffff;border-radius:14px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;">
+          <span class="material-symbols-outlined" style="font-size:20px">domain_add</span>
+        </div>
+        <div>
+          <h3 style="font-size:16px;font-weight:800;color:#0f172a;margin:0;">Register Client Web Asset</h3>
+          <p style="font-size:11px;color:#64748b;margin:0;">Deploy CyberShield Deception-as-a-Service on customer domains</p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('embed-snippet-modal').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:18px;">✕</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">Website / Product Name</label>
+        <input type="text" id="reg-app-name" value="Medicare.AI" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="e.g. Acme Cloud Commerce">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">Website Primary Domain / URL</label>
+        <input type="text" id="reg-app-url" value="http://127.0.0.1:5000" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="https://portal.client.com">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">Generated Client Snippet</label>
+        <div style="background:#0b1120;border-radius:6px;padding:12px;font-family:monospace;font-size:11px;color:#38bdf8;line-height:1.5;">
+          &lt;script src="http://127.0.0.1:8050/api/v1/sentinel/agent.js" data-site-id="medicare-ai" data-site-name="Medicare.AI"&gt;&lt;/script&gt;
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn-secondary" onclick="document.getElementById('embed-snippet-modal').style.display='none'" style="padding:8px 16px;border-radius:6px;font-size:12px;">Cancel</button>
+      <button class="btn-primary" onclick="alert('Asset configured! The deception layer is now active for this domain.');document.getElementById('embed-snippet-modal').style.display='none'" style="padding:8px 16px;border-radius:6px;font-size:12px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;border:none;">Activate &amp; Deploy Agent</button>
+    </div>
+  </div>
+</div>
 
 <!-- PLAIN-ENGLISH SESSION DETAIL POPUP MODAL -->
 <div id="session-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
