@@ -1479,6 +1479,32 @@ async def protected_app_status() -> Dict[str, Any]:
     return waf_proxy.get_metrics()
 
 
+class SimulateWAFRequest(BaseModel):
+    vector: str = Field(default="sqli", description="Attack vector: sqli, xss, rce, path_traversal, bot_scan")
+
+
+@app.get("/api/v1/protected/config")
+async def get_protected_app_config() -> Dict[str, Any]:
+    """Returns active CyberShield WAF security configuration and rate limits."""
+    return waf_proxy.get_config()
+
+
+class WAFConfigUpdateRequest(BaseModel):
+    block_score_threshold: Optional[int] = Field(None, ge=10, le=100)
+    rate_limiting_enabled: Optional[bool] = None
+    max_requests_per_minute: Optional[int] = Field(None, ge=5, le=1000)
+    strict_header_inspection: Optional[bool] = None
+
+
+@app.post("/api/v1/protected/config")
+async def update_protected_app_config(req: WAFConfigUpdateRequest) -> Dict[str, Any]:
+    """Updates active CyberShield WAF security rules dynamically."""
+    new_cfg = req.dict(exclude_none=True)
+    return waf_proxy.update_config(new_cfg)
+
+
+
+
 # ============================================================
 # MEDICARE.AI WAF REVERSE PROXY — CATCH-ALL
 # ============================================================
