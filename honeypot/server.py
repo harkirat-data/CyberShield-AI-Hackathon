@@ -786,6 +786,17 @@ async def protected_app_status() -> Dict[str, Any]:
     return waf_proxy.get_metrics()
 
 
+class SimulateWAFRequest(BaseModel):
+    vector: str = Field(default="sqli", description="Attack vector: sqli, xss, rce, path_traversal, bot_scan")
+
+
+@app.post("/api/v1/protected/simulate-attack")
+async def protected_app_simulate_attack(req: SimulateWAFRequest = SimulateWAFRequest()) -> Dict[str, Any]:
+    """Simulates an attack against Medicare.AI through CyberShield WAF for demonstration."""
+    return await waf_proxy.simulate_attack(vector=req.vector)
+
+
+
 # ============================================================
 # MEDICARE.AI WAF REVERSE PROXY — CATCH-ALL
 # ============================================================
