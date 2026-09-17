@@ -7,6 +7,7 @@ import hashlib
 import html
 import os
 import re
+import json
 import secrets
 import ssl
 import struct
@@ -14,7 +15,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-from urllib.parse import unquote_plus
+from urllib.parse import parse_qs, unquote_plus
 
 from .config import HoneypotSettings, ServiceProfile
 from .deception import GeminiDeceptionEngine, IntentClassifier
@@ -554,8 +555,8 @@ class HoneypotRuntime:
             analyze=True,
         )
 
-        if path == "/" and method == "GET":
-            payload = self._login_page(profile).encode()
+        if path in {"/", "/login", "/signin", "/auth", "/index.html", "/portal", "/finance"} and method == "GET":
+            payload = self._finance_portal_page(profile).encode()
             status = "200 OK"
             content_type = "text/html; charset=utf-8"
             ai_meta = {"provider": "static-decoy", "latency_ms": 0}
@@ -569,11 +570,156 @@ class HoneypotRuntime:
             status = "200 OK"
             content_type = "text/html; charset=utf-8"
             ai_meta = {"provider": "static-decoy", "latency_ms": 0}
-        elif path.startswith("/login") and method in {"POST", "PUT"}:
-            payload = b'{"ok":true,"redirect":"/admin"}'
+        elif (path.startswith("/login") or path.startswith("/api/v1/auth/login")) and method in {"POST", "PUT"}:
+            req_user = "admin"
+            try:
+                if decoded_body.startswith("{"):
+                    req_data = json.loads(decoded_body)
+                    req_user = req_data.get("user") or req_data.get("username") or "admin"
+                elif decoded_body:
+                    params = parse_qs(decoded_body)
+                    req_user = params.get("user", params.get("username", ["admin"]))[0]
+            except Exception:
+                pass
+
+            is_sqli = any(k in decoded_body.upper() for k in ("'", "OR 1=1", "UNION", "--", "/*", "SLEEP("))
+            if is_sqli:
+                await self._event(
+                    session_id,
+                    "WEB_EXPLOIT_SQLI",
+                    "critical",
+                    "inbound",
+                    f"Finance Portal SQL Injection: Auth bypass probe detected: '{req_user}'",
+                    byte_count=len(raw),
+                    metadata={"method": method, "path": path, "user": req_user, "exploit": "SQLi Auth Bypass"},
+                    analyze=True,
+                )
+
+            auth_response = {
+                "ok": True,
+                "status": "authenticated",
+                "redirect": "/portal",
+                "access_token": f"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.apex_treasury_{secrets.token_hex(6)}",
+                "user": {
+                    "username": req_user,
+                    "name": "Sarah Chen (CFO Decoy Session)" if "sarah" in req_user.lower() else "Executive Treasury Admin",
+                    "role": "Chief Financial Officer & Treasury Admin",
+                    "clearance": "LEVEL-4-RESTRICTED",
+                    "organization": "Apex Global Financial Core (NY-Node-04)",
+                    "session_id": session_id,
+                },
+                "treasury_metrics": {
+                    "total_liquidity": "$148,250,910.42",
+                    "daily_turnover": "$42,610,400.00",
+                    "reserve_ratio": "18.4%",
+                    "active_ledgers": 14,
+                    "swift_gateway": "ONLINE (FedLine-NY-Primary)",
+                },
+                "server_telemetry": {
+                    "honeypot_socket": f"Port {profile.port}",
+                    "soc_command_center": "Port 8050 Ingress Active",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "packet_signature": hashlib.sha256(raw).hexdigest()[:16],
+                },
+            }
+            payload = json.dumps(auth_response).encode("utf-8")
             status = "200 OK"
             content_type = "application/json"
-            ai_meta = {"provider": "static-decoy", "latency_ms": 0}
+            ai_meta = {"provider": "static-decoy", "latency_ms": 3}
+        elif path.startswith("/api/v1/finance/query") and method in {"POST", "GET"}:
+            query_str = "SELECT * FROM corporate_accounts;"
+            try:
+                if decoded_body.startswith("{"):
+                    req_data = json.loads(decoded_body)
+                    query_str = req_data.get("query") or query_str
+                elif decoded_body:
+                    params = parse_qs(decoded_body)
+                    query_str = params.get("query", [query_str])[0]
+            except Exception:
+                pass
+
+            is_sqli = any(k in query_str.upper() for k in ("'", "OR 1=1", "UNION", "--", "/*", "SLEEP(", "DROP", "INSERT", "INFORMATION_SCHEMA"))
+            if is_sqli:
+                await self._event(
+                    session_id,
+                    "DATABASE_EXPLOIT_SQLI",
+                    "critical",
+                    "inbound",
+                    f"Finance Core Database SQLi Injection executed: {query_str[:120]}",
+                    byte_count=len(raw),
+                    metadata={"query": query_str, "target": "finance_core.accounts"},
+                    analyze=True,
+                )
+
+            records = [
+                {"account_id": "APX-90812-US", "entity_name": "Apex Holdings Treasury Pool", "currency": "USD", "balance": "$84,210,500.00", "status": "SETTLED", "swift_bic": "APEXUS33XXX", "compliance_tier": "TIER-1"},
+                {"account_id": "APX-44192-GB", "entity_name": "Apex Europe Capital Liquidity", "currency": "GBP", "balance": "£32,140,890.15", "status": "SETTLED", "swift_bic": "APEXGB22LON", "compliance_tier": "TIER-1"},
+                {"account_id": "APX-11048-CH", "entity_name": "Apex Zurich Collateral Vault", "currency": "CHF", "balance": "CHF 19,850,000.00", "status": "RESTRICTED", "swift_bic": "APEXCHZZ88", "compliance_tier": "RESTRICTED-ENCLAVE"},
+                {"account_id": "APX-77319-SG", "entity_name": "Apex Asia-Pac Escrow Node", "currency": "SGD", "balance": "S$ 12,049,519.80", "status": "SETTLED", "swift_bic": "APEXSG22XXX", "compliance_tier": "TIER-2"},
+                {"account_id": "APX-00214-EXEC", "entity_name": "Executive Retained Earnings & Bonus Reserve", "currency": "USD", "balance": "$4,250,000.00", "status": "CONFIDENTIAL", "swift_bic": "APEXUS33XXX", "compliance_tier": "EXECUTIVE-ONLY"},
+            ]
+
+            if "UNION" in query_str.upper() or "SECRET" in query_str.upper():
+                records.append({
+                    "account_id": "APX-ROOT-SECRET",
+                    "entity_name": "SWIFT Master Root Gateway Key",
+                    "currency": "HEX",
+                    "balance": "RSA-4096-DECOY-HONEYTOKEN-d8f1e29c0a1b",
+                    "status": "TRIPWIRE_ARMED",
+                    "swift_bic": "ROOT_ADMIN_KEY",
+                    "compliance_tier": "HONEYTOKEN-LEAK",
+                })
+
+            query_response = {
+                "ok": True,
+                "query": query_str,
+                "execution_time_ms": 9,
+                "rows_returned": len(records),
+                "columns": ["account_id", "entity_name", "currency", "balance", "status", "swift_bic", "compliance_tier"],
+                "records": records,
+                "exploit_flagged": is_sqli,
+                "server_time": datetime.now(timezone.utc).isoformat(),
+            }
+            payload = json.dumps(query_response).encode("utf-8")
+            status = "200 OK"
+            content_type = "application/json"
+            ai_meta = {"provider": "static-decoy", "latency_ms": 2}
+        elif path.startswith("/api/v1/finance/transfer") and method in {"POST", "PUT"}:
+            trx_amount = "$5,000,000.00"
+            beneficiary = "Offshore Anonymous Holding Ltd (KYC Pending)"
+            try:
+                if decoded_body.startswith("{"):
+                    req_data = json.loads(decoded_body)
+                    trx_amount = req_data.get("amount") or trx_amount
+                    beneficiary = req_data.get("beneficiary") or beneficiary
+            except Exception:
+                pass
+
+            await self._event(
+                session_id,
+                "FINANCIAL_FRAUD_TAMPER",
+                "critical",
+                "inbound",
+                f"Unauthorized Treasury Wire Transfer Attempt: {trx_amount} to {beneficiary}",
+                byte_count=len(raw),
+                metadata={"amount": trx_amount, "beneficiary": beneficiary, "action": "WIRE_DISPATCH"},
+                analyze=True,
+            )
+
+            trx_response = {
+                "ok": True,
+                "transaction_id": f"TRX-SWIFT-2026-{secrets.token_hex(4).upper()}",
+                "status": "HELD_FOR_COMPLIANCE_AUDIT",
+                "routing": "FEDWIRE-021000021-INTERCEPT",
+                "amount": trx_amount,
+                "beneficiary": beneficiary,
+                "audit_status": "FLAGGED_BY_CYBERSHIELD_AI",
+                "message": "Transaction intercepted by CyberShield Sentinel Grid. Ingress coordinates logged.",
+            }
+            payload = json.dumps(trx_response).encode("utf-8")
+            status = "200 OK"
+            content_type = "application/json"
+            ai_meta = {"provider": "static-decoy", "latency_ms": 4}
         else:
             response, ai_meta = await self.brain.respond(
                 session_id=session_id,
@@ -993,16 +1139,20 @@ class HoneypotRuntime:
             pass
         return cert_path, key_path
 
-    @staticmethod
-    def _login_page(profile: ServiceProfile) -> str:
+    _portal_html_cache: Optional[str] = None
+
+    @classmethod
+    def _finance_portal_page(cls, profile: ServiceProfile) -> str:
+        if cls._portal_html_cache is None:
+            template_path = Path(__file__).resolve().parent / "templates" / "finance_portal.html"
+            if template_path.is_file():
+                cls._portal_html_cache = template_path.read_text(encoding="utf-8", errors="replace")
+            else:
+                cls._portal_html_cache = "<html><body><h3>Apex Global Financial Portal</h3></body></html>"
         product = html.escape(profile.product)
-        return f"""<!doctype html><html><head><title>Northstar Finance Portal</title></head>
-<body style="font-family:Arial;background:#eef1f4;color:#17202a;padding:60px">
-<main style="width:360px;margin:auto;background:white;padding:32px;border:1px solid #ccd3da">
-<h2>Finance Operations</h2><p>Sign in to continue.</p>
-<form method="post" action="/login"><label>User</label><input name="user" style="display:block;width:100%;margin:6px 0 14px">
-<label>Password</label><input type="password" name="password" style="display:block;width:100%;margin:6px 0 18px">
-<button type="submit">Sign in</button></form><small>{product}</small></main></body></html>"""
+        return cls._portal_html_cache.replace("__PORT__", str(profile.port)).replace("__PRODUCT__", product)
+
+    _login_page = _finance_portal_page
 
     @staticmethod
     def _hr_page(profile: ServiceProfile) -> str:
@@ -1012,15 +1162,51 @@ class HoneypotRuntime:
 <main style="width:400px;margin:auto;background:white;padding:32px;border:1px solid #bbf7d0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.05)">
 <h2 style="margin-top:0;color:#166534">👥 HR & Employee Directory</h2>
 <p style="font-size:13px;color:#4b5563">Employee Self-Service & Payroll Inquiries Portal.</p>
-<form method="post" action="/login">
+<form id="hr-form" method="post" action="/login">
 <label style="font-size:12px;font-weight:bold;color:#374151">Employee ID / Email</label>
-<input name="user" placeholder="e.g. EMP-10492 or admin" style="display:block;width:100%;padding:8px;margin:6px 0 14px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+<input id="hr-user" name="user" placeholder="e.g. EMP-10492 or admin" style="display:block;width:100%;padding:8px;margin:6px 0 14px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
 <label style="font-size:12px;font-weight:bold;color:#374151">Department PIN / Password</label>
-<input type="password" name="password" style="display:block;width:100%;padding:8px;margin:6px 0 18px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
-<button type="submit" style="background:#16a34a;color:white;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-weight:bold">Sign in to HR</button>
+<input id="hr-pass" type="password" name="password" style="display:block;width:100%;padding:8px;margin:6px 0 18px;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+<button type="submit" style="background:#16a34a;color:white;border:none;padding:10px 18px;border-radius:4px;cursor:pointer;font-weight:bold;width:100%">Sign in to HR</button>
 </form>
+<div style="margin-top:16px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;font-size:11px;color:#15803d">
+  <span>📡 Live Sensor:</span> <b>Streaming Telemetry to SOC (:8050)</b>
+</div>
 <div style="margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af">{product} • Confidential Internal System</div>
-</main></body></html>"""
+</main>
+<script>
+(function() {{
+  const form = document.getElementById("hr-form");
+  const user = document.getElementById("hr-user");
+  async function sendSignal(action) {{
+    try {{
+      await fetch("http://" + (window.location.hostname || "127.0.0.1") + ":8050/api/v1/honeypot/telemetry/ingest", {{
+        method: "POST",
+        headers: {{ "Content-Type": "application/json" }},
+        body: JSON.stringify({{
+          source: "Northstar HR Portal",
+          action: action,
+          user: user?.value || "hr_probe",
+          target_port: {profile.port},
+          timestamp: new Date().toISOString()
+        }})
+      }});
+    }} catch(e) {{}}
+  }}
+  sendSignal("hr_landing_probe");
+  user?.addEventListener("input", () => sendSignal("hr_lookup_probe"));
+  form?.addEventListener("submit", async function(e) {{
+    e.preventDefault();
+    await sendSignal("hr_auth_attempt");
+    try {{
+      const res = await fetch("/login", {{ method: "POST", body: new URLSearchParams(new FormData(form)) }});
+      const data = await res.json();
+      if (data.redirect) window.location.href = data.redirect;
+    }} catch(err) {{ form.submit(); }}
+  }});
+}})();
+</script>
+</body></html>"""
 
     @staticmethod
     def _admin_page(profile: ServiceProfile) -> str:
@@ -1034,13 +1220,53 @@ class HoneypotRuntime:
   ● Database Node: Mariadb-Cluster-Primary:33060<br>
   ● Auth Status: Authenticated as root (session: decoy-admin-01)
 </div>
-<form method="post" action="/admin/exec">
+<form id="admin-form" method="post" action="/admin/exec">
 <label style="font-size:12px;color:#94a3b8">Execute SQL / Maintenance Query</label>
-<input name="cmd" placeholder="e.g. SHOW TABLES; or SELECT * FROM users;" style="display:block;width:100%;padding:10px;margin:8px 0 16px;background:#0f172a;border:1px solid #475569;color:#38bdf8;font-family:monospace;border-radius:4px;box-sizing:border-box">
+<input id="admin-cmd" name="cmd" placeholder="e.g. SHOW TABLES; or SELECT * FROM users;" style="display:block;width:100%;padding:10px;margin:8px 0 16px;background:#0f172a;border:1px solid #475569;color:#38bdf8;font-family:monospace;border-radius:4px;box-sizing:border-box">
 <button type="submit" style="background:#0284c7;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold">Execute Remote Command</button>
 </form>
+<div style="margin-top:16px;padding:8px 12px;background:#090d16;border:1px solid #334155;border-radius:4px;font-size:11px;color:#38bdf8">
+  ● Real-Time Telemetry Link: <b>Live SOC Signal Active (:8050)</b>
+</div>
 <div style="margin-top:24px;padding-top:12px;border-top:1px solid #334155;font-size:11px;color:#64748b">{product} • Root Infrastructure Access</div>
-</main></body></html>"""
+</main>
+<script>
+(function() {{
+  const form = document.getElementById("admin-form");
+  const cmd = document.getElementById("admin-cmd");
+  async function sendSignal(action) {{
+    try {{
+      await fetch("http://" + (window.location.hostname || "127.0.0.1") + ":8050/api/v1/honeypot/telemetry/ingest", {{
+        method: "POST",
+        headers: {{ "Content-Type": "application/json" }},
+        body: JSON.stringify({{
+          source: "Executive Server Console",
+          action: action,
+          cmd: cmd?.value || "status",
+          target_port: {profile.port},
+          timestamp: new Date().toISOString()
+        }})
+      }});
+    }} catch(e) {{}}
+  }}
+  // Fire signal immediately on page access
+  sendSignal("console_recon_attached");
+  let cmdTimer;
+  cmd?.addEventListener("input", () => {{
+    clearTimeout(cmdTimer);
+    cmdTimer = setTimeout(() => sendSignal("console_cmd_typing"), 400);
+  }});
+  form?.addEventListener("submit", async function(e) {{
+    e.preventDefault();
+    await sendSignal("console_cmd_executed");
+    try {{
+      const res = await fetch("/admin/exec", {{ method: "POST", body: new URLSearchParams(new FormData(form)) }});
+      alert("Command dispatched inside decoy sandbox. Telemetry logged to SOC.");
+    }} catch(e) {{ form.submit(); }}
+  }});
+}})();
+</script>
+</body></html>"""
 
     @staticmethod
     def _mysql_packet(payload: bytes, sequence: int) -> bytes:
