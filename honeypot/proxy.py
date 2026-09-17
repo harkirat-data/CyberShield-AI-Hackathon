@@ -171,6 +171,46 @@ class MedicareWAFProxy:
         self.state = _SharedProxyState()
         self._client: Optional[httpx.AsyncClient] = None
 
+        # WAF Dynamic Configuration & Rate Limiting
+        self.config: Dict[str, Any] = {
+            "block_score_threshold": WAF_BLOCK_SCORE_THRESHOLD,
+            "rate_limiting_enabled": True,
+            "max_requests_per_minute": 60,
+            "strict_header_inspection": True,
+        }
+        self._ip_request_timestamps: Dict[str, Deque[float]] = {}
+
+    def get_config(self) -> Dict[str, Any]:
+        """Returns active WAF dynamic configuration."""
+        return dict(self.config)
+
+    def update_config(self, new_cfg: Dict[str, Any]) -> Dict[str, Any]:
+        """Updates active WAF configuration rules."""
+        if "block_score_threshold" in new_cfg:
+            self.config["block_score_threshold"] = int(new_cfg["block_score_threshold"])
+        if "rate_limiting_enabled" in new_cfg:
+            self.config["rate_limiting_enabled"] = bool(new_cfg["rate_limiting_enabled"])
+        if "max_requests_per_minute" in new_cfg:
+            self.config["max_requests_per_minute"] = int(new_cfg["max_requests_per_minute"])
+        if "strict_header_inspection" in new_cfg:
+            self.config["strict_header_inspection"] = bool(new_cfg["strict_header_inspection"])
+        return dict(self.config)
+
+    def _check_rate_limit(self, source_ip: str) -> bool:
+        """Rate limiter: returns True if client IP exceeds max_requests_per_minute."""
+        if not self.config.get("rate_limiting_enabled", True):
+            return False
+        max_reqs = self.config.get("max_requests_per_minute", 60)
+        now = time.monotonic()
+        if source_ip not in self._ip_request_timestamps:
+            self._ip_request_timestamps[source_ip] = deque()
+        timestamps = self._ip_request_timestamps[source_ip]
+        while timestamps and now - timestamps[0] > 60.0:
+            timestamps.popleft()
+        timestamps.append(now)
+        return len(timestamps) > max_reqs
+
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -394,11 +434,15 @@ class MedicareWAFProxy:
         """Returns (should_block, reason_string)."""
         if source_ip in self.blocked_sources:
             return True, "source_ip_on_blocklist"
-        if intent.severity in BLOCK_SEVERITIES and risk_score >= WAF_BLOCK_SCORE_THRESHOLD:
+        if self._check_rate_limit(source_ip):
+            return True, "rate_limit_exceeded"
+        threshold = self.config.get("block_score_threshold", WAF_BLOCK_SCORE_THRESHOLD)
+        if intent.severity in BLOCK_SEVERITIES and risk_score >= threshold:
             return True, f"waf_block:{intent.label}:score={risk_score}"
-        if risk_score >= 95:
+        if risk_score >= max(95, threshold):
             return True, f"risk_score_threshold:{risk_score}"
         return False, ""
+
 
     async def _forward(
         self,
