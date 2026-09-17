@@ -108,7 +108,11 @@ function riskLabel(score) {
 
 function protoFromPort(port) {
   if (port === 0) return "HOST";
-  const map = { 2222: "SSH", 2323: "TELNET", 8088: "HTTP", 8443: "HTTPS", 33060: "MYSQL" };
+  if (state.status?.services) {
+    const srv = state.status.services.find(s => s.port === port || s.configured_port === port);
+    if (srv) return (srv.protocol || srv.name).toUpperCase();
+  }
+  const map = { 2222: "SSH", 2323: "TELNET", 8088: "HTTP", 8443: "HTTPS", 3307: "MYSQL", 33060: "MYSQL" };
   return map[port] || "ENDPOINT";
 }
 
@@ -2207,30 +2211,55 @@ function updateIntentChart(events, sessions) {
 // TARGET COUNTERS (100% Real Per-Port Session & Action Totals)
 // ============================================================
 function updateTargetCounts(sessionsArr) {
-  const portMap = [
-    { key: "ssh", name: "SSH Honeypot (2222)", port: 2222 },
-    { key: "telnet", name: "Telnet Legacy (2323)", port: 2323 },
-    { key: "http", name: "HTTP Finance (8088)", port: 8088 },
-    { key: "https", name: "HTTPS Ops API (8443)", port: 8443 },
-    { key: "mysql", name: "MySQL Database (33060)", port: 33060 },
-  ];
+  // Config-driven: Read services dynamically from backend status/config
+  const configuredServices = state.status?.services;
+  const portMap = (configuredServices && configuredServices.length > 0)
+    ? configuredServices.map(srv => ({
+        key: srv.key,
+        name: srv.name ? `${srv.name} (${srv.port})` : `Port ${srv.port}`,
+        port: srv.port,
+      }))
+    : [
+        { key: "ssh", name: "SSH Honeypot (2222)", port: 2222 },
+        { key: "telnet", name: "Telnet Legacy (2323)", port: 2323 },
+        { key: "http", name: "HTTP Finance (8088)", port: 8088 },
+        { key: "https", name: "HTTPS Ops API (8443)", port: 8443 },
+        { key: "mysql", name: "MySQL Database (3307)", port: 3307 },
+      ];
 
-  portMap.forEach(item => {
-    const portSessions = (sessionsArr || []).filter(s => s.destination_port === item.port);
-    const active = portSessions.filter(s => !s.ended_at).length;
-    const actions = portSessions.reduce((acc, s) => acc + (s.interactions || 0), 0);
-    const count = portSessions.length;
-    const el = $(`ti-${item.key}`);
-    if (el) {
-      if (count === 0 && actions === 0) {
-        el.textContent = "0 probes";
-        el.style.color = "var(--text-muted)";
-      } else {
-        el.textContent = `${count} session${count !== 1 ? "s" : ""} (${actions} act)`;
-        el.style.color = active > 0 ? "#C24B4B" : "var(--text)";
+  const container = $("target-items");
+  if (container && configuredServices && configuredServices.length > 0) {
+    // Dynamically render target items if backend services are available
+    container.innerHTML = portMap.map(item => {
+      const portSessions = (sessionsArr || []).filter(s => s.destination_port === item.port);
+      const active = portSessions.filter(s => !s.ended_at).length;
+      const actions = portSessions.reduce((acc, s) => acc + (s.interactions || 0), 0);
+      const count = portSessions.length;
+      const label = (count === 0 && actions === 0)
+        ? "0 probes"
+        : `${count} session${count !== 1 ? "s" : ""} (${actions} act)`;
+      const color = active > 0 ? "#C24B4B" : (count > 0 ? "var(--text)" : "var(--text-muted)");
+      return `<div class="target-item"><span class="target-name">${esc(item.name)}</span><span class="target-count" id="ti-${esc(item.key)}" style="color:${color}">${esc(label)}</span></div>`;
+    }).join("");
+  } else {
+    // Fallback for static elements
+    portMap.forEach(item => {
+      const portSessions = (sessionsArr || []).filter(s => s.destination_port === item.port);
+      const active = portSessions.filter(s => !s.ended_at).length;
+      const actions = portSessions.reduce((acc, s) => acc + (s.interactions || 0), 0);
+      const count = portSessions.length;
+      const el = $(`ti-${item.key}`);
+      if (el) {
+        if (count === 0 && actions === 0) {
+          el.textContent = "0 probes";
+          el.style.color = "var(--text-muted)";
+        } else {
+          el.textContent = `${count} session${count !== 1 ? "s" : ""} (${actions} act)`;
+          el.style.color = active > 0 ? "#C24B4B" : "var(--text)";
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 // ============================================================
@@ -2327,10 +2356,11 @@ function renderCanaryTokens(tokens = []) {
   if (!tbody) return;
 
   const activeCount = tokens.filter(t => t.status === "active").length;
+  const triggeredCount = tokens.filter(t => (t.trigger_count || 0) > 0).length;
   if (countEl) countEl.textContent = `${activeCount} Active`;
   if (badgeEl) {
-    badgeEl.textContent = `${activeCount} ACT`;
-    badgeEl.classList.toggle("danger", tokens.some(t => (t.trigger_count || 0) > 0));
+    badgeEl.textContent = triggeredCount > 0 ? `${triggeredCount} HIT` : `${activeCount} ACT`;
+    badgeEl.classList.toggle("danger", triggeredCount > 0);
   }
 
   if (tokens.length === 0) {
@@ -2347,30 +2377,37 @@ function renderCanaryTokens(tokens = []) {
     const isTriggered = triggerCount > 0;
     const createdStr = token.created_at ? new Date(token.created_at).toLocaleDateString() : "--";
     const isActive = token.status === "active";
+    const secretDisplay = token.secret.length > 20 ? token.secret.substring(0, 18) + "…" : token.secret;
 
-    return `<tr>
+    return `<tr data-token-id="${esc(token.token_id)}">
       <td>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-weight:600;color:var(--text)">${esc(token.name)}</span>
           <span class="canary-token-type ${token.token_type}">${esc(token.token_type)}</span>
         </div>
-        ${token.last_source_ip ? `<div style="font-size:10px;color:var(--rose);margin-top:2px">Last trigger: ${esc(token.last_source_ip)}</div>` : ""}
+        ${isTriggered ? `<div style="font-size:10px;color:var(--rose);margin-top:2px">⚠ Last hit: ${esc(token.last_source_ip || "unknown")}</div>` : ""}
       </td>
       <td>
-        <button class="canary-copy-btn" data-secret="${esc(triggerUrl)}" title="Click to copy trigger URL/token">
+        <button class="canary-copy-btn" data-secret="${esc(triggerUrl)}" title="Copy ${isUrl ? "tripwire URL" : "secret token"}">
           <span class="material-symbols-outlined" style="font-size:13px">content_copy</span>
-          <span>${esc(token.secret.length > 22 ? token.secret.substring(0, 20) + "..." : token.secret)}</span>
+          <span>${esc(secretDisplay)}</span>
         </button>
       </td>
       <td>
         <span style="font-weight:700;color:${isTriggered ? "var(--rose)" : "var(--text-muted)"}">
-          ${triggerCount} ${triggerCount === 1 ? "trigger" : "triggers"}
+          ${triggerCount} ${triggerCount === 1 ? "hit" : "hits"}
         </span>
       </td>
       <td><span style="color:var(--text-muted);font-size:11px">${createdStr}</span></td>
-      <td>
-        <button class="canary-status-pill ${isActive ? "active" : "disabled"}" data-id="${esc(token.token_id)}" data-status="${esc(token.status)}">
+      <td style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap">
+        <button class="canary-status-pill ${isActive ? "active" : "disabled"}" data-id="${esc(token.token_id)}" data-status="${esc(token.status)}" title="Toggle active/disabled">
           ${isActive ? "Active" : "Disabled"}
+        </button>
+        ${isActive ? `<button class="canary-trigger-btn" data-id="${esc(token.token_id)}" title="Simulate a trigger for this token" style="background:var(--rose-muted,#fde8e8);border:1px solid var(--rose);border-radius:var(--radius-sm);padding:3px 8px;font-size:10px;cursor:pointer;color:var(--rose);font-weight:700;white-space:nowrap">
+          ⚡ Test
+        </button>` : ""}
+        <button class="canary-delete-btn" data-id="${esc(token.token_id)}" data-name="${esc(token.name)}" title="Delete this canary token" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px 6px;font-size:11px;cursor:pointer;color:var(--text-muted)">
+          <span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle">delete</span>
         </button>
       </td>
     </tr>`;
@@ -2402,6 +2439,22 @@ function renderCanaryTokens(tokens = []) {
       await toggleCanaryStatus(id, current);
     });
   });
+
+  tbody.querySelectorAll(".canary-trigger-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      await testCanaryTrigger(id, btn);
+    });
+  });
+
+  tbody.querySelectorAll(".canary-delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if (!confirm(`Delete canary token "${name}"? This cannot be undone.`)) return;
+      await deleteCanaryToken(id);
+    });
+  });
 }
 
 async function createCanaryToken(e) {
@@ -2425,11 +2478,11 @@ async function createCanaryToken(e) {
   }
 
   try {
-    await api("/api/v1/canary/tokens", {
+    const result = await api("/api/v1/canary/tokens", {
       method: "POST",
       body: JSON.stringify({ name, token_type, metadata: { deployed_by: "CyberShield AI Console" } }),
     });
-    toast(`Canary tripwire created: "${name}"`);
+    toast(`✅ Canary tripwire deployed: "${name}" (${token_type})`);
     nameInput.value = "";
     await loadCanaryTokens();
   } catch (err) {
@@ -2453,6 +2506,40 @@ async function toggleCanaryStatus(tokenId, currentStatus) {
     await loadCanaryTokens();
   } catch (err) {
     toast("Failed to update canary status: " + err.message, true);
+  }
+}
+
+async function testCanaryTrigger(tokenId, btnEl) {
+  const origHtml = btnEl ? btnEl.innerHTML : "";
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = "⏳ Firing…";
+  }
+  try {
+    const result = await api(`/api/v1/canary/tokens/${encodeURIComponent(tokenId)}/trigger`, {
+      method: "POST",
+    });
+    toast(`🚨 Canary tripwire triggered! Token: "${result.token?.name}" — SOC alert dispatched.`);
+    await loadCanaryTokens();
+  } catch (err) {
+    toast("Trigger failed: " + err.message, true);
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = origHtml;
+    }
+  }
+}
+
+async function deleteCanaryToken(tokenId) {
+  try {
+    await api(`/api/v1/canary/tokens/${encodeURIComponent(tokenId)}`, {
+      method: "DELETE",
+    });
+    toast("Canary token deleted.");
+    await loadCanaryTokens();
+  } catch (err) {
+    toast("Failed to delete canary: " + err.message, true);
   }
 }
 

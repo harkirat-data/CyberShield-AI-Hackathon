@@ -496,11 +496,15 @@ class TelemetryStore:
     
     def create_canary_token(self, token_data: Dict[str, Any]) -> None:
         values = dict(token_data)
-        if "metadata_json" in values and not isinstance(values["metadata_json"], str):
-            values["metadata_json"] = json.dumps(values["metadata_json"], default=str)
+        raw_meta = values.get("metadata_json")
+        if isinstance(raw_meta, str):
+            # already serialized
+            pass
+        elif isinstance(raw_meta, dict):
+            values["metadata_json"] = json.dumps(raw_meta, default=str)
         else:
             values["metadata_json"] = json.dumps({}, default=str)
-            
+
         columns = ", ".join(values.keys())
         placeholders = ", ".join(f":{key}" for key in values.keys())
         with self._lock:
@@ -508,6 +512,7 @@ class TelemetryStore:
                 f"INSERT INTO canary_tokens ({columns}) VALUES ({placeholders})", values
             )
             self._connection.commit()
+
 
     def list_canary_tokens(self) -> List[Dict[str, Any]]:
         with self._lock:
@@ -539,27 +544,55 @@ class TelemetryStore:
             self._connection.commit()
         return cursor.rowcount > 0
 
+    def delete_canary_token(self, token_id: str) -> bool:
+        with self._lock:
+            cursor = self._connection.execute(
+                "DELETE FROM canary_tokens WHERE token_id = ?",
+                (token_id,)
+            )
+            self._connection.commit()
+        return cursor.rowcount > 0
+
     def record_canary_trigger(self, secret: str, source_ip: str, trigger_metadata: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         now = utc_now()
         with self._lock:
-            # Atomic update
+            row = self._connection.execute(
+                "SELECT * FROM canary_tokens WHERE secret = ? AND status = 'active'", (secret,)
+            ).fetchone()
+            if not row:
+                return None
+
+            token_dict = self._canary_dict(row)
+            meta = dict(token_dict.get("metadata", {}))
+            triggers = list(meta.get("triggers", []))
+            trigger_entry = {
+                "timestamp": now,
+                "source_ip": source_ip,
+            }
+            if trigger_metadata:
+                trigger_entry.update(trigger_metadata)
+            triggers.append(trigger_entry)
+            meta["triggers"] = triggers[-25:]
+            new_meta_json = json.dumps(meta, default=str)
+
             cursor = self._connection.execute(
                 """UPDATE canary_tokens 
                    SET trigger_count = trigger_count + 1,
                        first_triggered_at = COALESCE(first_triggered_at, ?),
                        last_triggered_at = ?,
-                       last_source_ip = ?
+                       last_source_ip = ?,
+                       metadata_json = ?
                    WHERE secret = ? AND status = 'active'""",
-                (now, now, source_ip, secret)
+                (now, now, source_ip, new_meta_json, secret)
             )
             if cursor.rowcount == 0:
                 return None
             self._connection.commit()
             
-            row = self._connection.execute(
+            updated_row = self._connection.execute(
                 "SELECT * FROM canary_tokens WHERE secret = ?", (secret,)
             ).fetchone()
-        return self._canary_dict(row) if row else None
+        return self._canary_dict(updated_row) if updated_row else None
 
     @staticmethod
     def _canary_dict(row: sqlite3.Row) -> Dict[str, Any]:
