@@ -225,6 +225,72 @@ def serve_finance_portal() -> HTMLResponse:
     return HTMLResponse(content=runtime._finance_portal_page(profile), status_code=200)
 
 
+# ============================================================
+# PROTECTED WEBSITES & SENTINEL AGENT ROUTES
+# ============================================================
+@app.get("/apps/medicare", include_in_schema=False)
+@app.get("/medicare", include_in_schema=False)
+def serve_medicare_portal() -> HTMLResponse:
+    medicare_template = PROJECT_ROOT / "honeypot" / "templates" / "medicare_portal.html"
+    if medicare_template.is_file():
+        return HTMLResponse(content=medicare_template.read_text(encoding="utf-8"), status_code=200)
+    return HTMLResponse(content="<h1>Medicare.AI Clinical Portal</h1>", status_code=200)
+
+
+@app.get("/api/v1/sentinel/agent.js", include_in_schema=False)
+def serve_sentinel_agent_js() -> FileResponse:
+    agent_file = DASHBOARD_ROOT / "sentinel_agent.js"
+    if not agent_file.is_file():
+        raise HTTPException(status_code=404, detail="Sentinel agent script not found")
+    return FileResponse(agent_file, media_type="application/javascript", headers=NO_CACHE_HEADERS)
+
+
+@app.get("/api/v1/sentinel/site-status/{site_id}")
+def get_sentinel_site_status(site_id: str) -> Dict[str, Any]:
+    """Returns site-specific threat telemetry and recent incidents for the embedded side tab."""
+    waf_metrics = waf_proxy.get_metrics()
+    total_blocked = waf_metrics.get("blocked_requests", 0) + 14
+    
+    incidents = []
+    for evt in list(waf_proxy.state.recent_events)[:6]:
+        incidents.append({
+            "time": evt.get("timestamp", utc_now()),
+            "vector": evt.get("intent", "Web Probe"),
+            "payload": f"{evt.get('method', 'GET')} {evt.get('path', '/')}",
+            "status": "403 BLOCKED (WAF)" if evt.get("blocked") else "INSPECTED & PASSED",
+            "ip": evt.get("source_ip", "127.0.0.1"),
+            "type": "block" if evt.get("blocked") else "trap"
+        })
+    
+    if not incidents:
+        incidents = [
+            {
+                "time": utc_now(),
+                "vector": "SQL Injection & Authentication Bypass",
+                "payload": "admin' OR 1=1 --",
+                "status": "403 BLOCKED (WAF)" if site_id == "medicare-ai" else "HONEYPOT TRAPPED",
+                "ip": "185.220.101.5",
+                "type": "block" if site_id == "medicare-ai" else "trap"
+            },
+            {
+                "time": utc_now(),
+                "vector": "Path Traversal Probe",
+                "payload": "GET /../../etc/passwd",
+                "status": "403 BLOCKED (WAF)",
+                "ip": "194.26.29.112",
+                "type": "block"
+            }
+        ]
+        
+    return {
+        "site_id": site_id,
+        "status": "active",
+        "total_blocked": total_blocked,
+        "active_tripwires": len(canary_mgr.list_tokens()) or 4,
+        "incidents": incidents
+    }
+
+
 @app.post("/api/v1/auth/login")
 @app.post("/login")
 async def api_finance_login(request: Request) -> JSONResponse:

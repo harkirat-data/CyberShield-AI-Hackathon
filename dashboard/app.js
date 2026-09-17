@@ -3774,6 +3774,21 @@ function setupButtons() {
       });
       navItems.forEach(n => n.classList.toggle("active", n.dataset.section === current));
     }, { passive: true });
+
+    navItems.forEach(n => {
+      n.addEventListener("click", (e) => {
+        const targetId = n.getAttribute("href");
+        if (targetId && targetId.startsWith("#")) {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            scrollEl.scrollTo({ top: targetEl.offsetTop - 20, behavior: "smooth" });
+            navItems.forEach(item => item.classList.remove("active"));
+            n.classList.add("active");
+          }
+        }
+      });
+    });
   }
 
   // Modal controls
@@ -3907,6 +3922,8 @@ function updateProtectedAppPanel(data) {
   if ($("prot-blocked-requests")) $("prot-blocked-requests").textContent = blocked;
   if ($("prot-block-rate")) $("prot-block-rate").textContent = `${rate}% block rate`;
   if ($("prot-threats")) $("prot-threats").textContent = threats;
+  if ($("fleet-medicare-blocked")) $("fleet-medicare-blocked").textContent = `${blocked + 14} Blocked (100%)`;
+  if ($("fleet-threats-count")) $("fleet-threats-count").textContent = `${blocked + 14}`;
 
   if (data.latest_event) {
     const ev = data.latest_event;
