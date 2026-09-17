@@ -224,53 +224,44 @@ body {
   gap: 12px;
 }
 .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbar-title {
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+.topbar-brand-name {
   font-family: var(--font-head);
-  font-size: 18px; font-weight: 700;
-  letter-spacing: -0.4px; color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  line-height: 1;
   white-space: nowrap;
 }
-.topbar-accent { color: var(--primary); font-weight: 600; }
-.gemini-pill {
-  display: flex; align-items: center; gap: 6px;
-  padding: 4px 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+.topbar-brand-badge {
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-mono);
-  font-size: 11px; color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  color: #4e5d34;
+  background: #eef3e7;
+  border: 1px solid #d0ddbe;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-}
-.pill-label { color: var(--text-muted); }
-.pill-value { color: var(--primary); font-weight: 600; }
-.pill-latency {
-  font-size: 10px; padding: 1px 6px;
-  background: var(--surface-neutral);
-  border: 1px solid var(--border);
-  border-radius: 2px; color: var(--text-muted);
+  line-height: 1.2;
 }
 
-.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.search-box {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 12px;
-  background: var(--surface-neutral);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  transition: all 0.15s;
-  width: 280px;
-}
-.search-box:focus-within {
-  border-color: var(--primary);
-  background: var(--surface);
-}
-.search-box input {
-  border: none; background: transparent; outline: none;
-  font-family: var(--font-mono);
-  font-size: 12px; color: var(--text);
-  width: 100%;
-}
-.search-box input::placeholder { color: var(--text-muted); }
+.topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
 .grid-badge {
   display: flex; align-items: center; gap: 6px;

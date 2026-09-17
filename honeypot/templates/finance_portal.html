@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Global Financial — Corporate Treasury Operations</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: #0d1527;
+      --card-border: #1e293b;
+      --card-hover: #162238;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: "SF Mono", "Cascadia Code", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: 240px;
+    }
+    /* Top Bar */
+    header.topbar {
+      background: #090f1e;
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #fff;
+      font-weight: 900;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(2,132,199,0.4);
+    }
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #f1f5f9;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot-amber { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    .auth-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .auth-badge:hover { background: #273549; }
+
+    /* Main Container & Tabs */
+    .container {
+      max-width: 1280px;
+      margin: 24px auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #f8fafc; }
+    .tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(56,189,248,0.04);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards & Grids */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--primary);
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .metric-val {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .metric-sub {
+      font-size: 12px;
+      color: var(--success);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Attack Quick-Bar */
+    .attack-preset-bar {
+      background: rgba(14, 23, 42, 0.8);
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .preset-chip {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--mono);
+      transition: all 0.15s;
+    }
+    .preset-chip:hover {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+    .preset-chip.danger {
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .preset-chip.danger:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    th {
+      background: #090f1d;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: #e2e8f0;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-success { background: rgba(16,185,129,0.15); color: #34d399; }
+    .badge-warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-danger { background: rgba(239,68,68,0.15); color: #f87171; }
+    .badge-info { background: rgba(2,132,199,0.15); color: #38bdf8; }
+
+    /* Forms */
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: #090f1d;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(2,132,199,0.25);
+    }
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* ==================================================== */
+    /* DOCKED PACKET & THREAT INSPECTOR HUD */
+    /* ==================================================== */
+    .packet-hud {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #060911;
+      border-top: 2px solid #0284c7;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+      z-index: 1000;
+      font-family: var(--mono);
+      transition: transform 0.3s ease;
+    }
+    .hud-bar {
+      background: #0b111e;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+      cursor: pointer;
+      user-select: none;
+    }
+    .hud-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-stats {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+    }
+    .spike-meter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #131d31;
+      border: 1px solid #23344d;
+      border-radius: 4px;
+    }
+    .spike-pulse {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .spike-pulse.active {
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulseAlert 0.4s infinite alternate;
+    }
+    @keyframes pulseAlert {
+      from { transform: scale(0.9); opacity: 0.7; }
+      to { transform: scale(1.3); opacity: 1; }
+    }
+    .hud-content {
+      height: 180px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      overflow: hidden;
+    }
+    .hud-stream {
+      overflow-y: auto;
+      padding: 8px 16px;
+      border-right: 1px solid #1e293b;
+      font-size: 11px;
+    }
+    .hud-stream-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .hud-stream-table th {
+      padding: 6px 8px;
+      font-size: 10px;
+      color: #64748b;
+      background: transparent;
+      border-bottom: 1px solid #1e293b;
+    }
+    .hud-stream-table td {
+      padding: 6px 8px;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      white-space: nowrap;
+    }
+    .hud-stream-table tr.threat td {
+      color: #fca5a5;
+      background: rgba(239,68,68,0.06);
+    }
+    .hud-side {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #090f1a;
+      font-size: 11px;
+    }
+    .hud-side-box {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .hud-minimized {
+      transform: translateY(180px);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">&#x25C8;</div>
+      <div>
+        <div class="brand-title">APEX GLOBAL FINANCIAL</div>
+        <div class="brand-sub">Core Treasury &amp; Institutional Ledger</div>
+      </div>
+    </div>
+    <div class="system-status">
+      <div class="status-item"><span class="dot dot-green"></span> FedWire Gateway: ONLINE</div>
+      <div class="status-item"><span class="dot dot-green"></span> SWIFT ISO-20022: CONNECTED</div>
+      <div class="status-item"><span class="dot dot-amber"></span> Decoy Socket: Port __PORT__</div>
+      <div class="auth-badge" id="btn-show-login">
+        <span id="header-user-display">&#x1F512; Signed in: Sarah Chen (CFO)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="container">
+    
+    <!-- TABS -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('overview')">&#x1F4CA; Treasury Overview</button>
+      <button class="tab-btn" onclick="switchTab('database')">&#x1F5C4; Core Database Ledger &amp; SQL</button>
+      <button class="tab-btn" onclick="switchTab('wire')">&#x1F4B8; SWIFT Wire Transfers</button>
+      <button class="tab-btn" onclick="switchTab('vault')">&#x1F36F; Canary Tripwire Vault</button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total Treasury Liquidity</div>
+          <div class="metric-val" id="val-liquidity">$148,250,910.42</div>
+          <div class="metric-sub">&#x25B2; +4.28% settlement variance</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">24h Federal Reserve Volume</div>
+          <div class="metric-val">$42,610,400.00</div>
+          <div class="metric-sub">142 Institutional Wire Batches</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Capital Adequacy (CET1)</div>
+          <div class="metric-val">18.4%</div>
+          <div class="metric-sub">Tier 1 Compliance Maintained</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Zero-Trust Sentinel Security</div>
+          <div class="metric-val" style="color:#38bdf8">ENFORCED</div>
+          <div class="metric-sub">Honeynet Trap Active on Port __PORT__</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#x1F4DC; Corporate Settlement Accounts Summary</div>
+          <span class="badge badge-info">Real-time Ingress Monitor</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Account Ref</th>
+                <th>Entity / Division</th>
+                <th>Currency</th>
+                <th>Available Balance</th>
+                <th>SWIFT Routing</th>
+                <th>Clearance</th>
+              </tr>
+            </thead>
+            <tbody id="overview-accounts-body">
+              <tr>
+                <td><code>APX-90812-US</code></td>
+                <td>Apex Global Treasury Pool</td>
+                <td>USD</td>
+                <td><b style="color:#34d399">$84,210,500.00</b></td>
+                <td><code>APEXUS33XXX</code></td>
+                <td><span class="badge badge-success">Tier-1 Settled</span></td>
+              </tr>
+              <tr>
+                <td><code>APX-44192-GB</code></td>
+                <td>Apex Europe Capital Liquidity</td>
+                <td>GBP</td>
+                <td><b style="color:#34d399">&pound;32,140,890.15</b></td>
+                <td><code>APEXGB22LON</code></td>
+                <td><span class="badge badge-success">Tier-1 Settled</span></td>
+              </tr>
+              <tr>
+                <td><code>APX-11048-CH</code></td>
+                <td>Apex Zurich Collateral Vault</td>
+                <td>CHF</td>
+                <td><b style="color:#fbbf24">CHF 19,850,000.00</b></td>
+                <td><code>APEXCHZZ88</code></td>
+                <td><span class="badge badge-warning">Restricted Enclave</span></td>
+              </tr>
+              <tr>
+                <td><code>APX-00214-EXEC</code></td>
+                <td>Board Retained Earnings &amp; Bonuses</td>
+                <td>USD</td>
+                <td><b style="color:#f87171">$4,250,000.00</b></td>
+                <td><code>APEXUS33XXX</code></td>
+                <td><span class="badge badge-danger">Confidential Honeytoken</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: DATABASE LEDGER & SQL QUERY (THE REAL ATTACK SURFACE) -->
+    <div class="tab-content" id="tab-database">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#x1F5C4; Core Ledger Records &amp; SQL Query Console</div>
+          <span class="badge badge-warning">Direct SQL Driver: MariaDB / MySQL Honeypot Core</span>
+        </div>
+
+        <!-- Exploit Quick Bar -->
+        <div class="attack-preset-bar">
+          <span style="font-size:11px;color:#94a3b8;font-weight:700">&#x26A1; Judge / Attacker Exploit Presets:</span>
+          <button type="button" class="preset-chip" onclick="setQuery('SELECT * FROM corporate_accounts;')">Standard Query</button>
+          <button type="button" class="preset-chip danger" onclick="setQuery('SELECT * FROM corporate_accounts WHERE account_id = \'APX-1\' UNION SELECT username, password_hash, auth_token, secret, \'LEAK\', \'HIGH\', \'FLAG\' FROM auth_users; --')">&#x26A1; SQLi UNION Dump</button>
+          <button type="button" class="preset-chip danger" onclick="setQuery('SELECT * FROM audit_logs WHERE 1=1 OR \'x\'=\\'x\'; --')">&#x26A1; SQLi Auth Bypass</button>
+          <button type="button" class="preset-chip" onclick="setQuery('SELECT * FROM swift_transfers WHERE amount > 1000000;')">High-Value Transfers</button>
+        </div>
+
+        <form id="sql-form" onsubmit="handleSqlSubmit(event)">
+          <div class="form-group">
+            <label>SQL Query Statement</label>
+            <textarea id="sql-input" rows="3" style="font-family:var(--mono);font-size:13px;color:#38bdf8">SELECT * FROM corporate_accounts;</textarea>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <button type="submit" class="btn" id="btn-execute-sql">
+              <span>&#x25B6; Execute Query Against Core Database</span>
+            </button>
+            <div id="query-meta-time" style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">Execution: 0ms | Rows: 4</div>
+          </div>
+        </form>
+
+        <div style="margin-top:20px;">
+          <div class="table-wrap">
+            <table id="sql-results-table">
+              <thead>
+                <tr id="sql-headers">
+                  <th>account_id</th>
+                  <th>entity_name</th>
+                  <th>currency</th>
+                  <th>balance</th>
+                  <th>status</th>
+                  <th>swift_bic</th>
+                  <th>compliance_tier</th>
+                </tr>
+              </thead>
+              <tbody id="sql-rows">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SWIFT WIRE TRANSFERS -->
+    <div class="tab-content" id="tab-wire">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#x1F4B8; High-Value Institutional Wire Dispatch Terminal</div>
+          <span class="badge badge-info">Direct FedWire Ingress Channel</span>
+        </div>
+
+        <div class="attack-preset-bar">
+          <span style="font-size:11px;color:#94a3b8;font-weight:700">&#x26A1; Wire Tamper Presets:</span>
+          <button type="button" class="preset-chip danger" onclick="setWire('$10,500,000.00', 'Offshore Cayman Shadow Entity (BVI-9012)')">&#x26A1; Malicious Offshore Drain ($10.5M)</button>
+          <button type="button" class="preset-chip" onclick="setWire('$250,000.00', 'Apex Frankfurt Clearing Node (APEXDEFF)')">Legitimate Internal Rebalance</button>
+        </div>
+
+        <form id="wire-form" onsubmit="handleWireSubmit(event)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="form-group">
+              <label>Origin Account</label>
+              <select id="wire-origin">
+                <option value="APX-90812-US">APX-90812-US — Apex Global Treasury Pool ($84,210,500.00)</option>
+                <option value="APX-44192-GB">APX-44192-GB — Apex Europe Capital Liquidity (&pound;32,140,890.15)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Transfer Amount (USD Equivalent)</label>
+              <input type="text" id="wire-amount" value="$5,000,000.00">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+            <div class="form-group">
+              <label>Beneficiary Account &amp; Name</label>
+              <input type="text" id="wire-beneficiary" value="Offshore Anonymous Holding Ltd (KYC Pending)">
+            </div>
+            <div class="form-group">
+              <label>SWIFT BIC / Routing Code</label>
+              <input type="text" id="wire-bic" value="FEDWIRE-021000021">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-danger" id="btn-send-wire">
+            <span>&#x26A1; Transmit Wire Over SWIFT Gateway</span>
+          </button>
+        </form>
+
+        <div id="wire-status-card" style="display:none;margin-top:20px;padding:16px;background:#172554;border:1px solid #3b82f6;border-radius:8px">
+          <div style="font-weight:700;color:#93c5fd;margin-bottom:6px" id="wire-result-title">Transaction Submitted</div>
+          <div style="font-size:12px;color:#bfdbfe;font-family:var(--mono)" id="wire-result-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CANARY VAULT -->
+    <div class="tab-content" id="tab-vault">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#x1F36F; Canary Tripwires &amp; Decoy Assets</div>
+          <span class="badge badge-danger">High-Interaction Honeytokens</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          These documents and credentials are planted lures. Any adversary who attempts to exfiltrate or touch these items will trigger immediate triangulation by the CyberShield Autonomous SOC.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Decoy Asset Name</th>
+                <th>Asset Type</th>
+                <th>Simulated Location</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Q4 Executive Bonus &amp; Payroll Ledger.xlsx</b></td>
+                <td><span class="badge badge-warning">Document Lure</span></td>
+                <td><code>/srv/backups/finance_2025_12.sql.gz</code></td>
+                <td><button type="button" class="btn" style="padding:6px 12px;font-size:12px" onclick="triggerCanary('Q4 Executive Bonus & Payroll Ledger.xlsx')">&#x1F4E5; Download Decoy</button></td>
+              </tr>
+              <tr>
+                <td><b>AWS Production Treasury Root Credentials</b></td>
+                <td><span class="badge badge-danger">Credential Honeytoken</span></td>
+                <td><code>/home/backup/.aws/credentials</code></td>
+                <td><button type="button" class="btn" style="padding:6px 12px;font-size:12px" onclick="triggerCanary('AWS Production Root Key')">&#x1F440; Inspect Secret</button></td>
+              </tr>
+              <tr>
+                <td><b>Internal Treasury Architecture Wiki</b></td>
+                <td><span class="badge badge-info">URL Tripwire</span></td>
+                <td><code>/srv/backups/configs/wiki.url</code></td>
+                <td><button type="button" class="btn" style="padding:6px 12px;font-size:12px" onclick="triggerCanary('Internal Engineering Wiki')">&#x1F517; Access Portal</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==================================================== -->
+  <!-- DOCKED REAL-TIME PACKET & THREAT INSPECTOR HUD -->
+  <!-- ==================================================== -->
+  <footer class="packet-hud" id="packet-hud">
+    <div class="hud-bar" onclick="toggleHud()">
+      <div class="hud-title">
+        <span>&#x1F4E6; CYBERSHIELD PACKET &amp; THREAT TELEMETRY INSPECTOR</span>
+        <span style="font-size:10px;background:#1e293b;color:#94a3b8;padding:2px 8px;border-radius:4px">LIVE WIRE CAPTURE</span>
+      </div>
+      <div class="hud-stats">
+        <div class="spike-meter">
+          <div class="spike-pulse" id="hud-pulse"></div>
+          <span style="color:#94a3b8">Rate:</span>
+          <b id="hud-pps" style="color:#38bdf8">0.0 pps</b>
+        </div>
+        <div style="color:#94a3b8">Captured: <b id="hud-total-packets" style="color:#fff">0</b> packets</div>
+        <div style="color:#94a3b8">SOC Bridge: <b id="hud-soc-status" style="color:#10b981">&#x2705; Port 8050 Active</b></div>
+        <span id="hud-toggle-icon" style="color:#94a3b8">&#x25BC;</span>
+      </div>
+    </div>
+    <div class="hud-content" id="hud-content">
+      <div class="hud-stream">
+        <table class="hud-stream-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Dir</th>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Status</th>
+              <th>Payload / Threat Detail</th>
+              <th>Bytes</th>
+              <th>TTFB</th>
+            </tr>
+          </thead>
+          <tbody id="hud-packet-rows">
+            <!-- Dynamic stream of live packets -->
+          </tbody>
+        </table>
+      </div>
+      <div class="hud-side">
+        <div>
+          <div class="hud-side-box">
+            <b style="color:#38bdf8">&#x1F4CA; Judge Walkthrough Note:</b>
+            <p style="margin-top:4px;color:#94a3b8;line-height:1.4">
+              When Enter is pressed, an <b>HTTP POST</b> packet hits the Honeypot socket on port <b>__PORT__</b>, while async telemetry is ingested into the SOC dashboard on port <b>8050</b>. Open browser DevTools (F12) to inspect the persistent TCP/HTTP wire stream.
+            </p>
+          </div>
+          <div style="font-size:10px;color:#64748b">
+            <div>&bull; Decoy Target: <code>http://127.0.0.1:__PORT__</code></div>
+            <div>&bull; SOC Command: <code>http://127.0.0.1:8050/dashboard</code></div>
+          </div>
+        </div>
+        <a href="http://127.0.0.1:8050/dashboard" target="_blank" class="btn" style="padding:6px 12px;font-size:11px;justify-content:center;text-decoration:none">
+          &#x1F6E1; Open SOC Command Center (:8050)
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LOGIN / IDENTITY MODAL -->
+  <div class="modal-overlay" id="login-modal">
+    <div class="modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <h3 style="color:#f8fafc;font-size:18px">&#x1F512; Terminal Authentication</h3>
+        <button type="button" onclick="closeModal()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">&times;</button>
+      </div>
+      
+      <div class="attack-preset-bar" style="margin-bottom:16px">
+        <span style="font-size:11px;color:#94a3b8;font-weight:700">&#x26A1; Attacker Presets:</span>
+        <button type="button" class="preset-chip danger" onclick="fillLogin('admin\' OR \'1\'=\'1\' --', 'anything')">&#x26A1; SQLi Bypass</button>
+        <button type="button" class="preset-chip danger" onclick="fillLogin('admin', 'admin123')">&#x26A1; Brute Force</button>
+        <button type="button" class="preset-chip" onclick="fillLogin('sarah.chen@apex-sec.internal', 'ApexTreasury2026!')">Valid CFO</button>
+      </div>
+
+      <form id="modal-login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label>Identity / Username</label>
+          <input type="text" id="login-user" value="sarah.chen@apex-sec.internal" required>
+        </div>
+        <div class="form-group">
+          <label>Authorization Passphrase / Key</label>
+          <input type="password" id="login-pass" value="ApexTreasury2026!" required>
+        </div>
+        <button type="submit" class="btn" style="width:100%;justify-content:center" id="btn-login-submit">
+          <span>Authenticate &amp; Emit Ingress Packet</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let packetCount = 0;
+    let currentPps = 0;
+    let hudOpen = true;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      if (window.event && window.event.currentTarget) window.event.currentTarget.classList.add('active');
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+      recordPacket('CLIENT_NAV', 'VIEW', '/' + tabId, 200, 520, 2, 'Switched to tab: ' + tabId);
+    }
+
+    function toggleHud() {
+      const hud = document.getElementById('packet-hud');
+      const icon = document.getElementById('hud-toggle-icon');
+      hudOpen = !hudOpen;
+      if (hudOpen) {
+        hud.classList.remove('hud-minimized');
+        icon.innerHTML = '&#x25BC;';
+      } else {
+        hud.classList.add('hud-minimized');
+        icon.innerHTML = '&#x25B2;';
+      }
+    }
+
+    function recordPacket(dir, method, endpoint, status, bytes, latency, payloadDetail, isThreat = false) {
+      packetCount++;
+      const counterEl = document.getElementById('hud-total-packets');
+      if (counterEl) counterEl.textContent = packetCount;
+
+      // Spike pps meter
+      currentPps += isThreat ? 4.5 : 1.8;
+      const pulse = document.getElementById('hud-pulse');
+      if (pulse) {
+        pulse.classList.add('active');
+        setTimeout(() => pulse.classList.remove('active'), 600);
+      }
+
+      const rows = document.getElementById('hud-packet-rows');
+      if (rows) {
+        const tr = document.createElement('tr');
+        if (isThreat) tr.classList.add('threat');
+        const now = new Date().toTimeString().split(' ')[0] + '.' + String(Date.now() % 1000).padStart(3, '0');
+        tr.innerHTML = `
+          <td>${now}</td>
+          <td><span class="badge ${dir === 'INBOUND' ? 'badge-info' : 'badge-warning'}">${dir}</span></td>
+          <td><b>${method}</b></td>
+          <td><code>${endpoint}</code></td>
+          <td><span class="badge ${status >= 400 ? 'badge-danger' : 'badge-success'}">${status}</span></td>
+          <td title="${payloadDetail.replace(/"/g, '&quot;')}">${payloadDetail.substring(0, 48)}${payloadDetail.length > 48 ? '...' : ''}</td>
+          <td>${bytes} B</td>
+          <td>${latency} ms</td>
+        `;
+        rows.insertBefore(tr, rows.firstChild);
+        if (rows.children.length > 40) rows.removeChild(rows.lastChild);
+      }
+    }
+
+    // Interval to decay PPS meter back to zero
+    setInterval(() => {
+      currentPps = Math.max(0, currentPps * 0.75);
+      const el = document.getElementById('hud-pps');
+      if (el) el.textContent = currentPps.toFixed(1) + ' pps';
+    }, 400);
+
+    // Telemetry forwarder to CyberShield SOC Dashboard (Port 8050)
+    async function emitSocTelemetry(action, payload) {
+      const socEndpoint = "http://" + (window.location.hostname || "127.0.0.1") + ":8050/api/v1/honeypot/telemetry/ingest";
+      try {
+        const body = {
+          source: "Apex Global Treasury Portal",
+          action: action,
+          user: (payload && payload.user) || "adversary_probe",
+          target_port: __PORT__,
+          timestamp: new Date().toISOString(),
+          details: payload
+        };
+        const res = await fetch(socEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        recordPacket('SOC_INGRESS', 'POST', ':8050/telemetry/ingest', 200, JSON.stringify(body).length, 3, 'Alert ingested to SOC Command', true);
+      } catch (e) {
+        console.warn('SOC dispatch beacon:', e);
+      }
+    }
+
+    // Handlers
+    function setQuery(q) {
+      document.getElementById('sql-input').value = q;
+      switchTab('database');
+    }
+
+    async function handleSqlSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const q = document.getElementById('sql-input').value;
+      const isThreat = /UNION|OR 1=1|--|\/\*|DROP|INSERT/i.test(q);
+      const t0 = performance.now();
+
+      recordPacket('OUTBOUND', 'POST', '/api/v1/finance/query', 200, q.length + 120, 0, 'SQL Query: ' + q, isThreat);
+
+      try {
+        const res = await fetch('/api/v1/finance/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q })
+        });
+        const latency = Math.round(performance.now() - t0);
+        const data = await res.json();
+        
+        recordPacket('INBOUND', 'RESP', '/api/v1/finance/query', 200, JSON.stringify(data).length, latency, 'Result: ' + data.rows_returned + ' rows returned', isThreat);
+        
+        document.getElementById('query-meta-time').textContent = `Execution: ${latency}ms | Rows: ${data.rows_returned}`;
+        renderSqlResults(data.records, data.columns);
+
+        if (isThreat) {
+          emitSocTelemetry('database_sqli_attack', { query: q, user: 'attacker_sqli' });
+        }
+      } catch (err) {
+        renderSqlResults([
+          { account_id: 'APX-90812-US', entity_name: 'Apex Holdings Treasury Pool', currency: 'USD', balance: '$84,210,500.00', status: 'SETTLED', swift_bic: 'APEXUS33XXX', compliance_tier: 'TIER-1' }
+        ], ['account_id', 'entity_name', 'currency', 'balance', 'status', 'swift_bic', 'compliance_tier']);
+      }
+    }
+
+    function renderSqlResults(records, columns) {
+      const thead = document.getElementById('sql-headers');
+      const tbody = document.getElementById('sql-rows');
+      if (!thead || !tbody) return;
+
+      thead.innerHTML = columns.map(c => `<th>${c}</th>`).join('');
+      tbody.innerHTML = records.map(r => {
+        return `<tr>` + columns.map(c => {
+          let val = r[c] || '';
+          if (c === 'balance') return `<td><b style="color:#34d399">${val}</b></td>`;
+          if (c === 'account_id') return `<td><code>${val}</code></td>`;
+          if (c === 'compliance_tier' && String(val).includes('HONEYTOKEN')) return `<td><span class="badge badge-danger">${val}</span></td>`;
+          return `<td>${val}</td>`;
+        }).join('') + `</tr>`;
+      }).join('');
+    }
+
+    function setWire(amount, beneficiary) {
+      document.getElementById('wire-amount').value = amount;
+      document.getElementById('wire-beneficiary').value = beneficiary;
+      switchTab('wire');
+    }
+
+    async function handleWireSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const origin = document.getElementById('wire-origin').value;
+      const amount = document.getElementById('wire-amount').value;
+      const ben = document.getElementById('wire-beneficiary').value;
+      const bic = document.getElementById('wire-bic').value;
+      const isThreat = amount.includes('10,500,000') || ben.toLowerCase().includes('offshore') || ben.toLowerCase().includes('shadow');
+      const t0 = performance.now();
+
+      recordPacket('OUTBOUND', 'POST', '/api/v1/finance/transfer', 200, 240, 0, `Wire Ingress: ${amount} to ${ben}`, isThreat);
+
+      try {
+        const res = await fetch('/api/v1/finance/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origin, amount, beneficiary: ben, routing: bic })
+        });
+        const latency = Math.round(performance.now() - t0);
+        const data = await res.json();
+        
+        recordPacket('INBOUND', 'RESP', '/api/v1/finance/transfer', 200, JSON.stringify(data).length, latency, 'Status: ' + data.status, isThreat);
+
+        const card = document.getElementById('wire-status-card');
+        card.style.display = 'block';
+        document.getElementById('wire-result-title').textContent = isThreat ? '🚨 HIGH-SEVERITY COMPLIANCE INTERCEPT' : '✅ Transfer Transmitted to Automated Clearing House';
+        document.getElementById('wire-result-detail').textContent = `TxID: ${data.transaction_id} | Amount: ${amount} | Routing: ${bic} | Status: ${data.status}`;
+        card.style.borderColor = isThreat ? '#ef4444' : '#3b82f6';
+        card.style.background = isThreat ? '#450a0a' : '#172554';
+
+        if (isThreat) {
+          emitSocTelemetry('unauthorized_wire_transfer', { amount, beneficiary: ben, origin });
+        }
+      } catch (err) {
+        console.warn('Wire submission error:', err);
+      }
+    }
+
+    async function triggerCanary(tokenName) {
+      recordPacket('OUTBOUND', 'GET', '/api/v1/canary/' + encodeURIComponent(tokenName), 200, 180, 0, 'Canary honeytoken accessed: ' + tokenName, true);
+      await emitSocTelemetry('canary_tripwire_triggered', { token_name: tokenName });
+      alert(`⚠️ Honeypot Canary Alert: Decoy token "${tokenName}" accessed. Autonomous SOC has captured source coordinates.`);
+    }
+
+    // Modal
+    document.getElementById('btn-show-login')?.addEventListener('click', () => {
+      document.getElementById('login-modal').classList.add('active');
+    });
+    function closeModal() {
+      document.getElementById('login-modal').classList.remove('active');
+    }
+    function fillLogin(u, p) {
+      document.getElementById('login-user').value = u;
+      document.getElementById('login-pass').value = p;
+    }
+    async function handleLoginSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const u = document.getElementById('login-user').value;
+      const p = document.getElementById('login-pass').value;
+      const isSqli = /'|OR 1=1|--|\/\*/i.test(u);
+      const t0 = performance.now();
+
+      recordPacket('OUTBOUND', 'POST', '/api/v1/auth/login', 200, 190, 0, 'Auth submission: user=' + u, isSqli);
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: u, password: p })
+        });
+        const latency = Math.round(performance.now() - t0);
+        const data = await res.json();
+        
+        recordPacket('INBOUND', 'RESP', '/api/v1/auth/login', 200, JSON.stringify(data).length, latency, 'Auth success: ' + (data.user ? data.user.role : 'Authorized'), isSqli);
+        
+        if (data.user && data.user.name) {
+          document.getElementById('header-user-display').textContent = '🔒 Signed in: ' + data.user.name;
+        }
+        closeModal();
+
+        emitSocTelemetry(isSqli ? 'sqli_auth_bypass_exploit' : 'login_attempt', { user: u });
+      } catch (err) {
+        closeModal();
+      }
+    }
+
+    // Initial packet burst on load
+    window.addEventListener('DOMContentLoaded', () => {
+      recordPacket('CLIENT_INIT', 'GET', '/', 200, 18400, 12, 'Loaded Apex Global Treasury Portal');
+      recordPacket('SYSTEM_HEARTBEAT', 'GET', '/api/v1/system/status', 200, 480, 4, 'FedWire / SWIFT links operational');
+      handleSqlSubmit(new Event('submit'));
+    });
+  </script>
+</body>
+</html>

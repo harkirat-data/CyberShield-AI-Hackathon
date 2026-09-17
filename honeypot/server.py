@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import secrets
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,7 +23,8 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -74,8 +76,29 @@ waf_proxy = MedicareWAFProxy(
 async def lifespan(app: FastAPI):
     # Start honeypot decoy listeners
     await runtime.start()
-    # Start Medicare.AI WAF reverse-proxy client pool
-    await waf_proxy.start()
+
+    # Seed starter canary tripwires if none exist yet
+    if not canary_mgr.list_tokens():
+        try:
+            canary_mgr.create_token(
+                name="AWS Production Admin Key",
+                token_type="credential",
+                metadata={"location": "/home/backup/.aws/credentials", "deployed_by": "CyberShield AI Sentinel"},
+            )
+            canary_mgr.create_token(
+                name="Internal Engineering Wiki Tripwire",
+                token_type="url",
+                metadata={"location": "/srv/backups/configs/wiki.url", "deployed_by": "CyberShield AI Sentinel"},
+            )
+            canary_mgr.create_token(
+                name="Q4 Payroll & Executive Bonus Ledger",
+                token_type="document",
+                metadata={"location": "/srv/backups/finance_2025_12.sql.gz", "deployed_by": "CyberShield AI Sentinel"},
+            )
+            print("[canary] Initialized 3 default tripwire tokens.")
+        except Exception as exc:
+            print(f"[canary] Starter token seeding failed: {exc}")
+
     yield
     # Graceful shutdown
     await waf_proxy.stop()
@@ -88,11 +111,304 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class TelemetryIngestPayload(BaseModel):
+    source: Optional[str] = "HTTP Finance Portal"
+    action: Optional[str] = "credential_probe"
+    user: Optional[str] = "unknown"
+    target_port: Optional[int] = 8088
+    timestamp: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+@app.post("/api/v1/honeypot/telemetry/ingest")
+@app.post("/telemetry/ingest")
+def ingest_telemetry_beacon(req: TelemetryIngestPayload, request: Request) -> Dict[str, Any]:
+    """Direct live telemetry beacon showing undeniable data signal from decoy to dashboard."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    sess_id = f"ses_decoy_{int(time.time() * 1000)}"
+
+    # Record real active session
+    new_sess = DecoySession(
+        session_id=sess_id,
+        source_ip=client_ip,
+        source_port=request.client.port if request.client else 54321,
+        destination_port=req.target_port or 8088,
+        service="HTTP",
+        protocol="http",
+        persona="internal finance portal",
+        risk_score=85,
+        risk_level="critical",
+        intent="Adversary Web Portal Intrusion & Credential Harvesting",
+        username=req.user,
+    )
+    store.create_session(new_sess)
+
+    # Record real telemetry event
+    evt = TelemetryEvent(
+        session_id=sess_id,
+        event_type="AUTH_FAILED_EXPLOIT",
+        severity="critical",
+        direction="inbound",
+        content=f"Finance Portal (Port {req.target_port or 8088}) Ingress: Credential probe submitted for user '{req.user or 'admin'}' from {client_ip}",
+        metadata={"destination_port": req.target_port or 8088, "user": req.user, "action": req.action},
+    )
+    store.record_event(evt)
+
+    # Dispatch alert if alert manager available
+    if get_alert_manager and SecurityAlert:
+        try:
+            mgr = get_alert_manager()
+            sec_alert = SecurityAlert(
+                event_id=evt.event_id,
+                timestamp=evt.timestamp,
+                severity=new_sess.risk_level,
+                risk_score=new_sess.risk_score,
+                source_ip=new_sess.source_ip,
+                host=new_sess.persona,
+                service=new_sess.service,
+                event_type=evt.event_type,
+                intent=new_sess.intent,
+                mitre_techniques=["T1110", "T1078"],
+                mitre_tactics=["Initial Access", "Credential Access"],
+                ai_summary=f"Direct Decoy Signal: Credential probe detected on Finance Portal (Port {req.target_port or 8088}) from {client_ip}.",
+                recommended_remediation=[f"Block {client_ip} at perimeter firewall"],
+                details={"session_id": sess_id, "user": req.user},
+            )
+            mgr.send_alert(sec_alert, sync=False)
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "signal": "TELEMETRY_DISPATCHED",
+        "destination": "CyberShield SOC Command Center (Port 8050)",
+        "target_decoy": f"HTTP Finance Portal (Port {req.target_port or 8088})",
+        "threat_detected": "Credential Harvest / Unauthorized Probe",
+        "status": "INGESTED_TO_DASHBOARD",
+        "session_id": sess_id,
+        "timestamp": utc_now(),
+    }
+
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
     "Pragma": "no-cache",
     "Expires": "0",
 }
+
+
+# ============================================================
+# FINANCE PORTAL DEMO & API ROUTES
+# ============================================================
+@app.get("/finance-portal", include_in_schema=False)
+@app.get("/portal", include_in_schema=False)
+@app.get("/finance", include_in_schema=False)
+def serve_finance_portal() -> HTMLResponse:
+    from honeypot.config import ServiceProfile
+    profile = ServiceProfile(
+        key="http",
+        name="HTTP",
+        protocol="http",
+        port=8088,
+        public_port=80,
+        product="Apache/2.4.52 (Ubuntu)",
+        persona="internal finance portal",
+    )
+    return HTMLResponse(content=runtime._finance_portal_page(profile), status_code=200)
+
+
+@app.post("/api/v1/auth/login")
+@app.post("/login")
+async def api_finance_login(request: Request) -> JSONResponse:
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    req_user = body.get("user") or body.get("username") or "admin"
+    is_sqli = any(k in str(body).upper() for k in ("'", "OR 1=1", "UNION", "--", "/*", "SLEEP("))
+
+    if is_sqli:
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        sess_id = f"ses_portal_{int(time.time() * 1000)}"
+        new_sess = DecoySession(
+            session_id=sess_id,
+            source_ip=client_ip,
+            source_port=request.client.port if request.client else 54321,
+            destination_port=8088,
+            service="HTTP",
+            protocol="http",
+            persona="internal finance portal",
+            risk_score=90,
+            risk_level="critical",
+            intent="SQL Injection & Credential Bypass",
+            username=req_user,
+        )
+        store.create_session(new_sess)
+        evt = TelemetryEvent(
+            session_id=sess_id,
+            event_type="WEB_EXPLOIT_SQLI",
+            severity="critical",
+            direction="inbound",
+            content=f"Finance Portal SQL Injection: Auth bypass detected for '{req_user}' from {client_ip}",
+            metadata={"user": req_user, "exploit": "SQLi Auth Bypass", "destination_port": 8088},
+        )
+        store.record_event(evt)
+
+    auth_response = {
+        "ok": True,
+        "status": "authenticated",
+        "redirect": "/portal",
+        "access_token": f"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.apex_treasury_{secrets.token_hex(6)}",
+        "user": {
+            "username": req_user,
+            "name": "Sarah Chen (CFO Decoy Session)" if "sarah" in req_user.lower() else "Executive Treasury Admin",
+            "role": "Chief Financial Officer & Treasury Admin",
+            "clearance": "LEVEL-4-RESTRICTED",
+            "organization": "Apex Global Financial Core (NY-Node-04)",
+        },
+        "treasury_metrics": {
+            "total_liquidity": "$148,250,910.42",
+            "daily_turnover": "$42,610,400.00",
+            "reserve_ratio": "18.4%",
+            "active_ledgers": 14,
+            "swift_gateway": "ONLINE (FedLine-NY-Primary)",
+        },
+        "server_telemetry": {
+            "honeypot_socket": "Port 8088",
+            "soc_command_center": "Port 8050 Ingress Active",
+            "timestamp": utc_now(),
+        },
+    }
+    return JSONResponse(content=auth_response)
+
+
+@app.post("/api/v1/finance/query")
+@app.get("/api/v1/finance/query")
+async def api_finance_query(request: Request) -> JSONResponse:
+    query_str = "SELECT * FROM corporate_accounts;"
+    try:
+        if request.method == "POST":
+            body = await request.json()
+            query_str = body.get("query") or query_str
+        else:
+            query_str = request.query_params.get("query") or query_str
+    except Exception:
+        pass
+
+    is_sqli = any(k in query_str.upper() for k in ("'", "OR 1=1", "UNION", "--", "/*", "SLEEP(", "DROP", "INSERT", "INFORMATION_SCHEMA"))
+    if is_sqli:
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        sess_id = f"ses_portal_{int(time.time() * 1000)}"
+        new_sess = DecoySession(
+            session_id=sess_id,
+            source_ip=client_ip,
+            source_port=request.client.port if request.client else 54321,
+            destination_port=8088,
+            service="HTTP",
+            protocol="http",
+            persona="internal finance portal",
+            risk_score=94,
+            risk_level="critical",
+            intent="SQL Injection Database Exfiltration",
+            username="sqli_probe",
+        )
+        store.create_session(new_sess)
+        evt = TelemetryEvent(
+            session_id=sess_id,
+            event_type="DATABASE_EXPLOIT_SQLI",
+            severity="critical",
+            direction="inbound",
+            content=f"Finance Core Database SQLi Injection: '{query_str[:100]}' from {client_ip}",
+            metadata={"query": query_str, "destination_port": 8088},
+        )
+        store.record_event(evt)
+
+    records = [
+        {"account_id": "APX-90812-US", "entity_name": "Apex Holdings Treasury Pool", "currency": "USD", "balance": "$84,210,500.00", "status": "SETTLED", "swift_bic": "APEXUS33XXX", "compliance_tier": "TIER-1"},
+        {"account_id": "APX-44192-GB", "entity_name": "Apex Europe Capital Liquidity", "currency": "GBP", "balance": "£32,140,890.15", "status": "SETTLED", "swift_bic": "APEXGB22LON", "compliance_tier": "TIER-1"},
+        {"account_id": "APX-11048-CH", "entity_name": "Apex Zurich Collateral Vault", "currency": "CHF", "balance": "CHF 19,850,000.00", "status": "RESTRICTED", "swift_bic": "APEXCHZZ88", "compliance_tier": "RESTRICTED-ENCLAVE"},
+        {"account_id": "APX-77319-SG", "entity_name": "Apex Asia-Pac Escrow Node", "currency": "SGD", "balance": "S$ 12,049,519.80", "status": "SETTLED", "swift_bic": "APEXSG22XXX", "compliance_tier": "TIER-2"},
+        {"account_id": "APX-00214-EXEC", "entity_name": "Executive Retained Earnings & Bonus Reserve", "currency": "USD", "balance": "$4,250,000.00", "status": "CONFIDENTIAL", "swift_bic": "APEXUS33XXX", "compliance_tier": "EXECUTIVE-ONLY"},
+    ]
+
+    if "UNION" in query_str.upper() or "SECRET" in query_str.upper():
+        records.append({
+            "account_id": "APX-ROOT-SECRET",
+            "entity_name": "SWIFT Master Root Gateway Key",
+            "currency": "HEX",
+            "balance": "RSA-4096-DECOY-HONEYTOKEN-d8f1e29c0a1b",
+            "status": "TRIPWIRE_ARMED",
+            "swift_bic": "ROOT_ADMIN_KEY",
+            "compliance_tier": "HONEYTOKEN-LEAK",
+        })
+
+    return JSONResponse(content={
+        "ok": True,
+        "query": query_str,
+        "execution_time_ms": 11,
+        "rows_returned": len(records),
+        "columns": ["account_id", "entity_name", "currency", "balance", "status", "swift_bic", "compliance_tier"],
+        "records": records,
+        "exploit_flagged": is_sqli,
+        "server_time": utc_now(),
+    })
+
+
+@app.post("/api/v1/finance/transfer")
+async def api_finance_transfer(request: Request) -> JSONResponse:
+    trx_amount = "$5,000,000.00"
+    beneficiary = "Offshore Anonymous Holding Ltd (KYC Pending)"
+    try:
+        body = await request.json()
+        trx_amount = body.get("amount") or trx_amount
+        beneficiary = body.get("beneficiary") or beneficiary
+    except Exception:
+        pass
+
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    sess_id = f"ses_portal_{int(time.time() * 1000)}"
+    new_sess = DecoySession(
+        session_id=sess_id,
+        source_ip=client_ip,
+        source_port=request.client.port if request.client else 54321,
+        destination_port=8088,
+        service="HTTP",
+        protocol="http",
+        persona="internal finance portal",
+        risk_score=96,
+        risk_level="critical",
+        intent="Financial Wire Tampering & Unauthorized Egress",
+        username="wire_exploiter",
+    )
+    store.create_session(new_sess)
+    evt = TelemetryEvent(
+        session_id=sess_id,
+        event_type="FINANCIAL_FRAUD_TAMPER",
+        severity="critical",
+        direction="inbound",
+        content=f"Unauthorized Treasury Wire Transfer Attempt: {trx_amount} to {beneficiary} from {client_ip}",
+        metadata={"amount": trx_amount, "beneficiary": beneficiary, "destination_port": 8088},
+    )
+    store.record_event(evt)
+
+    return JSONResponse(content={
+        "ok": True,
+        "transaction_id": f"TRX-SWIFT-2026-{secrets.token_hex(4).upper()}",
+        "status": "HELD_FOR_COMPLIANCE_AUDIT",
+        "routing": "FEDWIRE-021000021-INTERCEPT",
+        "amount": trx_amount,
+        "beneficiary": beneficiary,
+        "audit_status": "FLAGGED_BY_CYBERSHIELD_AI",
+        "message": "Transaction intercepted by CyberShield Sentinel Grid. Ingress coordinates logged.",
+    })
 
 
 # ============================================================
@@ -483,12 +799,173 @@ def chat_with_assistant(request: ChatQueryRequest) -> Dict[str, Any]:
 
 
 # ============================================================
-# CANARY TOKENS API
+# CANARY TOKENS & TRIPWIRES API
 # ============================================================
 class CanaryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     token_type: str = Field(pattern="^(url|credential|document)$")
     metadata: Optional[Dict[str, Any]] = None
+
+
+class CanaryStatusUpdate(BaseModel):
+    status: str = Field(pattern="^(active|disabled)$")
+
+
+class CanaryTestRequest(BaseModel):
+    secret: Optional[str] = None
+    token_id: Optional[str] = None
+
+
+def _process_canary_trigger(
+    token_dict: Dict[str, Any],
+    source_ip: str,
+    request: Optional[Request] = None,
+    simulated: bool = False,
+) -> None:
+    """Handle SOC telemetry, investigations, and multi-channel alerting for canary triggers."""
+    event_id = f"canary-trig-{secrets.token_hex(6)}"
+    now_str = utc_now()
+    token_name = token_dict.get("name", "Unknown Tripwire")
+    token_type = token_dict.get("token_type", "url")
+    token_id = token_dict.get("token_id", "unknown")
+    secret = token_dict.get("secret", "")
+    port = getattr(getattr(request, "url", None), "port", 8050) if request else 8050
+
+    # Ensure canary system session exists for database foreign key integrity
+    if not store.get_session("canary-tripwire-grid"):
+        try:
+            store.create_session(
+                DecoySession(
+                    session_id="canary-tripwire-grid",
+                    source_ip=source_ip or "127.0.0.1",
+                    source_port=0,
+                    destination_port=port or 8050,
+                    service="canary",
+                    protocol="http",
+                    persona="cybershield-tripwire",
+                    started_at=now_str,
+                    status="active",
+                    risk_score=95,
+                    risk_level="critical",
+                    intent="Canary Tripwire Triggered",
+                    intent_confidence=1.0,
+                )
+            )
+        except Exception:
+            pass
+
+    # 1. Record Telemetry Event in Store
+    telemetry = TelemetryEvent(
+        event_id=event_id,
+        session_id="canary-tripwire-grid",
+        timestamp=now_str,
+        event_type="CANARY_TOKEN_TRIGGERED",
+        severity="critical",
+        direction="inbound",
+        content=f"Canary token '{token_name}' (type: {token_type}) triggered from {source_ip}",
+        metadata={
+            "token_id": token_id,
+            "token_name": token_name,
+            "token_type": token_type,
+            "secret_preview": (secret[:8] + "...") if len(secret) > 8 else secret,
+            "source_ip": source_ip,
+            "simulated": simulated,
+        },
+        byte_count=len(secret),
+        latency_ms=1,
+    )
+    try:
+        store.record_event(telemetry)
+    except Exception as err:
+        print(f"[canary] Failed to record telemetry: {err}")
+
+    # 2. Record Investigation in Store
+    try:
+        store.save_investigation(
+            event_id=event_id,
+            session_id="canary-tripwire-grid",
+            risk_score=95,
+            risk_level="critical",
+            intent="Canary Tripwire Triggered",
+            intent_confidence=1.0,
+            mitre=["T1552: Unsecured Credentials", "T1078: Valid Accounts"],
+            rationale=f"High-fidelity tripwire alert: Canary {token_type} '{token_name}' was accessed from {source_ip}. 100% confidence intrusion.",
+            investigation={
+                "event": {"event_id": event_id, "event_type": "CANARY_TOKEN_TRIGGERED", "severity": "critical"},
+                "risk": {"score": 95, "level": "critical", "rationale": "High-fidelity Canary tripwire triggered."},
+                "intent": {"label": "Canary Tripwire Triggered", "confidence": 1.0},
+                "mitre": {"techniques": ["T1552: Unsecured Credentials", "T1078: Valid Accounts"], "tactics": ["Initial Access", "Credential Access"]},
+                "token": {
+                    "token_id": token_id,
+                    "name": token_name,
+                    "token_type": token_type,
+                    "simulated": simulated,
+                },
+            },
+        )
+    except Exception as err:
+        print(f"[canary] Failed to record investigation: {err}")
+
+    # 3. Automated Alert Dispatch across Slack, Discord, Email
+    if get_alert_manager and SecurityAlert:
+        try:
+            mgr = get_alert_manager()
+            alert = SecurityAlert(
+                event_id=event_id,
+                timestamp=now_str,
+                severity="critical",
+                risk_score=95,
+                source_ip=source_ip,
+                host="cybershield-canary",
+                service="canary",
+                event_type="CANARY_TOKEN_TRIGGERED",
+                intent="Canary Tripwire Triggered",
+                mitre_techniques=["T1552: Unsecured Credentials", "T1078: Valid Accounts"],
+                mitre_tactics=["Initial Access", "Credential Access"],
+                ai_summary=f"🚨 CANARY TRIPWIRE TRIGGERED: '{token_name}' (type: {token_type}) was accessed by adversary from {source_ip}. 100% confidence intrusion detection.",
+                recommended_remediation=[
+                    f"Isolate/block source IP {source_ip} at perimeter firewall immediately",
+                    f"Audit exposure of asset '{token_name}' across file systems and configurations",
+                    "Initiate priority incident containment protocol for affected network segment",
+                ],
+                details={
+                    "token_id": token_id,
+                    "token_name": token_name,
+                    "token_type": token_type,
+                    "simulated": simulated,
+                },
+            )
+            mgr.send_alert(alert, sync=False)
+        except Exception as alert_err:
+            print(f"[canary] Multi-channel alert dispatch failed: {alert_err}")
+
+    # 4. Invoke Orchestrator if available
+    try:
+        from Ai.orchestrator import Orchestrator
+        orch = Orchestrator(use_rag=False, use_llm=False)
+        orch.investigate(
+            {
+                "event_id": event_id,
+                "timestamp": now_str,
+                "host": "cybershield-api",
+                "source": "canary_service",
+                "event_type": "CANARY_TOKEN_TRIGGERED",
+                "severity": "critical",
+                "actor": {"source_ip": source_ip, "user": None},
+                "target": {"host": "cybershield-api", "service": "canary", "port": port},
+                "details": {
+                    "token_id": token_id,
+                    "token_name": token_name,
+                    "token_type": token_type,
+                    "simulated": simulated,
+                },
+                "raw": f"Canary token '{token_name}' (type: {token_type}) triggered from {source_ip}",
+            },
+            brute_force_detected=False,
+            dispatch_alerts=False,
+        )
+    except Exception:
+        pass
 
 
 @app.get("/api/v1/canary/tokens")
@@ -505,6 +982,132 @@ def create_canary_token(req: CanaryCreate) -> Dict[str, Any]:
         metadata=req.metadata,
     )
     return {"ok": True, "token": token}
+
+
+@app.get("/api/v1/canary/tokens/{token_id}")
+def get_canary_token(token_id: str) -> Dict[str, Any]:
+    token = canary_mgr.get_token_by_id(token_id)
+    if not token:
+        raise HTTPException(status_code=404, detail="Canary token not found")
+    return {"ok": True, "token": token}
+
+
+@app.put("/api/v1/canary/tokens/{token_id}/status")
+def update_canary_token_status(token_id: str, req: CanaryStatusUpdate) -> Dict[str, Any]:
+    ok = canary_mgr.update_status(token_id, req.status)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Canary token not found")
+    return {"ok": True, "token_id": token_id, "status": req.status}
+
+
+@app.delete("/api/v1/canary/tokens/{token_id}")
+def delete_canary_token(token_id: str) -> Dict[str, Any]:
+    ok = canary_mgr.delete_token(token_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Canary token not found")
+    return {"ok": True, "token_id": token_id, "message": "Canary token deleted successfully"}
+
+
+@app.post("/api/v1/canary/tokens/{token_id}/trigger")
+def trigger_canary_token_by_id(token_id: str, request: Request) -> Dict[str, Any]:
+    source_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or getattr(request.client, "host", "127.0.0.1")
+    metadata = {
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "method": request.method,
+        "trigger_source": "dashboard_manual_trigger",
+        "simulated": True,
+    }
+    updated = canary_mgr.record_trigger_by_id(token_id, source_ip, metadata)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Active canary token not found or disabled")
+    _process_canary_trigger(updated, source_ip, request, simulated=True)
+    return {"ok": True, "message": f"Canary tripwire '{updated['name']}' triggered successfully", "token": updated}
+
+
+@app.post("/api/v1/canary/trigger/{secret}")
+def trigger_canary_by_secret(secret: str, request: Request) -> Dict[str, Any]:
+    source_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or getattr(request.client, "host", "127.0.0.1")
+    metadata = {
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "method": request.method,
+        "trigger_source": "api_trigger",
+        "simulated": False,
+    }
+    updated = canary_mgr.record_trigger(secret, source_ip, metadata)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Active canary token not found or disabled")
+    _process_canary_trigger(updated, source_ip, request, simulated=False)
+    return {"ok": True, "message": f"Canary tripwire '{updated['name']}' triggered successfully", "token": updated}
+
+
+@app.post("/api/v1/canary/test")
+def test_canary_trigger(req: CanaryTestRequest, request: Request) -> Dict[str, Any]:
+    source_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or getattr(request.client, "host", "127.0.0.1")
+    metadata = {
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "method": request.method,
+        "trigger_source": "api_test_simulation",
+        "simulated": True,
+    }
+    updated = None
+    if req.token_id:
+        updated = canary_mgr.record_trigger_by_id(req.token_id, source_ip, metadata)
+    elif req.secret:
+        updated = canary_mgr.record_trigger(req.secret, source_ip, metadata)
+    else:
+        raise HTTPException(status_code=400, detail="Must provide 'secret' or 'token_id'")
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Active canary token not found or disabled")
+    _process_canary_trigger(updated, source_ip, request, simulated=True)
+    return {"ok": True, "message": f"Canary token '{updated['name']}' simulated trigger processed", "token": updated}
+
+
+@app.get("/t/{secret}", include_in_schema=False)
+@app.post("/t/{secret}", include_in_schema=False)
+def fast_canary_tripwire_url(secret: str, request: Request) -> HTMLResponse:
+    source_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or getattr(request.client, "host", "127.0.0.1")
+    metadata = {
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "method": request.method,
+        "url": str(request.url),
+        "trigger_source": "http_tripwire_url",
+        "simulated": False,
+    }
+    updated = canary_mgr.record_trigger(secret, source_ip, metadata)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Not found")
+    _process_canary_trigger(updated, source_ip, request, simulated=False)
+    return HTMLResponse(
+        content="""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CyberShield AI — Tripwire Detected</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0c120c; color: #d0ddbe; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .card { background: #131c13; border: 1px solid #233423; border-radius: 12px; padding: 40px; text-align: center; max-width: 480px; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
+    .badge { display: inline-block; background: #284428; color: #8B9A6E; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px; }
+    h2 { color: #f4f6f0; margin: 0 0 12px; font-size: 22px; }
+    p { color: #8ca4ac; font-size: 14px; line-height: 1.5; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Decoy Asset Online</span>
+    <h2>CyberShield AI Honeytoken Verified</h2>
+    <p>This canary URL tripwire is actively monitored by the Autonomous SOC Grid. Trigger coordinates and source telemetry have been captured and verified.</p>
+  </div>
+</body>
+</html>""",
+        status_code=200,
+    )
+
+
+@app.get("/canary/{secret}", include_in_schema=False)
+@app.post("/canary/{secret}", include_in_schema=False)
+def fast_canary_tripwire_url_alias(secret: str, request: Request) -> HTMLResponse:
+    return fast_canary_tripwire_url(secret, request)
 
 
 # ============================================================
@@ -719,27 +1322,51 @@ def get_attackers() -> Dict[str, Any]:
 
 
 @app.post("/api/v1/intel/simulate-attack")
-def simulate_attack() -> Dict[str, Any]:
+def simulate_attack(target: Optional[str] = Query(None)) -> Dict[str, Any]:
     sim_ip = "185.220.101.5"
+    
+    # Config-driven: dynamically read active honeypot services from settings
+    services = settings.services
+    matched = None
+    if target:
+        matched = next((s for s in services if s.key.lower() == target.lower() or str(s.port) == target), None)
+    if not matched:
+        # Default to HTTP finance honeypot if available, else first service
+        matched = next((s for s in services if s.key == "http"), services[0] if services else None)
+
+    dest_port = matched.port if matched else 8088
+    service_name = (matched.name if matched else "HTTP").upper()
+    proto = matched.protocol if matched else "http"
+    persona = matched.persona if matched else "internal finance portal"
+
+    intent = "SQL Injection & Unauthorized Credential Harvesting" if proto in ("http", "https") else "Adversary Shell Injection & Credential Harvesting"
+    event_type = "WEB_EXPLOIT_SQLI" if proto in ("http", "https") else "AUTH_FAILED_EXPLOIT"
+    content = (
+        f"POST /login HTTP/1.1 - SQLi probe \"' OR 1=1--\" & unauthorized credential harvesting on {persona} (port {dest_port})"
+        if proto in ("http", "https")
+        else f"SSH-2.0-paramiko_2.8.0 - Failed root exploit attempt & credential harvesting from {sim_ip} on port {dest_port}"
+    )
+
     sim_session = DecoySession(
         session_id=f"sim_{int(time.time() * 1000)}",
         source_ip=sim_ip,
         source_port=54321,
-        destination_port=2222,
-        service="SSH",
-        protocol="ssh",
-        persona="finance-prod shell gateway",
+        destination_port=dest_port,
+        service=service_name,
+        protocol=proto,
+        persona=persona,
         risk_score=92,
         risk_level="critical",
-        intent="Adversary Shell Injection & Credential Harvesting",
+        intent=intent,
     )
     store.create_session(sim_session)
     event = TelemetryEvent(
         session_id=sim_session.session_id,
-        event_type="AUTH_FAILED_EXPLOIT",
+        event_type=event_type,
         severity="critical",
         direction="inbound",
-        content="SSH-2.0-paramiko_2.8.0 - Failed root exploit attempt & credential harvesting from 185.220.101.5",
+        content=content,
+        metadata={"destination_port": dest_port, "service": service_name},
     )
     store.record_event(event)
 
