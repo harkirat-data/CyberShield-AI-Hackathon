@@ -3975,12 +3975,44 @@ function updateProtectedAppPanel(data) {
   }
 }
 
+async function simulateWAFAttack() {
+  const btn = $("btn-simulate-waf-attack");
+  const origText = btn ? btn.innerHTML : "Simulate Attack";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size:13px;animation:spin 1s linear infinite">sync</span> Injecting Attack...`;
+  }
+  try {
+    const vectors = ["sqli", "xss", "path_traversal", "rce"];
+    const vector = vectors[Math.floor(Math.random() * vectors.length)];
+    const res = await api("/api/v1/protected/simulate-attack", {
+      method: "POST",
+      body: JSON.stringify({ vector }),
+    });
+    if (res.blocked) {
+      toast(`🛡️ CyberShield WAF intercepted ${res.vector.toUpperCase()} attack! Risk score: ${res.risk_score}`);
+    } else {
+      toast(`⚠️ Simulated ${res.vector.toUpperCase()} attack against Medicare.AI`);
+    }
+    await pollProtectedStatus();
+    await refresh();
+  } catch (e) {
+    toast("Attack simulation failed: " + e.message, true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  }
+}
+
 // ============================================================
 // INIT
 // ============================================================
 async function init() {
   initNlpChatbot();
   setupButtons();
+  $("btn-simulate-waf-attack")?.addEventListener("click", simulateWAFAttack);
   await refresh();
   connectWebSocket();
   setInterval(refresh, 3000);
@@ -3989,4 +4021,5 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
 

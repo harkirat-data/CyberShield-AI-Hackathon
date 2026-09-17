@@ -171,6 +171,46 @@ class MedicareWAFProxy:
         self.state = _SharedProxyState()
         self._client: Optional[httpx.AsyncClient] = None
 
+        # WAF Dynamic Configuration & Rate Limiting
+        self.config: Dict[str, Any] = {
+            "block_score_threshold": WAF_BLOCK_SCORE_THRESHOLD,
+            "rate_limiting_enabled": True,
+            "max_requests_per_minute": 60,
+            "strict_header_inspection": True,
+        }
+        self._ip_request_timestamps: Dict[str, Deque[float]] = {}
+
+    def get_config(self) -> Dict[str, Any]:
+        """Returns active WAF dynamic configuration."""
+        return dict(self.config)
+
+    def update_config(self, new_cfg: Dict[str, Any]) -> Dict[str, Any]:
+        """Updates active WAF configuration rules."""
+        if "block_score_threshold" in new_cfg:
+            self.config["block_score_threshold"] = int(new_cfg["block_score_threshold"])
+        if "rate_limiting_enabled" in new_cfg:
+            self.config["rate_limiting_enabled"] = bool(new_cfg["rate_limiting_enabled"])
+        if "max_requests_per_minute" in new_cfg:
+            self.config["max_requests_per_minute"] = int(new_cfg["max_requests_per_minute"])
+        if "strict_header_inspection" in new_cfg:
+            self.config["strict_header_inspection"] = bool(new_cfg["strict_header_inspection"])
+        return dict(self.config)
+
+    def _check_rate_limit(self, source_ip: str) -> bool:
+        """Rate limiter: returns True if client IP exceeds max_requests_per_minute."""
+        if not self.config.get("rate_limiting_enabled", True):
+            return False
+        max_reqs = self.config.get("max_requests_per_minute", 60)
+        now = time.monotonic()
+        if source_ip not in self._ip_request_timestamps:
+            self._ip_request_timestamps[source_ip] = deque()
+        timestamps = self._ip_request_timestamps[source_ip]
+        while timestamps and now - timestamps[0] > 60.0:
+            timestamps.popleft()
+        timestamps.append(now)
+        return len(timestamps) > max_reqs
+
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -394,11 +434,15 @@ class MedicareWAFProxy:
         """Returns (should_block, reason_string)."""
         if source_ip in self.blocked_sources:
             return True, "source_ip_on_blocklist"
-        if intent.severity in BLOCK_SEVERITIES and risk_score >= WAF_BLOCK_SCORE_THRESHOLD:
+        if self._check_rate_limit(source_ip):
+            return True, "rate_limit_exceeded"
+        threshold = self.config.get("block_score_threshold", WAF_BLOCK_SCORE_THRESHOLD)
+        if intent.severity in BLOCK_SEVERITIES and risk_score >= threshold:
             return True, f"waf_block:{intent.label}:score={risk_score}"
-        if risk_score >= 95:
+        if risk_score >= max(95, threshold):
             return True, f"risk_score_threshold:{risk_score}"
         return False, ""
+
 
     async def _forward(
         self,
@@ -537,6 +581,14 @@ class MedicareWAFProxy:
             if not blocked and intent.severity in ("high", "critical"):
                 event_type = "WAF_THREAT_DETECTED"
 
+            remediation_patch = None
+            if intent.label.lower() in ("sqli", "sql injection"):
+                remediation_patch = "Use parameterized SQL queries / ORM binding in Medicare.AI endpoint code."
+            elif intent.label.lower() in ("xss", "cross-site scripting"):
+                remediation_patch = "Sanitize HTML inputs using bleach / escape untrusted variables before rendering in templates."
+            elif intent.label.lower() in ("rce", "command injection"):
+                remediation_patch = "Remove subprocess / shell execution functions; sanitize system input parameters."
+
             event = TelemetryEvent(
                 session_id=session_id,
                 event_type=event_type,
@@ -553,7 +605,9 @@ class MedicareWAFProxy:
                     "intent": intent.label,
                     "intent_confidence": intent.confidence,
                     "source_ip": source_ip,
+                    "remediation_advisory": remediation_patch,
                 },
+
                 timestamp=timestamp,
             )
             self.store.record_event(event)
@@ -566,9 +620,92 @@ class MedicareWAFProxy:
             pass
 
     # ------------------------------------------------------------------
-    # Public API for dashboard
+    # Public API for dashboard & attack simulation
     # ------------------------------------------------------------------
 
     def get_metrics(self) -> Dict[str, Any]:
         """Return live proxy metrics for the CyberShield dashboard API."""
         return self.state.snapshot()
+
+    async def simulate_attack(self, vector: str = "sqli") -> Dict[str, Any]:
+        """
+        Simulate an incoming attack against Medicare.AI through the WAF.
+        Generates realistic threat events and triggers WAF inspection & blocking.
+        """
+        timestamp = utc_now()
+        source_ip = "198.51.100.42"
+        session_id = new_id("waf_sim")
+
+        vector = vector.lower()
+        if vector == "sqli":
+            path = "/api/hospitals?specialty=' OR 1=1--"
+            method = "GET"
+            summary = "GET /api/hospitals?specialty=' OR 1=1--\nUA: Mozilla/5.0 (PentestBot)"
+        elif vector == "xss":
+            path = "/api/analyze-prescription"
+            method = "POST"
+            summary = "POST /api/analyze-prescription\nUA: CyberAttacker/2.0\n<script>document.cookie</script>"
+        elif vector == "path_traversal":
+            path = "/proxy/../../etc/passwd"
+            method = "GET"
+            summary = "GET /proxy/../../etc/passwd\nUA: DirBuster/1.0"
+        elif vector == "rce":
+            path = "/api/hospitals?query=test; cat /etc/shadow"
+            method = "GET"
+            summary = "GET /api/hospitals?query=test; cat /etc/shadow\nUA: RCE-Scanner"
+        else: # bot_scan
+            path = "/.env"
+            method = "GET"
+            summary = "GET /.env\nUA: Masscan/1.3"
+
+        intent = IntentClassifier.classify(summary)
+        risk_score = self._compute_risk_score(
+            source_ip=source_ip,
+            intent=intent,
+            path=path,
+            body=summary,
+        )
+        blocked, block_reason = self._should_block(
+            source_ip=source_ip,
+            intent=intent,
+            risk_score=risk_score,
+        )
+
+        await self._log_request(
+            session_id=session_id,
+            source_ip=source_ip,
+            method=method,
+            path=path,
+            intent=intent,
+            risk_score=risk_score,
+            blocked=blocked,
+            block_reason=block_reason,
+            body_preview=summary,
+            request_summary=summary,
+            timestamp=timestamp,
+        )
+
+        await self.state.record(
+            source_ip=source_ip,
+            path=path,
+            method=method,
+            intent=intent.label,
+            severity=intent.severity,
+            risk_score=risk_score,
+            blocked=blocked,
+            status_code=403 if blocked else 200,
+            latency_ms=12,
+            timestamp=timestamp,
+        )
+
+        return {
+            "ok": True,
+            "vector": vector,
+            "blocked": blocked,
+            "intent": intent.label,
+            "severity": intent.severity,
+            "risk_score": risk_score,
+            "path": path,
+            "timestamp": timestamp,
+        }
+
