@@ -566,9 +566,92 @@ class MedicareWAFProxy:
             pass
 
     # ------------------------------------------------------------------
-    # Public API for dashboard
+    # Public API for dashboard & attack simulation
     # ------------------------------------------------------------------
 
     def get_metrics(self) -> Dict[str, Any]:
         """Return live proxy metrics for the CyberShield dashboard API."""
         return self.state.snapshot()
+
+    async def simulate_attack(self, vector: str = "sqli") -> Dict[str, Any]:
+        """
+        Simulate an incoming attack against Medicare.AI through the WAF.
+        Generates realistic threat events and triggers WAF inspection & blocking.
+        """
+        timestamp = utc_now()
+        source_ip = "198.51.100.42"
+        session_id = new_id("waf_sim")
+
+        vector = vector.lower()
+        if vector == "sqli":
+            path = "/api/hospitals?specialty=' OR 1=1--"
+            method = "GET"
+            summary = "GET /api/hospitals?specialty=' OR 1=1--\nUA: Mozilla/5.0 (PentestBot)"
+        elif vector == "xss":
+            path = "/api/analyze-prescription"
+            method = "POST"
+            summary = "POST /api/analyze-prescription\nUA: CyberAttacker/2.0\n<script>document.cookie</script>"
+        elif vector == "path_traversal":
+            path = "/proxy/../../etc/passwd"
+            method = "GET"
+            summary = "GET /proxy/../../etc/passwd\nUA: DirBuster/1.0"
+        elif vector == "rce":
+            path = "/api/hospitals?query=test; cat /etc/shadow"
+            method = "GET"
+            summary = "GET /api/hospitals?query=test; cat /etc/shadow\nUA: RCE-Scanner"
+        else: # bot_scan
+            path = "/.env"
+            method = "GET"
+            summary = "GET /.env\nUA: Masscan/1.3"
+
+        intent = IntentClassifier.classify(summary)
+        risk_score = self._compute_risk_score(
+            source_ip=source_ip,
+            intent=intent,
+            path=path,
+            body=summary,
+        )
+        blocked, block_reason = self._should_block(
+            source_ip=source_ip,
+            intent=intent,
+            risk_score=risk_score,
+        )
+
+        await self._log_request(
+            session_id=session_id,
+            source_ip=source_ip,
+            method=method,
+            path=path,
+            intent=intent,
+            risk_score=risk_score,
+            blocked=blocked,
+            block_reason=block_reason,
+            body_preview=summary,
+            request_summary=summary,
+            timestamp=timestamp,
+        )
+
+        await self.state.record(
+            source_ip=source_ip,
+            path=path,
+            method=method,
+            intent=intent.label,
+            severity=intent.severity,
+            risk_score=risk_score,
+            blocked=blocked,
+            status_code=403 if blocked else 200,
+            latency_ms=12,
+            timestamp=timestamp,
+        )
+
+        return {
+            "ok": True,
+            "vector": vector,
+            "blocked": blocked,
+            "intent": intent.label,
+            "severity": intent.severity,
+            "risk_score": risk_score,
+            "path": path,
+            "timestamp": timestamp,
+        }
+
