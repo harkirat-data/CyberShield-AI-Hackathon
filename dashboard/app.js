@@ -4049,6 +4049,24 @@ async function saveWAFConfig(e) {
   }
 }
 
+async function exportWAFRules() {
+  try {
+    const res = await api("/api/v1/protected/export-rules?format=modsecurity");
+    if (res && res.content) {
+      const blob = new Blob([res.content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename || "cybershield_waf_rules.conf";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("📥 CyberShield WAF production ruleset downloaded!");
+    }
+  } catch (err) {
+    toast("Failed to export WAF rules: " + err.message, true);
+  }
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -4059,10 +4077,12 @@ async function init() {
   $("btn-configure-waf")?.addEventListener("click", openWAFConfigModal);
   $("btn-close-waf-modal")?.addEventListener("click", closeWAFConfigModal);
   $("btn-cancel-waf-modal")?.addEventListener("click", closeWAFConfigModal);
+  $("btn-export-waf-rules")?.addEventListener("click", exportWAFRules);
   $("waf-config-form")?.addEventListener("submit", saveWAFConfig);
   $("waf-input-threshold")?.addEventListener("input", (e) => {
     if ($("waf-threshold-val")) $("waf-threshold-val").textContent = e.target.value;
   });
+
 
   await refresh();
   connectWebSocket();
