@@ -4006,6 +4006,67 @@ async function simulateWAFAttack() {
   }
 }
 
+async function openWAFConfigModal() {
+  const modal = $("waf-modal-overlay");
+  if (!modal) return;
+  modal.style.display = "flex";
+  try {
+    const cfg = await api("/api/v1/protected/config");
+    if (cfg) {
+      if ($("waf-input-threshold")) $("waf-input-threshold").value = cfg.block_score_threshold || 75;
+      if ($("waf-threshold-val")) $("waf-threshold-val").textContent = cfg.block_score_threshold || 75;
+      if ($("waf-input-ratelimit-toggle")) $("waf-input-ratelimit-toggle").checked = cfg.rate_limiting_enabled !== false;
+      if ($("waf-input-max-reqs")) $("waf-input-max-reqs").value = cfg.max_requests_per_minute || 60;
+      if ($("waf-input-strict-headers")) $("waf-input-strict-headers").checked = cfg.strict_header_inspection !== false;
+    }
+  } catch (e) {
+    toast("Could not fetch active WAF rules: " + e.message, true);
+  }
+}
+
+function closeWAFConfigModal() {
+  const modal = $("waf-modal-overlay");
+  if (modal) modal.style.display = "none";
+}
+
+async function saveWAFConfig(e) {
+  e.preventDefault();
+  const payload = {
+    block_score_threshold: parseInt($("waf-input-threshold")?.value || "75"),
+    rate_limiting_enabled: $("waf-input-ratelimit-toggle")?.checked ?? true,
+    max_requests_per_minute: parseInt($("waf-input-max-reqs")?.value || "60"),
+    strict_header_inspection: $("waf-input-strict-headers")?.checked ?? true,
+  };
+  try {
+    await api("/api/v1/protected/config", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    toast("✅ WAF Security Policy updated successfully!");
+    closeWAFConfigModal();
+  } catch (err) {
+    toast("Failed to update WAF Policy: " + err.message, true);
+  }
+}
+
+async function exportWAFRules() {
+  try {
+    const res = await api("/api/v1/protected/export-rules?format=modsecurity");
+    if (res && res.content) {
+      const blob = new Blob([res.content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename || "cybershield_waf_rules.conf";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("📥 CyberShield WAF production ruleset downloaded!");
+    }
+  } catch (err) {
+    toast("Failed to export WAF rules: " + err.message, true);
+  }
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -4013,6 +4074,16 @@ async function init() {
   initNlpChatbot();
   setupButtons();
   $("btn-simulate-waf-attack")?.addEventListener("click", simulateWAFAttack);
+  $("btn-configure-waf")?.addEventListener("click", openWAFConfigModal);
+  $("btn-close-waf-modal")?.addEventListener("click", closeWAFConfigModal);
+  $("btn-cancel-waf-modal")?.addEventListener("click", closeWAFConfigModal);
+  $("btn-export-waf-rules")?.addEventListener("click", exportWAFRules);
+  $("waf-config-form")?.addEventListener("submit", saveWAFConfig);
+  $("waf-input-threshold")?.addEventListener("input", (e) => {
+    if ($("waf-threshold-val")) $("waf-threshold-val").textContent = e.target.value;
+  });
+
+
   await refresh();
   connectWebSocket();
   setInterval(refresh, 3000);
@@ -4021,5 +4092,6 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
 
 
