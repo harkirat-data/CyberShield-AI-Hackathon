@@ -484,7 +484,7 @@ class MedicareWAFProxy:
             )
             latency_ms = int((time.monotonic() - t0) * 1000)
 
-            # Strip hop-by-hop from upstream response headers
+            # Strip hop-by-hop from upstream response headers & inject security hardening
             response_headers = {
                 k: v
                 for k, v in upstream.headers.items()
@@ -492,6 +492,11 @@ class MedicareWAFProxy:
             }
             response_headers["X-CyberShield-WAF"] = "INSPECTED"
             response_headers["X-CyberShield-Latency"] = str(latency_ms)
+            response_headers["X-Content-Type-Options"] = "nosniff"
+            response_headers["X-Frame-Options"] = "SAMEORIGIN"
+            response_headers["X-XSS-Protection"] = "1; mode=block"
+            response_headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
 
             return (
                 Response(
@@ -708,4 +713,96 @@ class MedicareWAFProxy:
             "path": path,
             "timestamp": timestamp,
         }
+
+    def export_rules(self, fmt: str = "modsecurity") -> Dict[str, Any]:
+        """Generate exportable production WAF rules for Medicare.AI defense deployment."""
+        fmt = fmt.lower()
+        thresh = self.config.get("block_score_threshold", 75)
+        max_reqs = self.config.get("max_requests_per_minute", 60)
+
+        if fmt == "nginx":
+            content = f"""# CyberShield AI WAF Rules for Medicare.AI (Nginx Format)
+# Generated: {utc_now()}
+
+limit_req_zone $binary_remote_addr zone=medicare_waf:10m rate={max_reqs}r/m;
+
+server {{
+    listen 80;
+    server_name medicare.ai;
+
+    # Rate Limiting
+    limit_req zone=medicare_waf burst=10 nodelay;
+
+    # Security Headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # SQL Injection Defense Rule
+    location ~* "('||\\\"|union|select|insert|drop|delete|--|\\/\\*)" {{
+        deny all;
+        return 403 "Blocked by CyberShield WAF (SQLi)";
+    }}
+
+    # Path Traversal Defense Rule
+    location ~* "(\\.\\.\\/|\\.\\.\\%2f|\\/etc\\/passwd|\\.env)" {{
+        deny all;
+        return 403 "Blocked by CyberShield WAF (Path Traversal)";
+    }}
+
+    location / {{
+        proxy_pass {self.target_url};
+        proxy_set_header X-Forwarded-By "CyberShield-WAF";
+    }}
+}}
+"""
+        elif fmt == "cloudflare":
+            content = f"""// CyberShield AI Cloudflare WAF Expression Rules
+{{
+  "name": "CyberShield Medicare.AI Protection Rules",
+  "rules": [
+    {{
+      "expression": "(http.request.uri.query contains \"' OR\" or http.request.uri.query contains \"UNION SELECT\")",
+      "action": "block",
+      "description": "CyberShield SQLi Protection (Risk Threshold: {thresh})"
+    }},
+    {{
+      "expression": "(http.request.uri.path contains \"/etc/passwd\" or http.request.uri.path contains \"/.env\")",
+      "action": "block",
+      "description": "CyberShield Path Traversal Protection"
+    }},
+    {{
+      "expression": "rate(http.request.uri, 1m) > {max_reqs}",
+      "action": "challenge",
+      "description": "CyberShield Sliding-Window Rate Limit"
+    }}
+  ]
+}}
+"""
+        else: # modsecurity
+            content = f"""# CyberShield AI ModSecurity v3 Ruleset for Medicare.AI
+# Generated: {utc_now()}
+
+SecRuleEngine On
+
+# Rule 9001: CyberShield Rate Limiting
+SecAction "id:9001,phase:1,nolog,pass,initcol:ip=%{{REMOTE_ADDR}},setvar:ip.request_count=+1,expirevar:ip.request_count=60"
+SecRule IP:REQUEST_COUNT "@gt {max_reqs}" "id:9002,phase:1,deny,status:429,log,msg:'CyberShield Rate Limit Exceeded'"
+
+# Rule 9003: SQL Injection Detection (Risk Threshold: {thresh})
+SecRule REQUEST_URI|REQUEST_BODY "@rx (?i)('(\\s*)+or|union(\\s*)+select|select(\\s*)+.*from|drop(\\s*)+table)" \\
+    "id:9003,phase:2,deny,status:403,log,msg:'CyberShield WAF: SQL Injection Attack Detected'"
+
+# Rule 9004: XSS Detection
+SecRule REQUEST_URI|REQUEST_BODY "@rx (?i)(<script|javascript:|onerror=|onload=)" \\
+    "id:9004,phase:2,deny,status:403,log,msg:'CyberShield WAF: Cross-Site Scripting Detected'"
+"""
+
+        return {
+            "format": fmt,
+            "filename": f"cybershield_medicare_waf_{fmt}.conf",
+            "content": content,
+            "timestamp": utc_now(),
+        }
+
 

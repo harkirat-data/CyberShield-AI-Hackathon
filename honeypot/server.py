@@ -1503,6 +1503,13 @@ async def update_protected_app_config(req: WAFConfigUpdateRequest) -> Dict[str, 
     return waf_proxy.update_config(new_cfg)
 
 
+@app.get("/api/v1/protected/export-rules")
+async def export_protected_app_rules(format: str = Query("modsecurity")) -> Dict[str, Any]:
+    """Generates exportable production WAF rules (ModSecurity, Nginx, Cloudflare) for Medicare.AI defense."""
+    return waf_proxy.export_rules(fmt=format)
+
+
+
 
 
 # ============================================================
