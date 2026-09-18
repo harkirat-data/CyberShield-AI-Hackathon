@@ -1571,10 +1571,16 @@ location /api/v1/resource {
         <input type="checkbox" id="waf-input-strict-headers" checked style="width:18px;height:18px;accent-color:#0ea5e9;cursor:pointer;">
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
-        <button type="button" id="btn-cancel-waf-modal" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--text-main);padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">Cancel</button>
-        <button type="submit" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;color:#fff;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;box-shadow:0 2px 10px rgba(14,165,233,0.3);">Save Policy Changes</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
+        <button type="button" id="btn-export-waf-rules" style="background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;padding:8px 14px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);">
+          <span class="material-symbols-outlined" style="font-size:14px">download</span>Export WAF Rules (.conf)
+        </button>
+        <div style="display:flex;gap:10px;">
+          <button type="button" id="btn-cancel-waf-modal" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--text-main);padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">Cancel</button>
+          <button type="submit" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;color:#fff;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;box-shadow:0 2px 10px rgba(14,165,233,0.3);">Save Policy Changes</button>
+        </div>
       </div>
+
     </form>
   </div>
 </div>
