@@ -42,7 +42,7 @@ This document tracks every atomic commit executed live on the hackathon reposito
 * **Files**: `honeypot/__init__.py`, `honeypot/models.py`, `judge_briefs/01_honeypot_models.md`
 * **Commit Message**: `feat(honeypot): implement DecoySession and TelemetryEvent forensic models`
 * **Technical Summary**: Implemented immutable `DecoySession` and `TelemetryEvent` dataclasses with automatic SHA-256 payload integrity hashing. Added Judge Brief 01 cheat-sheet.
-* **Branches Initialized**: Created collaborator branches `arman-work` and `arman-work` on GitHub for frontend milestones.
+* **Branches Initialized**: Created collaborator branch `arman-work` on GitHub for frontend milestones.
 
 ---
 

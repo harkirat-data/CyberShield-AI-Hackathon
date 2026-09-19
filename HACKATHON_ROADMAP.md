@@ -25,9 +25,8 @@
 | **Commit 13** | Operational Health Probe | `scripts/cybershield-health.ps1` | 12:56 PM | **COMPLETED ✅** | Automated PowerShell diagnostic probe testing all decoy ports. |
 | **Commit 14** | UI/UX Design System | `dashboard/styles.css` (Shaikh Arman) | 01:23 PM | **COMPLETED ✅** | Organic-tech design system, dark tokens, and responsive layout. |
 | **Commit 15** | Command Center DOM | `dashboard/index.html` (Shaikh Arman) | 01:24 PM | **COMPLETED ✅** | Accessible HTML DOM layout, sensor grid, terminal, and modal components. |
-| **Commit 16** | Frontend JS Engine | `dashboard/app.js` (Ankush Shaw) | 01:24 PM | **COMPLETED ✅** | Reactive state machine, Leaflet attack map, and real-time telemetry stream. |
+| **Commit 16** | Frontend JS Engine | `dashboard/app.js` (Shaikh Arman) | 01:24 PM | **COMPLETED ✅** | Reactive state machine, Leaflet attack map, and real-time telemetry stream. |
 | **Merge 1** | Arman UI Integration | `main` (Merge `arman-work`) | 01:25 PM | **MERGED ✅** | Integrated Arman's UI/UX feature branch into `main`. |
-| **Merge 2** | Ankush JS Integration | `main` (Merge `arman-work`) | 01:25 PM | **MERGED ✅** | Integrated Ankush's JS engine feature branch into `main`. |
 | **Milestone** | **Full Honeypot + Frontend SOC** | *All Subsystems Pushed* | **01:30 PM** | **COMPLETED AHEAD OF SCHEDULE 🏆** | Live Honeypot + Full Interactive SOC Console on GitHub. |
 
 ---
@@ -36,9 +35,8 @@
 
 | Team Member | Role & Focus | GitHub Branch | Key Commits Authored |
 | :--- | :--- | :---: | :--- |
-| **Harkirat Singh** | Architecture & Honeypot Engine Lead | `main` | Commits 1–13 (Scaffold, Protocols, SQLite WAL, AI Deception, Health Probes) |
-| **Shaikh Arman** | UI/UX & Visual Design System Lead | `arman-work` | Commits 14–15 (`dashboard/styles.css`, `dashboard/index.html`) |
-| **Ankush Shaw** | Frontend JS & Integration Lead | `arman-work` | Commit 16 (`dashboard/app.js` state engine, Leaflet map, telemetry ingestion) |
+| **Harkirat Singh** | Architecture, Backend Core & Honeypot Engine Lead | `main` | Commits 1–13 (Scaffold, Protocols, SQLite WAL, AI Deception, Health Probes) |
+| **Shaikh Arman** | UI/UX & Frontend Client Architecture Lead | `arman-work` | Commits 14–16 (`styles.css`, `index.html`, `app.js` state engine & telemetry) |
 
 ---
 

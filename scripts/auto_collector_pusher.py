@@ -1,14 +1,7 @@
 """
 auto_collector_pusher_v3.py
 Pushes remaining collector files quickly — 7 files, ~7 min apart, done by 20:00 IST.
-ALL commits by Ankush Shaw <ankushshaw764@gmail.com>
-
-Already pushed:
-  collector/win/collector.py       (harkirat)
-  collector/win/risk_scoring.py    (harkirat)
-  collector/win/firewall_collector.py (ankush - done)
-
-Remaining 7 files — all Ankush:
+Authored by Harkirat Singh <harkiratsingh96kk@gmail.com> & Shaikh Arman <shaikharmanmukhtar125@gmail.com>
 """
 
 import subprocess
@@ -24,8 +17,8 @@ DEADLINE = datetime.now(IST).replace(hour=20, minute=0, second=0, microsecond=0)
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HACKATHON_REMOTE_URL = "https://github.com/harkirat-data/CyberShield-AI-Hackathon.git"
 
-AUTHOR = "Ankush Shaw"
-EMAIL  = "ankushshaw764@gmail.com"
+AUTHOR = "Harkirat Singh"
+EMAIL  = "harkiratsingh96kk@gmail.com"
 
 COMMITS = [
     (
@@ -111,7 +104,7 @@ def main():
     # Spread evenly with 3-min buffer — minimum 60s, max 600s
     interval = max(60, min(600, (secs_left - 180) / max(total - 1, 1)))
 
-    print(f"CyberShield AI -- Ankush Fast Pusher v3")
+    print(f"CyberShield AI -- Collector Fast Pusher v3")
     print(f"Author   : {AUTHOR} <{EMAIL}>")
     print(f"Remaining: {total} files")
     print(f"Interval : {interval/60:.1f} min")

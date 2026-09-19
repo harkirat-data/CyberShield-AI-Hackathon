@@ -250,9 +250,8 @@ pytest tests/ -v
 
 ## Hackathon Engineering Team
 
-* **Harkirat Singh** (`harkiratsingh96kk@gmail.com`): System Architecture, Backend Core, AI RAG Pipeline & Multi-Port Decoy Engine
-* **Shaikh Arman** (`shaikharmanmukhtar125@gmail.com`): Frontend Lead, UI/UX Design System & Command Center Layout
-* **Ankush Shaw** (`ankushshaw764@gmail.com`): Frontend Client State, WebSocket Streaming & Attack Simulators
+* **Harkirat Singh** (`harkiratsingh96kk@gmail.com`): System Architecture, Backend Core, AI RAG Pipeline, Multi-Port Decoy Engine & Threat Detection Engine
+* **Shaikh Arman** (`shaikharmanmukhtar125@gmail.com`): Frontend Lead, UI/UX Design System, SOC Command Center Layout, Client State Engine & Attack Simulators
 
 ---
 
