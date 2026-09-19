@@ -3903,11 +3903,19 @@ document.head.appendChild(style);
 async function pollProtectedStatus() {
   try {
     const res = await fetch("/api/v1/protected/status");
-    if (!res.ok) return;
-    const data = await res.json();
-    updateProtectedAppPanel(data);
+    if (res.ok) {
+      const data = await res.json();
+      updateProtectedAppPanel(data);
+    }
+    const bannedRes = await fetch("/api/v1/protected/banned-ips");
+    if (bannedRes.ok) {
+      const bData = await bannedRes.json();
+      const count = bData.banned_ips ? bData.banned_ips.length : 0;
+      if ($("prot-banned-count")) $("prot-banned-count").textContent = count;
+    }
   } catch (_) {}
 }
+
 
 function updateProtectedAppPanel(data) {
   if (!data) return;
