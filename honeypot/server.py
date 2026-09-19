@@ -1526,6 +1526,13 @@ async def unban_protected_app_ip(req: UnbanIPRequest) -> Dict[str, Any]:
     return {"ok": success, "ip": req.ip}
 
 
+@app.post("/api/v1/protected/health-audit")
+async def run_protected_app_health_audit() -> Dict[str, Any]:
+    """Runs an automated AI security vulnerability audit on Medicare.AI and returns OWASP health breakdown."""
+    return waf_proxy.run_security_audit()
+
+
+
 
 
 

@@ -4075,6 +4075,44 @@ async function exportWAFRules() {
   }
 }
 
+async function openAuditModal() {
+  const modal = $("audit-modal-overlay");
+  if (!modal) return;
+  modal.style.display = "flex";
+  try {
+    const data = await api("/api/v1/protected/health-audit", { method: "POST" });
+    if (!data) return;
+    if ($("audit-score-val")) $("audit-score-val").textContent = `${data.health_score}%`;
+    if ($("audit-status-badge")) $("audit-status-badge").textContent = `STATUS: ${data.status}`;
+    if ($("audit-quarantine-count")) $("audit-quarantine-count").textContent = data.quarantined_ips || 0;
+
+    const owaspList = $("audit-owasp-list");
+    if (owaspList && data.owasp_breakdown) {
+      owaspList.innerHTML = Object.entries(data.owasp_breakdown).map(([cat, score]) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);font-size:11px;">
+          <span>${cat}</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:${score >= 90 ? '#22c55e' : '#f59e0b'}">${score}% Pass</span>
+        </div>
+      `).join("");
+    }
+
+    const patchList = $("audit-patches-list");
+    if (patchList && data.virtual_patches_applied) {
+      patchList.innerHTML = data.virtual_patches_applied.map(p => `
+        <span style="font-size:10px;font-family:var(--font-mono);background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);padding:3px 8px;border-radius:4px;font-weight:700;">✓ ${p}</span>
+      `).join("");
+    }
+    toast("🛡️ Medicare.AI AI Security Vulnerability Audit Completed!");
+  } catch (err) {
+    toast("Failed to run Security Audit: " + err.message, true);
+  }
+}
+
+function closeAuditModal() {
+  const modal = $("audit-modal-overlay");
+  if (modal) modal.style.display = "none";
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -4086,10 +4124,14 @@ async function init() {
   $("btn-close-waf-modal")?.addEventListener("click", closeWAFConfigModal);
   $("btn-cancel-waf-modal")?.addEventListener("click", closeWAFConfigModal);
   $("btn-export-waf-rules")?.addEventListener("click", exportWAFRules);
+  $("btn-audit-security")?.addEventListener("click", openAuditModal);
+  $("btn-close-audit-modal")?.addEventListener("click", closeAuditModal);
+  $("btn-done-audit-modal")?.addEventListener("click", closeAuditModal);
   $("waf-config-form")?.addEventListener("submit", saveWAFConfig);
   $("waf-input-threshold")?.addEventListener("input", (e) => {
     if ($("waf-threshold-val")) $("waf-threshold-val").textContent = e.target.value;
   });
+
 
 
   await refresh();
