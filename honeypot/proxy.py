@@ -25,7 +25,7 @@ import asyncio
 import os
 import time
 from collections import deque
-from typing import Any, Deque, Dict, Optional, Set, Tuple
+from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import httpx
 from fastapi import Request
@@ -179,6 +179,29 @@ class MedicareWAFProxy:
             "strict_header_inspection": True,
         }
         self._ip_request_timestamps: Dict[str, Deque[float]] = {}
+        self._ip_block_counts: Dict[str, int] = {}
+        self._ip_ban_reasons: Dict[str, str] = {}
+
+    def get_banned_ips(self) -> List[Dict[str, Any]]:
+        """Returns list of currently quarantined / blocked IPs with reasons."""
+        banned = []
+        for ip in self.blocked_sources:
+            banned.append({
+                "ip": ip,
+                "reason": self._ip_ban_reasons.get(ip, "WAF Threat Auto-Ban / Honeypot Perimeter Block"),
+                "blocks_triggered": self._ip_block_counts.get(ip, 1),
+            })
+        return banned
+
+    def unban_ip(self, source_ip: str) -> bool:
+        """Removes an IP from the active WAF quarantine list."""
+        if source_ip in self.blocked_sources:
+            self.blocked_sources.remove(source_ip)
+            self._ip_block_counts.pop(source_ip, None)
+            self._ip_ban_reasons.pop(source_ip, None)
+            return True
+        return False
+
 
     def get_config(self) -> Dict[str, Any]:
         """Returns active WAF dynamic configuration."""
@@ -308,6 +331,11 @@ class MedicareWAFProxy:
         # ── Block path ─────────────────────────────────────────────────
         if blocked:
             latency_ms = int((time.monotonic() - t_start) * 1000)
+            self._ip_block_counts[source_ip] = self._ip_block_counts.get(source_ip, 0) + 1
+            if self._ip_block_counts[source_ip] >= 2:
+                self.blocked_sources.add(source_ip)
+                self._ip_ban_reasons[source_ip] = f"Auto-Quarantine: {intent.label} ({block_reason})"
+
             await self.state.record(
                 source_ip=source_ip,
                 path=full_path,

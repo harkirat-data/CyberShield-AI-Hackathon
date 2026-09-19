@@ -1509,6 +1509,24 @@ async def export_protected_app_rules(format: str = Query("modsecurity")) -> Dict
     return waf_proxy.export_rules(fmt=format)
 
 
+@app.get("/api/v1/protected/banned-ips")
+async def get_protected_app_banned_ips() -> Dict[str, Any]:
+    """Returns list of currently quarantined / auto-banned IP addresses."""
+    return {"banned_ips": waf_proxy.get_banned_ips()}
+
+
+class UnbanIPRequest(BaseModel):
+    ip: str = Field(..., description="IP address to remove from WAF quarantine")
+
+
+@app.post("/api/v1/protected/unban-ip")
+async def unban_protected_app_ip(req: UnbanIPRequest) -> Dict[str, Any]:
+    """Unbans an IP address from WAF quarantine."""
+    success = waf_proxy.unban_ip(req.ip)
+    return {"ok": success, "ip": req.ip}
+
+
+
 
 
 
