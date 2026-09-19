@@ -2,7 +2,7 @@
 
 > **Submission Document**: Problem Statement, Core Innovations, and Industry Impact  
 > **Project**: CyberShield AI — Autonomous Cyber-Deception Grid & AI SOC Platform  
-> **Team**: Harkirat Singh, Shaikh Arman, Ankush Shaw  
+> **Team**: Harkirat Singh, Shaikh Arman  
 
 ---
 

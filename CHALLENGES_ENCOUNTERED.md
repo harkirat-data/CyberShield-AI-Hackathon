@@ -1,7 +1,7 @@
 # CyberShield AI — The Challenges We Ran Into
 
 > **Project**: CyberShield AI  
-> **Team**: Harkirat Singh, Shaikh Arman, Ankush Shaw  
+> **Team**: Harkirat Singh, Shaikh Arman  
 > **What this document is**: A simple, honest, and non-technical look at the real hurdles we hit while building this project and how we solved them.
 
 ---

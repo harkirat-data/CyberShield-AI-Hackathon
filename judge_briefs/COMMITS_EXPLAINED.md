@@ -323,7 +323,7 @@
 ## 1️⃣6️⃣ Commit 16: `dashboard/app.js` (Client State Engine & Telemetry Stream)
 * **Commit Hash**: `f7a769e`
 * **Commit Message**: `feat(frontend): implement client state engine, API polling, Leaflet attack map, and real-time telemetry stream`
-* **Author**: Ankush Shaw (`ankushshaw764@gmail.com`)
+* **Author**: Shaikh Arman Mukhtar (`shaikharmanmukhtar125@gmail.com`)
 * **Branch**: `arman-work`
 * **Files**: `dashboard/app.js`
 
@@ -343,16 +343,16 @@
   * Asynchronously streams queries to `/api/copilot/ask` and `/api/investigate/{session_id}`.
   * Renders markdown responses, Sigma rules, and one-click firewall remediation rules.
 
-### 🎙️ How to Explain to a Judge (Ankush Shaw):
-> *"Sir, as Frontend JS and Integration Lead, I built the client intelligence engine in `dashboard/app.js`. It maintains a reactive state store that synchronizes with our FastAPI backend every 2 seconds. When an adversary hits any decoy port, the telemetry is immediately ingested, the Leaflet attack map animates the adversary's geographic location, the terminal streams their raw payload with its SHA-256 verification hash, and our AI Copilot is triggered to provide instant incident response guidance."*
+### 🎙️ How to Explain to a Judge (Shaikh Arman):
+> *"Sir, as Frontend Lead, I built the client intelligence engine in `dashboard/app.js`. It maintains a reactive state store that synchronizes with our FastAPI backend every 2 seconds. When an adversary hits any decoy port, the telemetry is immediately ingested, the Leaflet attack map animates the adversary's geographic location, the terminal streams their raw payload with its SHA-256 verification hash, and our AI Copilot is triggered to provide instant incident response guidance."*
 
 ---
 
 ## 🔀 Merge Commits: Team Feature Integration
 * **`99f90b3`**: `Merge branch 'arman-work': SOC design system and console layout` (Integrated Arman's UI/UX into `main`)
-* **`19efb3e`**: `Merge branch 'arman-work': Frontend client logic, state management, and telemetry stream` (Integrated Ankush's JS engine into `main`)
+* **`19efb3e`**: `Merge branch 'arman-work': Frontend client logic, state management, and telemetry stream` (Integrated Arman's JS engine into `main`)
 * **Author**: Harkirat Singh (`harkiratsingh96kk@gmail.com`)
-* **Impact**: Validates full three-person engineering collaboration with parallel feature branches merged into `main`.
+* **Impact**: Validates seamless engineering collaboration with frontend and backend feature branches merged into `main`.
 
 ---
 
