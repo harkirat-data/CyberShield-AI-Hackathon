@@ -74,8 +74,9 @@ waf_proxy = MedicareWAFProxy(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start honeypot decoy listeners
+    # Start honeypot decoy listeners and WAF proxy
     await runtime.start()
+    await waf_proxy.start()
 
     # Seed starter canary tripwires if none exist yet
     if not canary_mgr.list_tokens():
@@ -507,6 +508,16 @@ def serve_script() -> FileResponse:
     if not js_file.is_file():
         raise HTTPException(status_code=404, detail="Dashboard app.js not found")
     return FileResponse(js_file, media_type="application/javascript", headers=NO_CACHE_HEADERS)
+
+
+@app.get("/api/v1/sentinel/agent.js", include_in_schema=False)
+def serve_sentinel_agent_js() -> FileResponse:
+    js_file = DASHBOARD_ROOT / "sentinel_agent.js"
+    if not js_file.is_file():
+        raise HTTPException(status_code=404, detail="Sentinel agent script not found")
+    headers = dict(NO_CACHE_HEADERS)
+    headers["Access-Control-Allow-Origin"] = "*"
+    return FileResponse(js_file, media_type="application/javascript", headers=headers)
 
 
 @app.get("/dashboard/{file_path:path}", include_in_schema=False)
@@ -1481,6 +1492,12 @@ async def protected_app_status() -> Dict[str, Any]:
 
 class SimulateWAFRequest(BaseModel):
     vector: str = Field(default="sqli", description="Attack vector: sqli, xss, rce, path_traversal, bot_scan")
+
+
+@app.post("/api/v1/protected/simulate-attack")
+async def simulate_protected_app_attack(req: Optional[SimulateWAFRequest] = None) -> Dict[str, Any]:
+    vec = req.vector if req else "sqli"
+    return await waf_proxy.simulate_attack(vec)
 
 
 @app.get("/api/v1/protected/config")
