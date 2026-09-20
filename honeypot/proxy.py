@@ -40,8 +40,8 @@ from .store import HoneypotStore
 # Constants
 # ---------------------------------------------------------------------------
 
-# Where Medicare.AI is deployed locally.  Override via env var MEDICARE_AI_URL.
-DEFAULT_MEDICARE_URL: str = "http://127.0.0.1:5000"
+# Where Medicare.AI is deployed. Override via env var MEDICARE_AI_URL.
+DEFAULT_MEDICARE_URL: str = "https://medicareai-blue.vercel.app"
 
 # Risk score at which a request is hard-blocked (WAF block).
 WAF_BLOCK_SCORE_THRESHOLD: int = 75
@@ -59,6 +59,8 @@ HOP_BY_HOP_HEADERS: frozenset = frozenset(
         "upgrade",
         "host",               # rewritten by httpx
         "content-length",     # recalculated by httpx
+        "content-encoding",   # decompressed by httpx
+        "accept-encoding",    # handled by httpx client
     }
 )
 
@@ -482,15 +484,7 @@ class MedicareWAFProxy:
     ) -> Tuple[Response, int, int]:
         """Forward request to Medicare.AI, return (Response, status_code, latency_ms)."""
         if not self._client:
-            return (
-                Response(
-                    content='{"error":"Upstream client not initialised"}',
-                    status_code=503,
-                    media_type="application/json",
-                ),
-                503,
-                0,
-            )
+            await self.start()
 
         # Strip hop-by-hop and security-sensitive headers
         forward_headers = {
