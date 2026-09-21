@@ -1,0 +1,89 @@
+{
+  "title": "VALENS Autonomous Deception Sigma Rule Catalog",
+  "version": "1.4.0",
+  "generated_at": "2026-09-21T12:15:10Z",
+  "rules": [
+    {
+      "id": "sigma-decoy-sqli-001",
+      "name": "SQL Injection Decoy Interception",
+      "status": "stable",
+      "description": "Detects SQL injection payload attempts targeting synthetic MySQL / HTTP decoy endpoints.",
+      "references": [
+        "https://attack.mitre.org/techniques/T1190/"
+      ],
+      "tags": [
+        "attack.initial_access",
+        "attack.t1190"
+      ],
+      "level": "critical",
+      "detection": {
+        "selection": {
+          "service": ["mysql", "http_decoy"],
+          "payload_keywords|contains": [
+            "' OR 1=1",
+            "UNION SELECT",
+            "information_schema.tables",
+            "SLEEP(",
+            "BENCHMARK("
+          ]
+        },
+        "condition": "selection"
+      },
+      "action": {
+        "containment": "quarantine_source_ip",
+        "fake_response": "serve_poisoned_hash_table"
+      }
+    },
+    {
+      "id": "sigma-decoy-ssh-002",
+      "name": "SSH Brute-Force Tarpit Trigger",
+      "status": "stable",
+      "description": "Detects high-frequency authentication failures on port 2222 and activates delayed banner tarpit.",
+      "references": [
+        "https://attack.mitre.org/techniques/T1110.001/"
+      ],
+      "tags": [
+        "attack.credential_access",
+        "attack.t1110.001"
+      ],
+      "level": "high",
+      "detection": {
+        "selection": {
+          "service": "ssh_decoy",
+          "auth_failures|gte": 3,
+          "timeframe": "60s"
+        },
+        "condition": "selection"
+      },
+      "action": {
+        "containment": "infinite_slow_banner_tarpit",
+        "log_credentials": true
+      }
+    },
+    {
+      "id": "sigma-decoy-canary-003",
+      "name": "AWS Cloud Canary Key Tripwire",
+      "status": "stable",
+      "description": "Fires instant high-priority alert upon unauthorized access to synthetic AWS IAM Canary keys.",
+      "references": [
+        "https://attack.mitre.org/techniques/T1552.001/"
+      ],
+      "tags": [
+        "attack.credential_access",
+        "attack.t1552.001"
+      ],
+      "level": "critical",
+      "detection": {
+        "selection": {
+          "event_type": "aws_canary_access",
+          "action_attempted|contains": ["GetObject", "ListBuckets", "DescribeInstances"]
+        },
+        "condition": "selection"
+      },
+      "action": {
+        "containment": "isolate_originating_node",
+        "dispatch_soc_alert": true
+      }
+    }
+  ]
+}
