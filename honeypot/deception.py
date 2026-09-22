@@ -76,7 +76,7 @@ class IntentClassifier:
             "DATABASE_DISCOVERY",
             "high",
             0.86,
-            re.compile(r"\b(show\s+databases|information_schema|select\s+.+from|dump|union\s+select)\b", re.I),
+            re.compile(r"('(\s*)+or\b|union(\s*)+select|select\s+.+from|drop(\s*)+table|show\s+databases|information_schema|dump\b|1=1)", re.I),
         ),
         (
             "System discovery",

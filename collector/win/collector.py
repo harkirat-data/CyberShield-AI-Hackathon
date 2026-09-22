@@ -8,10 +8,13 @@ import socket
 import urllib.request
 import urllib.error
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
-from risk_scoring import score_event
+try:
+    from .risk_scoring import score_event
+except ImportError:
+    from risk_scoring import score_event
 
 OUTPUT_DIR = Path(r"C:\soc-logs")
 ALERT_LOG = OUTPUT_DIR / "win.log" / "windows_alerts.jsonl"
@@ -268,7 +271,7 @@ def _normalize_event(event, risk_level):
     details = {k: v for k, v in details.items() if v}
     return {
         "event_id": f"{event['event_type']}:{event.get('user') or event.get('source_ip') or 'unknown'}:{int(time.time() * 1000)}",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "host": HOSTNAME,
         "source": "win_auth",
         "event_type": event.get("event_type", "UNKNOWN"),
@@ -362,7 +365,7 @@ def main():
 
                     scored = score_event(event)
                     output = {
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "event": event,
                         "risk": {
                             "score": scored["risk_score"],
@@ -387,7 +390,7 @@ def main():
 
                     bf_alerts = check_brute_force(event)
                     for bf in bf_alerts:
-                        bf["timestamp"] = datetime.utcnow().isoformat()
+                        bf["timestamp"] = datetime.now(timezone.utc).isoformat()
                         bf["trigger_event"] = event
                         write_jsonl(ALERT_LOG, bf)
                         print(json.dumps({"alert": bf}))
@@ -395,7 +398,7 @@ def main():
 
                     sus_alerts = check_suspicious_patterns(event)
                     for sus in sus_alerts:
-                        sus["timestamp"] = datetime.utcnow().isoformat()
+                        sus["timestamp"] = datetime.now(timezone.utc).isoformat()
                         sus["trigger_event"] = event
                         write_jsonl(ALERT_LOG, sus)
                         print(json.dumps({"alert": sus}))

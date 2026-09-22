@@ -226,6 +226,9 @@
             <button id="btn-simulate-waf-attack" style="font-size:11px;font-family:var(--font-mono);color:#ef4444;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
               <span class="material-symbols-outlined" style="font-size:13px">bolt</span>Simulate Attack
             </button>
+            <button id="btn-manage-quarantine" style="font-size:11px;font-family:var(--font-mono);color:#ef4444;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
+              <span class="material-symbols-outlined" style="font-size:13px">gavel</span>Quarantine
+            </button>
             <a href="http://127.0.0.1:8050/proxy" target="_blank" id="protected-app-link" style="font-size:11px;font-family:var(--font-mono);color:#0ea5e9;background:rgba(14,165,233,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(14,165,233,0.25);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
               <span class="material-symbols-outlined" style="font-size:13px">open_in_new</span>Access via WAF
             </a>
@@ -250,7 +253,7 @@
             <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#f59e0b" id="prot-threats">0</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">High/critical severity</div>
           </div>
-          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
+          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);cursor:pointer;" id="tile-ip-quarantine" title="Click to open WAF Quarantine Manager">
             <div style="font-size:11px;color:#ef4444;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">IP Quarantine</div>
             <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#ef4444" id="prot-banned-count">0</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Auto-banned attackers</div>
@@ -1638,6 +1641,53 @@ location /api/v1/resource {
 
     <div style="display:flex;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
       <button type="button" id="btn-done-audit-modal" style="background:linear-gradient(135deg,#22c55e,#0ea5e9);border:none;color:#fff;padding:8px 22px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;">Close Audit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MEDICARE.AI WAF QUARANTINE MANAGER ===== -->
+<div id="quarantine-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg-card,#1e293b);border:1px solid rgba(239,68,68,0.35);border-radius:16px;width:100%;max-width:600px;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);color:var(--text-main,#f8fafc);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-symbols-outlined" style="color:#ef4444;font-size:26px">gavel</span>
+        <div>
+          <h3 style="margin:0;font-family:var(--font-head);font-size:16px;font-weight:700;">WAF IP Quarantine Manager</h3>
+          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">Medicare.AI Real-Time Perimeter Isolation Controls</span>
+        </div>
+      </div>
+      <button id="btn-close-quarantine-modal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Overview Banner -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(245,158,11,0.08));border:1px solid rgba(239,68,68,0.25);padding:14px 16px;border-radius:12px;margin-bottom:18px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Quarantined Attackers</div>
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:900;color:#ef4444" id="modal-quarantine-count">0</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:var(--text-muted)">Enforcement: <strong style="color:#ef4444">403 Forbidden Gate</strong></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Rule: <strong style="color:var(--text-main)">Repeated Attack Auto-Ban</strong></div>
+      </div>
+    </div>
+
+    <!-- Quarantined IPs List Container -->
+    <div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h4 style="margin:0;font-size:13px;font-family:var(--font-head);color:var(--text-main);">Quarantined IP Addresses</h4>
+        <button id="btn-refresh-quarantine" style="font-size:11px;font-family:var(--font-mono);background:none;border:none;color:#0ea5e9;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">
+          <span class="material-symbols-outlined" style="font-size:13px">refresh</span>Refresh
+        </button>
+      </div>
+      <div id="quarantine-ip-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px;">
+        <!-- Populated via JavaScript -->
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
+      <button type="button" id="btn-done-quarantine-modal" style="background:linear-gradient(135deg,#ef4444,#f59e0b);border:none;color:#fff;padding:8px 22px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;">Done</button>
     </div>
   </div>
 </div>

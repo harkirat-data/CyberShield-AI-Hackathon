@@ -3,7 +3,7 @@ schema.py - Shared dataclasses for AI layer
 """
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 
@@ -112,7 +112,7 @@ class Investigation:
     latency_ms: int = 0
     pipeline_version: str = "1.0"
     model_version: str = ""
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> Dict:
         return {

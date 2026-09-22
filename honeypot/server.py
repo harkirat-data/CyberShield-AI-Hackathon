@@ -1516,7 +1516,7 @@ class WAFConfigUpdateRequest(BaseModel):
 @app.post("/api/v1/protected/config")
 async def update_protected_app_config(req: WAFConfigUpdateRequest) -> Dict[str, Any]:
     """Updates active CyberShield WAF security rules dynamically."""
-    new_cfg = req.dict(exclude_none=True)
+    new_cfg = req.model_dump(exclude_none=True) if hasattr(req, "model_dump") else req.dict(exclude_none=True)
     return waf_proxy.update_config(new_cfg)
 
 
@@ -1588,7 +1588,14 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            alerts_status = get_alert_manager().get_status() if get_alert_manager else {}
+            alerts_status = {}
+            if get_alert_manager:
+                try:
+                    mgr = get_alert_manager()
+                    if mgr:
+                        alerts_status = mgr.get_status()
+                except Exception:
+                    alerts_status = {}
             payload = {
                 "type": "state_update",
                 "status": runtime.status(),

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 SCORE_LOGON_SUCCESS = 10
@@ -193,6 +193,6 @@ def score_event(event):
         "risk_score": base_score,
         "risk_level": level,
         "reasons": reasons,
-        "scored_at": datetime.utcnow().isoformat(),
+        "scored_at": datetime.now(timezone.utc).isoformat(),
         "event": event
     }

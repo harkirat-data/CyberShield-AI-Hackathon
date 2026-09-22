@@ -65,7 +65,7 @@ HOP_BY_HOP_HEADERS: frozenset = frozenset(
 )
 
 # Severity levels that trigger a WAF block when combined with high intent risk
-BLOCK_SEVERITIES: frozenset = frozenset({"critical"})
+BLOCK_SEVERITIES: frozenset = frozenset({"critical", "high"})
 
 
 # ---------------------------------------------------------------------------

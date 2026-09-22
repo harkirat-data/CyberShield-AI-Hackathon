@@ -4113,6 +4113,75 @@ function closeAuditModal() {
   if (modal) modal.style.display = "none";
 }
 
+async function loadQuarantineList() {
+  const container = $("quarantine-ip-list");
+  if (!container) return;
+  try {
+    const res = await api("/api/v1/protected/banned-ips");
+    const ips = (res && res.banned_ips) ? res.banned_ips : [];
+    if ($("modal-quarantine-count")) $("modal-quarantine-count").textContent = ips.length;
+    if ($("prot-banned-count")) $("prot-banned-count").textContent = ips.length;
+
+    if (ips.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:24px 16px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px dashed rgba(255,255,255,0.1);color:var(--text-muted);font-size:12px;">
+          <span class="material-symbols-outlined" style="font-size:28px;color:#22c55e;display:block;margin-bottom:6px;">check_circle</span>
+          No attacker IPs are currently quarantined. Medicare.AI perimeter is secure.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = ips.map(ip => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);padding:10px 14px;border-radius:8px;">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:#f87171;display:flex;align-items:center;gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:14px;color:#ef4444">block</span>
+            ${escapeHtml(ip)}
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Status: WAF 403 Hard-Drop &middot; Auto-quarantined</div>
+        </div>
+        <button onclick="unbanIP('${escapeHtml(ip)}')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--font-mono);cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:12px">lock_open</span>Release
+        </button>
+      </div>
+    `).join("");
+  } catch (err) {
+    container.innerHTML = `<div style="color:#ef4444;font-size:12px;">Failed to load quarantine list: ${err.message}</div>`;
+  }
+}
+
+async function unbanIP(ip) {
+  if (!ip) return;
+  try {
+    const res = await api("/api/v1/protected/unban-ip", {
+      method: "POST",
+      body: JSON.stringify({ ip: ip }),
+    });
+    if (res && res.ok) {
+      toast(`✅ Released ${ip} from Medicare.AI WAF quarantine.`);
+      await loadQuarantineList();
+    } else {
+      toast(`Failed to unban ${ip}`, true);
+    }
+  } catch (err) {
+    toast(`Error unbanning ${ip}: ` + err.message, true);
+  }
+}
+window.unbanIP = unbanIP;
+
+function openQuarantineModal() {
+  const modal = $("quarantine-modal-overlay");
+  if (!modal) return;
+  modal.style.display = "flex";
+  loadQuarantineList();
+}
+
+function closeQuarantineModal() {
+  const modal = $("quarantine-modal-overlay");
+  if (modal) modal.style.display = "none";
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -4127,6 +4196,11 @@ async function init() {
   $("btn-audit-security")?.addEventListener("click", openAuditModal);
   $("btn-close-audit-modal")?.addEventListener("click", closeAuditModal);
   $("btn-done-audit-modal")?.addEventListener("click", closeAuditModal);
+  $("btn-manage-quarantine")?.addEventListener("click", openQuarantineModal);
+  $("tile-ip-quarantine")?.addEventListener("click", openQuarantineModal);
+  $("btn-close-quarantine-modal")?.addEventListener("click", closeQuarantineModal);
+  $("btn-done-quarantine-modal")?.addEventListener("click", closeQuarantineModal);
+  $("btn-refresh-quarantine")?.addEventListener("click", loadQuarantineList);
   $("waf-config-form")?.addEventListener("submit", saveWAFConfig);
   $("waf-input-threshold")?.addEventListener("input", (e) => {
     if ($("waf-threshold-val")) $("waf-threshold-val").textContent = e.target.value;
