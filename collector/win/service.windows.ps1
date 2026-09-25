@@ -1,5 +1,5 @@
 # install_service_windows.ps1
-# Installs VALENS.AI Windows collectors as services.
+# Installs VALENS Windows collectors as services.
 # Run as Administrator: .\install_service_windows.ps1
 
 #Requires -RunAsAdministrator
@@ -10,7 +10,7 @@ $InstallDir = "C:\soc\collectors"
 $LogDir     = "C:\soc\logs"
 $PythonExe  = (Get-Command python.exe).Source
 
-Write-Host "[VALENS.AI] Installing Windows collectors..." -ForegroundColor Cyan
+Write-Host "[VALENS] Installing Windows collectors..." -ForegroundColor Cyan
 
 # 1. Create directories
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
@@ -24,20 +24,20 @@ foreach ($file in $files) {
     $source = Join-Path $ScriptDir $file
     if (Test-Path $source) {
         Copy-Item $source $InstallDir -Force
-        Write-Host "[VALENS.AI] Copied $file" -ForegroundColor Green
+        Write-Host "[VALENS] Copied $file" -ForegroundColor Green
     } else {
-        Write-Host "[VALENS.AI] WARNING: $file not found in $ScriptDir" -ForegroundColor Yellow
+        Write-Host "[VALENS] WARNING: $file not found in $ScriptDir" -ForegroundColor Yellow
     }
 }
 
 # 3. Install Python dependencies
-Write-Host "[VALENS.AI] Installing Python dependencies..." -ForegroundColor Cyan
+Write-Host "[VALENS] Installing Python dependencies..." -ForegroundColor Cyan
 & $PythonExe -m pip install --quiet pywin32 watchdog
 
 # 4. Download NSSM (service manager) if not present
 $NssmPath = "$env:SystemRoot\System32\nssm.exe"
 if (-not (Test-Path $NssmPath)) {
-    Write-Host "[VALENS.AI] Downloading NSSM..." -ForegroundColor Cyan
+    Write-Host "[VALENS] Downloading NSSM..." -ForegroundColor Cyan
     $NssmUrl = "https://nssm.cc/release/nssm-2.24.zip"
     $NssmZip = "$env:TEMP\nssm.zip"
     $NssmExtractDir = "$env:TEMP\nssm"
@@ -49,11 +49,11 @@ if (-not (Test-Path $NssmPath)) {
     $NssmExe = Get-ChildItem -Path $NssmExtractDir -Recurse -Filter "nssm.exe" |
                Where-Object { $_.DirectoryName -match "win64" } | Select-Object -First 1
     Copy-Item $NssmExe.FullName $NssmPath -Force
-    Write-Host "[VALENS.AI] NSSM installed" -ForegroundColor Green
+    Write-Host "[VALENS] NSSM installed" -ForegroundColor Green
 }
 
 # 5. Install auth collector service
-Write-Host "[VALENS.AI] Installing valens-auth service..." -ForegroundColor Cyan
+Write-Host "[VALENS] Installing valens-auth service..." -ForegroundColor Cyan
 
 & $NssmPath install valens-auth $PythonExe "$InstallDir\auth_collector.py" | Out-Null
 & $NssmPath set valens-auth AppDirectory $InstallDir           | Out-Null
@@ -61,12 +61,12 @@ Write-Host "[VALENS.AI] Installing valens-auth service..." -ForegroundColor Cyan
 & $NssmPath set valens-auth AppStderrOutput "$LogDir\auth.err.log"   | Out-Null
 & $NssmPath set valens-auth AppRotateFiles 1                  | Out-Null
 & $NssmPath set valens-auth AppRotateBytes 10485760           | Out-Null  # 10MB
-& $NssmPath set valens-auth DisplayName "VALENS.AI Auth Collector"     | Out-Null
+& $NssmPath set valens-auth DisplayName "VALENS Auth Collector"     | Out-Null
 & $NssmPath set valens-auth Description "Collects Windows Security/Auth events" | Out-Null
 & $NssmPath set valens-auth Start SERVICE_AUTO_START           | Out-Null
 
 # 6. Install system collector service
-Write-Host "[VALENS.AI] Installing valens-system service..." -ForegroundColor Cyan
+Write-Host "[VALENS] Installing valens-system service..." -ForegroundColor Cyan
 
 & $NssmPath install valens-system $PythonExe "$InstallDir\system_collector_windows.py" | Out-Null
 & $NssmPath set valens-system AppDirectory $InstallDir        | Out-Null
@@ -74,7 +74,7 @@ Write-Host "[VALENS.AI] Installing valens-system service..." -ForegroundColor Cy
 & $NssmPath set valens-system AppStderrOutput "$LogDir\system.err.log" | Out-Null
 & $NssmPath set valens-system AppRotateFiles 1                | Out-Null
 & $NssmPath set valens-system AppRotateBytes 10485760         | Out-Null
-& $NssmPath set valens-system DisplayName "VALENS.AI System Collector"  | Out-Null
+& $NssmPath set valens-system DisplayName "VALENS System Collector"  | Out-Null
 & $NssmPath set valens-system Description "Collects Windows System/Sysmon events" | Out-Null
 & $NssmPath set valens-system Start SERVICE_AUTO_START        | Out-Null
 
@@ -91,9 +91,9 @@ Start-Service valens-system
 Start-Sleep -Seconds 2
 
 Write-Host ""
-Write-Host "[VALENS.AI] ========================================" -ForegroundColor Green
-Write-Host "[VALENS.AI] Installation complete!" -ForegroundColor Green
-Write-Host "[VALENS.AI] ========================================" -ForegroundColor Green
+Write-Host "[VALENS] ========================================" -ForegroundColor Green
+Write-Host "[VALENS] Installation complete!" -ForegroundColor Green
+Write-Host "[VALENS] ========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Service status:"
 Get-Service valens-auth   | Format-Table -AutoSize

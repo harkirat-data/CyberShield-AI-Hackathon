@@ -1,6 +1,6 @@
-# VALENS.AI — The Challenges We Ran Into
+# VALENS — The Challenges We Ran Into
 
-> **Project**: VALENS.AI — Security Operations. Deception. Intelligence  
+> **Project**: VALENS — Security Operations. Deception. Intelligence  
 > **Team**: Harkirat Singh, Shaikh Arman  
 > **What this document is**: A simple, honest, and non-technical look at the real hurdles we hit while building this project and how we solved them.
 

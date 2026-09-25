@@ -43,7 +43,7 @@ def run(cmd, cwd, env=None):
 
 
 def main():
-    print(f"VALENS.AI -- Pushing High-Priority Fixes")
+    print(f"VALENS -- Pushing High-Priority Fixes")
     print(f"Author: {AUTHOR} <{EMAIL}>")
     print("=" * 60)
 

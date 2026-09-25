@@ -1,4 +1,4 @@
-# VALENS.AI — Master Judge Briefing & Commit Explainer
+# VALENS — Master Judge Briefing & Commit Explainer
 
 > **Purpose**: Use this cheat-sheet during Mentoring (3:00 PM) and Judging rounds. Whenever a judge asks: *"Walk me through this commit"* or *"Why did you write this code?"*, use the exact speaking scripts below.
 
@@ -9,7 +9,7 @@
 ### 🎙️ The 15-Second Spoken Pitch:
 > *"Sir, Firewalls and EDR are like locked front doors and security guards—they try to keep bad guys out. But once an attacker steals a valid password, the firewall waves them right in.*  
 > 
-> *VALENS.AI is a **decoy room with laser tripwires**. No real employee or customer ever has a reason to go there. So if anyone touches it, **it is 100% an intruder with ZERO false alarms**, and we trap them in a fake sandbox to study their weapons before they ever reach our real data."*
+> *VALENS is a **decoy room with laser tripwires**. No real employee or customer ever has a reason to go there. So if anyone touches it, **it is 100% an intruder with ZERO false alarms**, and we trap them in a fake sandbox to study their weapons before they ever reach our real data."*
 
 ### 📋 Layman Comparison Table:
 | Security Layer | Real-World Analogy | The Fatal Flaw |
@@ -17,14 +17,14 @@
 | **Firewall** | **The Main Entrance Gate** | If the thief steals a real employee's ID badge (stolen credentials), the gate opens right up. |
 | **IDS / IPS** | **CCTV camera on a crowded street** | It triggers 5,000 alarms a day for normal traffic. SOC teams get overwhelmed by false alarms and miss the real threat. |
 | **EDR (Antivirus)** | **A security guard inside the CEO's office** | Only reacts *after* malware has already landed on a critical server. If the hacker uses standard admin tools, EDR stays quiet. |
-| **VALENS.AI** | **A fake vault placed in the hallway** | **No employee ever goes there.** The moment the door knob turns, you know with 100% certainty you caught a hacker. |
+| **VALENS** | **A fake vault placed in the hallway** | **No employee ever goes there.** The moment the door knob turns, you know with 100% certainty you caught a hacker. |
 
 ### 🎯 The 3 Differentiators:
 1. **Zero False Positives**: Traditional tools drown SOC teams in thousands of false alerts. A honeypot has zero production traffic, so 1 alert = 1 confirmed attacker.
 2. **Catches Zero-Days and Stolen Credentials**: Attacks with no known virus signatures or using valid credentials walk past firewalls, but get caught immediately when exploring our decoys.
-3. **Active Deception vs. Passive Blocking**: Firewalls just block, prompting hackers to try another port. VALENS.AI feeds them convincing fake responses, wasting their time while extracting their playbook with zero risk to production.
+3. **Active Deception vs. Passive Blocking**: Firewalls just block, prompting hackers to try another port. VALENS feeds them convincing fake responses, wasting their time while extracting their playbook with zero risk to production.
 
-> *"Firewalls build higher walls. VALENS.AI builds a maze where the attacker wastes their time and reveals their playbook to us."*
+> *"Firewalls build higher walls. VALENS builds a maze where the attacker wastes their time and reveals their playbook to us."*
 
 ---
 
@@ -70,13 +70,13 @@
 * **Files**: `README.md`
 
 ### What is Inside:
-* Complete architectural blueprint of VALENS.AI.
+* Complete architectural blueprint of VALENS.
 * The 4-step intelligence loop: **Deceive (Honeypot Decoy) &rarr; Collect &rarr; Investigate (ChromaDB RAG) &rarr; Neutralize / Alert**.
 * Decoy port specifications (SSH `2222`, Telnet `2323`, HTTP `8088`, MySQL `3306`).
 * Security isolation model: Air-gapped sandboxing with zero egress execution (hackers cannot escape or pivot to real host processes).
 
 ### 🎙️ How to Explain to a Judge:
-> *"Our README acts as the technical blueprint for VALENS.AI. It outlines our core innovation: an autonomous honeypot SOC that deceives attackers with realistic fake personas, extracts their telemetry, performs real-time AI attribution using MITRE ATT&CK, and alerts security teams instantly."*
+> *"Our README acts as the technical blueprint for VALENS. It outlines our core innovation: an autonomous honeypot SOC that deceives attackers with realistic fake personas, extracts their telemetry, performs real-time AI attribution using MITRE ATT&CK, and alerts security teams instantly."*
 
 ---
 

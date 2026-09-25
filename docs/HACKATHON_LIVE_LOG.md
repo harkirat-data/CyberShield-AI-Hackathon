@@ -1,4 +1,4 @@
-# VALENS.AI — Live Hackathon Execution & Task Log
+# VALENS — Live Hackathon Execution & Task Log
 
 This document tracks every atomic commit executed live on the hackathon repository:
 **Repository**: [https://github.com/harkirat-data/CyberShield-AI-Hackathon](https://github.com/harkirat-data/CyberShield-AI-Hackathon)

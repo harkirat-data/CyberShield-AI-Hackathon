@@ -1,4 +1,4 @@
-# VALENS.AI: Security Operations. Deception. Intelligence
+# VALENS: Security Operations. Deception. Intelligence
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
@@ -7,15 +7,15 @@
 [![Leaflet.js](https://img.shields.io/badge/Leaflet-1.9.4-199900.svg)](https://leafletjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-VALENS.AI is an autonomous cyber-deception and threat intelligence platform. It integrates a multi-service decoy honeypot grid with an on-premise Retrieval-Augmented Generation (RAG) SOC investigation engine. 
+VALENS is an autonomous cyber-deception and threat intelligence platform. It integrates a multi-service decoy honeypot grid with an on-premise Retrieval-Augmented Generation (RAG) SOC investigation engine. 
 
-Instead of passive network logging or ungrounded blocking, VALENS.AI actively entangles adversaries in high-fidelity decoy services, captures raw session telemetry with cryptographic integrity, correlates actions against MITRE ATT&CK techniques in real time, and provides an interactive operator command console with automated incident alerting.
+Instead of passive network logging or ungrounded blocking, VALENS actively entangles adversaries in high-fidelity decoy services, captures raw session telemetry with cryptographic integrity, correlates actions against MITRE ATT&CK techniques in real time, and provides an interactive operator command console with automated incident alerting.
 
 ---
 
 ## System Architecture
 
-VALENS.AI enforces a closed-loop intelligence cycle: **Deceive &rarr; Capture &rarr; Correlate &rarr; Investigate &rarr; Neutralize**.
+VALENS enforces a closed-loop intelligence cycle: **Deceive &rarr; Capture &rarr; Correlate &rarr; Investigate &rarr; Neutralize**.
 
 ```mermaid
 flowchart TD
@@ -95,7 +95,7 @@ flowchart LR
     end
 
     subgraph HostSystem ["Protected Host OS"]
-        App["VALENS.AI Backend"]
+        App["VALENS Backend"]
         VectorDB[("ChromaDB Vector Store")]
         HostFirewall["Windows Defender / Linux iptables"]
     end

@@ -99,7 +99,7 @@ def main():
     total_commits = len(COMMIT_BATCHES)
     interval_secs = 210  # ~3.5 minutes between commits (total ~14-15 minutes)
 
-    print(f"[{now_ist_str()}] VALENS.AI -- RAG Progressive Pusher")
+    print(f"[{now_ist_str()}] VALENS -- RAG Progressive Pusher")
     print(f"Author  : {AUTHOR} <{EMAIL}>")
     print(f"Commits : {total_commits} batches")
     print(f"Interval: {interval_secs / 60:.1f} minutes")

@@ -5,7 +5,7 @@ description: Detects PowerShell launched with encoded command arguments commonly
 references:
   - https://attack.mitre.org/techniques/T1059/001/
   - https://attack.mitre.org/techniques/T1027/
-author: VALENS.AI
+author: VALENS
 date: 2026/07/02
 logsource:
   product: windows

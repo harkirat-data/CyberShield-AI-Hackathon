@@ -1,7 +1,7 @@
 [project]
 name = "valens-ai"
 version = "0.1.0"
-description = "VALENS.AI — Security Operations. Deception. Intelligence"
+description = "VALENS — Security Operations. Deception. Intelligence"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

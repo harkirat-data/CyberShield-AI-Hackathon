@@ -1,7 +1,7 @@
-# VALENS.AI — The Problem It Solves
+# VALENS — The Problem It Solves
 
 > **Submission Document**: Problem Statement, Core Innovations, and Industry Impact  
-> **Project**: VALENS.AI — Security Operations. Deception. Intelligence  
+> **Project**: VALENS — Security Operations. Deception. Intelligence  
 > **Team**: Harkirat Singh, Shaikh Arman  
 
 ---
@@ -12,7 +12,7 @@ Modern cybersecurity is facing an asymmetric warfare crisis. Organizations spend
 
 Traditional security fails not because it lacks defenses, but because **it relies on passive blocking, signature matching, and noisy heuristic rules**. 
 
-**VALENS.AI solves this fundamental flaw by shifting enterprise defense from passive detection to active, autonomous cyber-deception.** By deploying an air-gapped, multi-port synthetic decoy grid paired with an on-premise Retrieval-Augmented Generation (RAG) AI investigation engine, VALENS.AI delivers **100% high-fidelity threat detection with ZERO false positives**, detains attackers safely, and generates instant, automated code-level remediation.
+**VALENS solves this fundamental flaw by shifting enterprise defense from passive detection to active, autonomous cyber-deception.** By deploying an air-gapped, multi-port synthetic decoy grid paired with an on-premise Retrieval-Augmented Generation (RAG) AI investigation engine, VALENS delivers **100% high-fidelity threat detection with ZERO false positives**, detains attackers safely, and generates instant, automated code-level remediation.
 
 ---
 
@@ -52,9 +52,9 @@ Traditional security fails not because it lacks defenses, but because **it relie
 
 ---
 
-## 3. How VALENS.AI Solves These Problems
+## 3. How VALENS Solves These Problems
 
-VALENS.AI enforces a closed-loop intelligence cycle: **Deceive → Capture → Correlate → Investigate → Neutralize**.
+VALENS enforces a closed-loop intelligence cycle: **Deceive → Capture → Correlate → Investigate → Neutralize**.
 
 ```
    ┌───────────────────┐       ┌──────────────────────┐       ┌──────────────────────┐
@@ -72,12 +72,12 @@ VALENS.AI enforces a closed-loop intelligence cycle: **Deceive → Capture → C
 ```
 
 ### 1. Absolute Zero False Positives (1 Alert = 1 Confirmed Attacker)
-* **The Solution**: VALENS.AI deploys synthetic honeypot sensors across unassigned corporate ports (`SSH 2222`, `Telnet 2323`, `HTTP 8088`, `HTTPS 8443`, `MySQL 3307`).
+* **The Solution**: VALENS deploys synthetic honeypot sensors across unassigned corporate ports (`SSH 2222`, `Telnet 2323`, `HTTP 8088`, `HTTPS 8443`, `MySQL 3307`).
 * **Why It Works**: No legitimate employee, customer, or automated build script ever has a business reason to touch these decoy ports or interact with planted canary tokens. Therefore, **any packet received on a decoy is 100% verified adversary activity**.
 * **Impact**: Eliminates alert fatigue instantly. Every single notification delivered to the SOC represents an active intruder.
 
 ### 2. Zero-Egress Air-Gapped Sandboxing
-* **The Solution**: VALENS.AI’s protocol listeners are synthetic emulators. When an attacker connects to our SSH or Telnet decoys, the server negotiates RFC-compliant banners (`OpenSSH 8.9p1`, `Apache 2.4.52`, `MySQL 8.0.33`) and absorbs commands into memory buffers.
+* **The Solution**: VALENS’s protocol listeners are synthetic emulators. When an attacker connects to our SSH or Telnet decoys, the server negotiates RFC-compliant banners (`OpenSSH 8.9p1`, `Apache 2.4.52`, `MySQL 8.0.33`) and absorbs commands into memory buffers.
 * **Why It Works**: **Zero host execution gate.** Attacker commands are never passed to the host operating system, bash, or sub-processes. Attackers waste time, burn zero-day exploits, and reveal their playbooks inside a completely contained virtual sandbox.
 
 ### 3. Canary Honeytokens & Tripwires
@@ -85,11 +85,11 @@ VALENS.AI enforces a closed-loop intelligence cycle: **Deceive → Capture → C
 * **Why It Works**: If an intruder breaches a system and attempts to use or exfiltrate these canary credentials, an immediate critical alarm is triggered across Discord, Slack, and SMTP with source IP attribution.
 
 ### 4. Zero-Egress On-Premise AI RAG Investigation Copilot
-* **The Solution**: VALENS.AI integrates an embedded ChromaDB vector store loaded with curated Sigma detection rules, Wazuh endpoint signatures, and enterprise MITRE ATT&CK catalogs.
+* **The Solution**: VALENS integrates an embedded ChromaDB vector store loaded with curated Sigma detection rules, Wazuh endpoint signatures, and enterprise MITRE ATT&CK catalogs.
 * **Why It Works**: Uses local `sentence-transformers/all-MiniLM-L6-v2` embeddings and BM25 hybrid reranking. Incident telemetry is triaged locally without sending sensitive forensic logs to external third-party cloud APIs.
 
 ### 5. Automated Remediation & 1-Click GitHub Pull Requests
-* **The Solution**: Moving beyond passive reporting, VALENS.AI’s remediation engine automatically synthesizes tailored code patches (Python, JavaScript, PHP) and generates instant perimeter firewall rules (`iptables` / Windows Defender).
+* **The Solution**: Moving beyond passive reporting, VALENS’s remediation engine automatically synthesizes tailored code patches (Python, JavaScript, PHP) and generates instant perimeter firewall rules (`iptables` / Windows Defender).
 * **Why It Works**: Through 1-click GitHub API integration, security teams can automatically open a verified Pull Request containing the vulnerability fix, slashing Mean Time to Remediation (MTTR) from days to seconds.
 
 ### 6. Geospatial Threat Attribution & Precision Honey-Lure
@@ -100,7 +100,7 @@ VALENS.AI enforces a closed-loop intelligence cycle: **Deceive → Capture → C
 
 ## 4. Problem & Solution Value Comparison
 
-| Dimension | Traditional Security (Firewall / SIEM / EDR) | VALENS.AI Platform |
+| Dimension | Traditional Security (Firewall / SIEM / EDR) | VALENS Platform |
 | :--- | :--- | :--- |
 | **False-Positive Rate** | 90% – 98% (High noise, thousands of alarms daily) | **0% (Guaranteed adversary interaction)** |
 | **Stolen Credentials** | Unchecked (Treated as legitimate user traffic) | **Caught immediately via Decoys & Canary Tokens** |

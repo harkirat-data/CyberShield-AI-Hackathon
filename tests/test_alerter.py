@@ -1,5 +1,5 @@
 """
-test_alerter.py - Unit and integration tests for VALENS.AI alerting layer.
+test_alerter.py - Unit and integration tests for VALENS alerting layer.
 
 Tests:
 1. Slack payload generation

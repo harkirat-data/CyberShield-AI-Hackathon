@@ -216,7 +216,7 @@ def create_app():
         print("FastAPI not installed. Run: pip install fastapi uvicorn")
         return None
 
-    app = FastAPI(title="VALENS.AI Orchestrator", version="1.0")
+    app = FastAPI(title="VALENS Orchestrator", version="1.0")
     orch = Orchestrator(use_rag=True, use_llm=True)
 
     @app.get("/health")

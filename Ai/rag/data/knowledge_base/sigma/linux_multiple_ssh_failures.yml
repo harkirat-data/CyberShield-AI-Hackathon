@@ -4,7 +4,7 @@ status: stable
 description: Detects repeated failed SSH authentication attempts that may indicate brute force activity.
 references:
   - https://attack.mitre.org/techniques/T1110/
-author: VALENS.AI
+author: VALENS
 date: 2026/07/02
 logsource:
   product: linux

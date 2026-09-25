@@ -4,7 +4,7 @@ status: stable
 description: Detects clearing of Windows event logs, often used to remove forensic evidence.
 references:
   - https://attack.mitre.org/techniques/T1070/001/
-author: VALENS.AI
+author: VALENS
 date: 2026/07/02
 logsource:
   product: windows

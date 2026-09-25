@@ -1,6 +1,6 @@
 #!/bin/bash
 # test_events.sh
-# Generates test events for VALENS.AI Linux collectors.
+# Generates test events for VALENS Linux collectors.
 # Run with: sudo ./test_events.sh
 
 set -e

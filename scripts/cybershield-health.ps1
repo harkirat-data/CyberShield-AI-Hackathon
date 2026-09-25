@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "VALENS.AI health" -ForegroundColor Cyan
+Write-Host "VALENS health" -ForegroundColor Cyan
 Invoke-RestMethod -Uri "$BaseUrl/health" | ConvertTo-Json -Depth 6
 
 Write-Host "`nDeception grid" -ForegroundColor Cyan

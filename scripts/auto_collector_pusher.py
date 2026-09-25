@@ -104,7 +104,7 @@ def main():
     # Spread evenly with 3-min buffer — minimum 60s, max 600s
     interval = max(60, min(600, (secs_left - 180) / max(total - 1, 1)))
 
-    print(f"VALENS.AI -- Collector Fast Pusher v3")
+    print(f"VALENS -- Collector Fast Pusher v3")
     print(f"Author   : {AUTHOR} <{EMAIL}>")
     print(f"Remaining: {total} files")
     print(f"Interval : {interval/60:.1f} min")

@@ -144,7 +144,7 @@ class RAGPipeline:
     ) -> str:
         prompt = self._build_query_prompt(query, history, rag_chunks)
         system = (
-            "You are VALENS.AI, an intelligent, conversational cybersecurity assistant and SOC copilot. "
+            "You are VALENS, an intelligent, conversational cybersecurity assistant and SOC copilot. "
             "You help security analysts and users understand cyber defense, multi-port honeypot deception, active threats, and incident triage. "
             "Converse naturally, helpfully, and warmly with users. "
             "If the user greets you (e.g. 'hello', 'hi', 'who are you', 'how are you'), chat naturally and introduce your cyber defense capabilities. "
@@ -168,14 +168,14 @@ class RAGPipeline:
         # Conversational greetings & banter
         if any(w in q for w in ["hi", "hello", "hey", "hola", "greetings", "yo"]) and len(q.split()) <= 4:
             return (
-                "👋 Hello! I'm your **VALENS.AI Security Copilot**.\n\n"
+                "👋 Hello! I'm your **VALENS Security Copilot**.\n\n"
                 "I monitor our multi-port honeynet mesh, analyze trapped adversary behaviors, and help you triage cyber incidents. "
                 "How can I help you today? You can ask about our active decoys, recent attacks, or specific security vulnerabilities!"
             )
 
         if "who are you" in q or "what is your name" in q or "what can you do" in q:
             return (
-                "🛡️ I am **VALENS.AI**, an autonomous active deception and SOC copilot.\n\n"
+                "🛡️ I am **VALENS**, an autonomous active deception and SOC copilot.\n\n"
                 "Here is what I do:\n"
                 "• **Multi-Port Decoy Monitoring:** I watch active honeypot traps on SSH (2222), Telnet (2323), HTTP (8088), HTTPS (8443), and MySQL (3307).\n"
                 "• **Real-Time Attacker Triage:** I track adversary IPs, ASN routes, geolocation, and dwell time.\n"
@@ -199,7 +199,7 @@ class RAGPipeline:
         if "honeypot" in q or "deception" in q:
             return (
                 "🍯 **How Honeypot Deception Works:**\n\n"
-                "Instead of waiting for attackers to discover real corporate databases or admin servers, VALENS.AI deploys **active synthetic decoys**.\n\n"
+                "Instead of waiting for attackers to discover real corporate databases or admin servers, VALENS deploys **active synthetic decoys**.\n\n"
                 "1. **Zero False Positives:** Legitimate employees never connect to port 2323 (Telnet) or port 8088 (Fake Finance Portal). Any traffic is 100% hostile.\n"
                 "2. **Dwell Time Expansion:** We deliver plausible synthetic responses to keep intruders busy and extract their entire exploit toolkit.\n"
                 "3. **Zero Production Risk:** Decoys run in isolated sandboxes with egress disabled, completely shielding your real production stack."
@@ -228,7 +228,7 @@ class RAGPipeline:
         # Canary Tokens / Tripwires
         if "canary" in q or "tripwire" in q or "honeytoken" in q:
             return (
-                "🐦 **Canary Tripwires in VALENS.AI:**\n\n"
+                "🐦 **Canary Tripwires in VALENS:**\n\n"
                 "Canary tokens are digital tripwires planted in places attackers love to rummage through (e.g., decoy AWS credentials, fake internal wiki URLs, or confidential PDFs).\n\n"
                 "The moment an intruder opens or curls the token, an instantaneous webhook alert fires with the intruder's IP address, User-Agent, and geolocation!"
             )
@@ -245,7 +245,7 @@ class RAGPipeline:
         if "mitre" in q:
             return (
                 "🎯 **MITRE ATT&CK Matrix Correlation:**\n\n"
-                "VALENS.AI tags observed telemetry with MITRE ATT&CK techniques in real time:\n"
+                "VALENS tags observed telemetry with MITRE ATT&CK techniques in real time:\n"
                 "• **T1046:** Network Service Scanning\n"
                 "• **T1110:** Brute Force / Credential Guessing\n"
                 "• **T1190:** Exploit Public-Facing Application (SQLi/Command Injection)\n"
@@ -265,7 +265,7 @@ class RAGPipeline:
         # General helpful fallback
         return (
             f"I have analyzed your inquiry regarding **'{query}'**.\n\n"
-            "As your VALENS.AI copilot, I continuously evaluate ingress traffic across our 5 decoy listeners (ports 2222, 2323, 8088, 8443, 3307). "
+            "As your VALENS copilot, I continuously evaluate ingress traffic across our 5 decoy listeners (ports 2222, 2323, 8088, 8443, 3307). "
             "All telemetry is sandboxed with zero risk to production. Would you like me to inspect our latest attacker dossier or explain a specific defense technique?"
         )
 

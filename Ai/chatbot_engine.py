@@ -1,5 +1,5 @@
 """
-chatbot_engine.py - Human-Like Conversational LLM Engine for VALENS.AI.
+chatbot_engine.py - Human-Like Conversational LLM Engine for VALENS.
 
 Features:
 1. True LLM Integration: Uses Google Gemini models (gemini-2.5-flash / gemini-flash-latest) via REST API.
@@ -72,7 +72,7 @@ _SECURITY_TERMS = {
     "honeypot", "honeynet", "honeytoken", "sandbox", "malware", "payload",
     "trojan", "ransomware", "phishing", "brute", "bruteforce", "zero", "trust",
     "canary", "tokens", "remediation", "patch", "pull", "request", "github",
-    "cyber", "valens", "valens.ai", "telemetry", "sentinel", "firewall", "ingress", "egress"
+    "cyber", "valens", "valens", "telemetry", "sentinel", "firewall", "ingress", "egress"
 }
 
 _HINGLISH_WORDS = {
@@ -241,13 +241,13 @@ def generate_chat_response(
     top_proto = sessions[0].get("service", "HTTP") if sessions else "None"
 
     soc_context = (
-        f"VALENS.AI Honeypot Grid Status: 5 active decoy ports online (SSH:2222, Telnet:2323, HTTP:8088, HTTPS:8443, MySQL:33060). "
+        f"VALENS Honeypot Grid Status: 5 active decoy ports online (SSH:2222, Telnet:2323, HTTP:8088, HTTPS:8443, MySQL:33060). "
         f"Total captured sessions: {session_count}. High-severity threats: {crit_count}. "
         f"Latest session: {top_ip} targeting {top_proto}. Zero production egress allowed."
     )
 
     sys_prompt = (
-        f"You are VALENS.AI, a helpful, intelligent, conversational cybersecurity AI assistant. "
+        f"You are VALENS, a helpful, intelligent, conversational cybersecurity AI assistant. "
         f"If the user asks a general question, answer it helpfully and naturally. "
         f"If the user asks about the security status or honeypot grid, use this live context: {soc_context}. "
         f"Never hallucinate architecture details into unrelated questions. "
@@ -294,14 +294,14 @@ def _cognitive_nlp_answer(
     if any(g in q for g in ["hello", "hi", "hey", "good morning", "good evening", "namaste", "kem cho"]):
         if is_hi:
             return (
-                "नमस्ते! मैं आपका **VALENS.AI सुरक्षा सहायक** हूँ। हमारा डिसेप्शन ग्रिड सक्रिय है और "
+                "नमस्ते! मैं आपका **VALENS सुरक्षा सहायक** हूँ। हमारा डिसेप्शन ग्रिड सक्रिय है और "
                 f"वर्तमान में **{sess_count} घुसपैठिए सत्र** सुरक्षित रूप से सैंडबॉक्स में फंसे हुए हैं। "
                 "मैं आज आपकी किस सुरक्षा घटना या खतरे की जाँच में मदद कर सकता हूँ?"
             )
         else:
             greetings = [
-                f"Hello! I'm your **VALENS.AI SOC Assistant**. Our multi-port deception grid is fully active with **{sess_count} trapped adversary sessions**. How can I help with your security investigation today?",
-                f"Hi there! VALENS.AI perimeter defense is online. All decoys (SSH, Telnet, HTTP, MySQL) are actively monitoring. Feel free to ask about live sessions, attacker attribution, or security remediation!",
+                f"Hello! I'm your **VALENS SOC Assistant**. Our multi-port deception grid is fully active with **{sess_count} trapped adversary sessions**. How can I help with your security investigation today?",
+                f"Hi there! VALENS perimeter defense is online. All decoys (SSH, Telnet, HTTP, MySQL) are actively monitoring. Feel free to ask about live sessions, attacker attribution, or security remediation!",
                 f"Greetings! SOC telemetry is healthy. We have captured and quarantined all inbound adversary reconnaissance so far. What would you like to explore?"
             ]
             return random.choice(greetings)
@@ -310,13 +310,13 @@ def _cognitive_nlp_answer(
     if any(k in q for k in ["who are you", "what are you", "what is your name", "your role", "what model"]):
         if is_hi:
             return (
-                "मैं **VALENS.AI SOC Copilot** हूँ—एक स्वायत्त हनीपॉट रक्षा और घटना प्रतिक्रिया सहायक। "
+                "मैं **VALENS SOC Copilot** हूँ—एक स्वायत्त हनीपॉट रक्षा और घटना प्रतिक्रिया सहायक। "
                 "मेरा काम हमलावरों को धोखे (Deception) से आकर्षित करना, उनके पेलोड का विश्लेषण करना और "
                 "MITRE ATT&CK एवं 1-क्लिक गिटहब पुल रिक्वेस्ट के माध्यम से सुरक्षा पैच तैयार करना है।"
             )
         else:
             return (
-                "I am the **VALENS.AI SOC Assistant**, an autonomous deception intelligence copilot. "
+                "I am the **VALENS SOC Assistant**, an autonomous deception intelligence copilot. "
                 "I monitor incoming network probes across fake decoy ports (like MySQL 33060 and SSH 2222), "
                 "extract attacker TTPs with zero false positives, and automatically generate GitHub Pull Requests "
                 "to patch vulnerabilities in production code."
@@ -375,7 +375,7 @@ def _cognitive_nlp_answer(
     if any(k in q for k in ["sql", "sqli", "injection", "database attack", "cwe-89"]):
         if is_hi:
             return (
-                "💉 **SQL इंजेक्शन (CWE-89) और VALENS.AI सुरक्षा:**\n\n"
+                "💉 **SQL इंजेक्शन (CWE-89) और VALENS सुरक्षा:**\n\n"
                 "SQL इंजेक्शन तब होता है जब कोई हमलावर इनपुट फ़ील्ड में दुर्भावनापूर्ण SQL कमांड (जैसे `' OR 1=1 --`) डालता है।\n\n"
                 "• **हमारा डेकोय कैसे बचाता है:** पोर्ट 33060 पर हमारा MySQL डेकोय वास्तविक डेटाबेस जैसा दिखता है और हमलावर के पेलोड को पकड़ लेता है।\n"
                 "• **समाधान:** स्ट्रिंग कॉन्कैटिनेशन के बजाय पैरामीटराइज्ड तैयार क्वेरी (`cursor.execute(query, (user_val,))`) का उपयोग करें।"
@@ -386,13 +386,13 @@ def _cognitive_nlp_answer(
                 "SQL Injection occurs when untrusted user input is directly concatenated into dynamic SQL queries without sanitization.\n\n"
                 "```python\n# SAFE: Parameterized prepared query binding\nquery = 'SELECT * FROM users WHERE username = %s'\ncursor.execute(query, (username,))\n```\n\n"
                 "• **Honeypot Decoy Action:** Our Port 33060 decoy presented realistic MySQL handshake banners, trapping payloads like `UNION SELECT` safely.\n"
-                "• **1-Click PR:** VALENS.AI can autonomously push a parameterized query fix to your GitHub repo in seconds."
+                "• **1-Click PR:** VALENS can autonomously push a parameterized query fix to your GitHub repo in seconds."
             )
 
     # F. HOW HONEYPOT / DECEPTION WORKS
     if any(k in q for k in ["how", "honeypot work", "deception", "architecture", "what is honeypot"]):
         return (
-            "🍯 **How VALENS.AI Deception Technology Works:**\n\n"
+            "🍯 **How VALENS Deception Technology Works:**\n\n"
             "1. **Decoy Listening Grid:** We expose authentic-looking trap ports (SSH, Telnet, HTTP, MySQL) on non-production interfaces.\n"
             "2. **Zero False Positives:** Real users never touch decoy ports. Any interaction is **100% verified adversary activity**.\n"
             "3. **Synthetic Lure Response:** Using adaptive sandboxes, we feed convincing fake Linux shells and HTTP responses to keep the hacker occupied and study their playbook.\n"
