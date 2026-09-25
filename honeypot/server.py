@@ -495,6 +495,23 @@ def serve_dashboard() -> FileResponse:
     return FileResponse(index_file, media_type="text/html", headers=NO_CACHE_HEADERS)
 
 
+@app.get("/console", include_in_schema=False)
+@app.get("/dashboard/console", include_in_schema=False)
+def serve_console() -> FileResponse:
+    console_file = DASHBOARD_ROOT / "console.html"
+    if not console_file.is_file():
+        raise HTTPException(status_code=404, detail="Console console.html not found")
+    return FileResponse(console_file, media_type="text/html", headers=NO_CACHE_HEADERS)
+
+
+@app.get("/dashboard/console.css", include_in_schema=False)
+def serve_console_styles() -> FileResponse:
+    css_file = DASHBOARD_ROOT / "console.css"
+    if not css_file.is_file():
+        raise HTTPException(status_code=404, detail="Console console.css not found")
+    return FileResponse(css_file, media_type="text/css", headers=NO_CACHE_HEADERS)
+
+
 @app.get("/dashboard/styles.css", include_in_schema=False)
 def serve_styles() -> FileResponse:
     css_file = DASHBOARD_ROOT / "styles.css"
@@ -521,9 +538,12 @@ def serve_sentinel_agent_js() -> FileResponse:
     return FileResponse(js_file, media_type="application/javascript", headers=headers)
 
 
+@app.get("/images/{file_path:path}", include_in_schema=False)
 @app.get("/dashboard/{file_path:path}", include_in_schema=False)
 def serve_dashboard_static(file_path: str) -> FileResponse:
     target = DASHBOARD_ROOT / file_path
+    if not target.is_file() and (DASHBOARD_ROOT / "images" / file_path).is_file():
+        target = DASHBOARD_ROOT / "images" / file_path
     if target.is_file():
         media_types = {
             ".svg": "image/svg+xml",
