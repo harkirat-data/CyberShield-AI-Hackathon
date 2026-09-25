@@ -10,7 +10,7 @@
   if (window.__VALENS_SENTINEL_INITIALIZED__) return;
   window.__VALENS_SENTINEL_INITIALIZED__ = true;
 
-  const SOC_URL = currentScript.getAttribute?.('data-soc-url') || (['8088', '8090'].includes(window.location.port) ? 'http://127.0.0.1:8050' : window.location.origin);
+  const SOC_URL = currentScript.getAttribute?.('data-soc-url') || (window.location.port === '8088' ? 'http://127.0.0.1:8050' : window.location.origin);
   const SITE_ID = currentScript.getAttribute?.('data-site-id') || (window.location.pathname.includes('medicare') ? 'medicare-ai' : 'apex-finance');
   const SITE_NAME = currentScript.getAttribute?.('data-site-name') || (SITE_ID === 'medicare-ai' ? 'Medicare.AI Healthcare Platform' : 'Apex Global Financial Portal');
 

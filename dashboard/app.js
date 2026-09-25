@@ -2971,7 +2971,8 @@ function connectWebSocket() {
     return;
   }
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${proto}//${window.location.host}/api/v1/ws/dashboard`;
+  const host = window.location.port === "8090" ? `${window.location.hostname}:8050` : window.location.host;
+  const wsUrl = `${proto}//${host}/api/v1/ws/dashboard`;
 
   try {
     ws = new WebSocket(wsUrl);

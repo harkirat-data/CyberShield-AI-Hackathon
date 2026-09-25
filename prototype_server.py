@@ -75,9 +75,16 @@ def serve_dashboard_showcase():
 
 
 @app.get("/console", include_in_schema=False)
-def redirect_to_soc_console():
-    """Redirects to the live VALENS SOC Command Center Console on Port 8050."""
-    return RedirectResponse(url="http://127.0.0.1:8050/console", status_code=302)
+@app.get("/dashboard/console", include_in_schema=False)
+def serve_prototype_console():
+    """Serves the Prototype Deception Grid Console on Port 8090."""
+    proto_file = DASHBOARD_ROOT / "prototype_console.html"
+    if proto_file.is_file():
+        return FileResponse(proto_file, media_type="text/html", headers=NO_CACHE_HEADERS)
+    console_file = DASHBOARD_ROOT / "console.html"
+    if console_file.is_file():
+        return FileResponse(console_file, media_type="text/html", headers=NO_CACHE_HEADERS)
+    return HTMLResponse("<h1>VALENS Prototype Console</h1>", status_code=200)
 
 
 @app.get("/api/v1/sentinel/agent.js", include_in_schema=False)
