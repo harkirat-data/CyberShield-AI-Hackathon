@@ -693,11 +693,22 @@ Generated automatically by VALENS Autonomous SOC Engine.
                 )
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                     status = resp.getcode()
-                    if status in (200, 201, 202, 204):
+                    body_content = resp.read().decode("utf-8", errors="ignore")
+                    is_err = False
+                    try:
+                        parsed_body = json.loads(body_content)
+                        if isinstance(parsed_body, dict) and parsed_body.get("status") == "error":
+                            is_err = True
+                            self.last_error = f"Webhook error: {parsed_body.get('error')}"
+                            logger.warning("[email-webhook] %s", self.last_error)
+                    except Exception:
+                        pass
+
+                    if status in (200, 201, 202, 204) and not is_err:
                         logger.info("[email-webhook] Webhook alert sent successfully for event %s to %s", alert.event_id, self.webhook_url)
                         self.last_error = None
                         delivered = True
-                    else:
+                    elif not is_err:
                         logger.warning("[email-webhook] Unexpected status %d sending alert for %s", status, alert.event_id)
             except Exception as exc:
                 self.last_error = f"Email webhook delivery error: {exc}"
