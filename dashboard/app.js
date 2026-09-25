@@ -2657,15 +2657,16 @@ function renderAlerts(data) {
       badgeEmail.textContent = isEnabled ? "CONNECTED" : "MUTED";
       badgeEmail.className = `channel-status ${isEnabled ? "active" : "muted"}`;
       badgeEmail.title = isEnabled ? "Click to mute Email alerts" : "Click to enable Email alerts";
+      const prefix = email.webhook_configured && (!email.host || email.host.includes("Webhook")) ? "Webhook" : "SMTP";
       textEmail.textContent = isEnabled
-        ? `SMTP: ${email.host || "Configured"} → ${activeCount} active recipient(s)`
-        : `SMTP: ${email.host || "Configured"} (Muted, click to unmute)`;
+        ? `${prefix}: ${email.host || "Active"} → ${activeCount} active recipient(s)`
+        : `${prefix}: ${email.host || "Configured"} (Muted, click to unmute)`;
     } else {
       cardEmail.classList.remove("connected", "muted-channel");
       badgeEmail.textContent = "DISABLED";
       badgeEmail.className = "channel-status";
       badgeEmail.title = "Not configured in .env";
-      textEmail.textContent = email.last_error || "SMTP host / credentials not set in .env";
+      textEmail.textContent = email.last_error || "SMTP host / credentials or EMAIL_WEBHOOK_URL not set in .env";
     }
   }
 

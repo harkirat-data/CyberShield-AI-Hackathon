@@ -345,6 +345,7 @@ class EmailAlerter:
         smtp_use_tls: Optional[bool] = None,
         alert_to: Optional[str] = None,
         alert_from: Optional[str] = None,
+        webhook_url: Optional[str] = None,
         timeout_seconds: float = 10.0,
     ):
         self._host = smtp_host
@@ -354,6 +355,7 @@ class EmailAlerter:
         self._use_tls = smtp_use_tls
         self._alert_to = alert_to
         self._alert_from = alert_from
+        self._webhook_url = webhook_url
         self.timeout = timeout_seconds
         self.last_error: Optional[str] = None
         self._recipients: Optional[List[Dict[str, Any]]] = None
@@ -496,8 +498,14 @@ class EmailAlerter:
         return os.environ.get("ALERT_EMAIL_FROM", "").strip() or self.user or "alerts@valens.ai"
 
     @property
+    def webhook_url(self) -> str:
+        if self._webhook_url is not None:
+            return self._webhook_url
+        return os.environ.get("EMAIL_WEBHOOK_URL", "").strip()
+
+    @property
     def is_configured(self) -> bool:
-        return bool(self.host and (self.get_recipients() or os.environ.get("ALERT_EMAIL_TO", "").strip()))
+        return bool(self.webhook_url or (self.host and (self.get_recipients() or os.environ.get("ALERT_EMAIL_TO", "").strip())))
 
     def build_message(self, alert: SecurityAlert) -> tuple[str, str, str]:
         """
@@ -640,14 +648,9 @@ Generated automatically by VALENS Autonomous SOC Engine.
         return subject, text_body, html_body
 
     def send(self, alert: SecurityAlert, override_recipients: Optional[List[str]] = None) -> bool:
-        """Send email alert via SMTP. Returns True on success, False otherwise."""
-        if not self.host:
-            self.last_error = "SMTP_HOST is not configured in .env (e.g. smtp.gmail.com)"
-            logger.debug("[email] %s", self.last_error)
-            return False
-
+        """Send email alert via SMTP relay or Email Webhook. Returns True on success, False otherwise."""
         if not self.is_configured:
-            self.last_error = "SMTP not fully configured in .env (missing SMTP_HOST or recipient)"
+            self.last_error = "Email not configured in .env (missing SMTP_HOST/credentials or EMAIL_WEBHOOK_URL)"
             logger.debug("[email] %s", self.last_error)
             return False
 
@@ -656,36 +659,82 @@ Generated automatically by VALENS Autonomous SOC Engine.
             for addr in (override_recipients if override_recipients is not None else self.get_active_recipients())
             if addr.strip()
         ]
-        if not recipients:
-            self.last_error = "No active email recipients configured"
-            logger.warning("[email] %s; skipping alert %s", self.last_error, alert.event_id)
-            return False
 
         subject, text_body, html_body = self.build_message(alert)
+        delivered = False
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = self.from_email
-        msg["To"] = ", ".join(recipients)
-        msg.attach(MIMEText(text_body, "plain", "utf-8"))
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
+        # 1. Webhook delivery branch (Zapier, Make, n8n, Resend, or custom email webhook gateway)
+        if self.webhook_url:
+            alert_data = alert.to_dict() if hasattr(alert, "to_dict") else (alert.__dict__ if hasattr(alert, "__dict__") else {})
+            payload = {
+                "event_id": alert.event_id,
+                "timestamp": alert.timestamp,
+                "severity": alert.severity,
+                "risk_score": alert.risk_score,
+                "event_type": alert.event_type,
+                "source_ip": alert.source_ip,
+                "host": alert.host,
+                "service": alert.service,
+                "subject": subject,
+                "recipients": recipients,
+                "to": ", ".join(recipients) if recipients else self.to_email,
+                "from": self.from_email,
+                "text": text_body,
+                "html": html_body,
+                "alert": alert_data,
+            }
+            try:
+                data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(
+                    self.webhook_url,
+                    data=data,
+                    headers={"Content-Type": "application/json", "User-Agent": "VALENS-EmailAlerter/1.0"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    status = resp.getcode()
+                    if status in (200, 201, 202, 204):
+                        logger.info("[email-webhook] Webhook alert sent successfully for event %s to %s", alert.event_id, self.webhook_url)
+                        self.last_error = None
+                        delivered = True
+                    else:
+                        logger.warning("[email-webhook] Unexpected status %d sending alert for %s", status, alert.event_id)
+            except Exception as exc:
+                self.last_error = f"Email webhook delivery error: {exc}"
+                logger.error("[email-webhook] Failed to deliver alert for %s: %s", alert.event_id, exc)
 
-        try:
-            with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
-                server.ehlo()
-                if self.use_tls:
-                    server.starttls()
+        # 2. SMTP delivery branch
+        if self.host:
+            if not recipients:
+                if not delivered:
+                    self.last_error = "No active email recipients configured"
+                    logger.warning("[email] %s; skipping alert %s", self.last_error, alert.event_id)
+                return delivered
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = self.from_email
+            msg["To"] = ", ".join(recipients)
+            msg.attach(MIMEText(text_body, "plain", "utf-8"))
+            msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+            try:
+                with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
                     server.ehlo()
-                if self.user and self.password:
-                    server.login(self.user, self.password)
-                server.sendmail(self.from_email, recipients, msg.as_string())
-            self.last_error = None
-            logger.info("[email] Alert sent successfully for event %s to %s", alert.event_id, ", ".join(recipients))
-            return True
-        except Exception as exc:
-            self.last_error = f"SMTP dispatch error: {exc}"
-            logger.error("[email] Failed to send alert email for %s: %s", alert.event_id, exc)
-            return False
+                    if self.use_tls:
+                        server.starttls()
+                        server.ehlo()
+                    if self.user and self.password:
+                        server.login(self.user, self.password)
+                    server.sendmail(self.from_email, recipients, msg.as_string())
+                self.last_error = None
+                logger.info("[email] Alert sent successfully via SMTP for event %s to %s", alert.event_id, ", ".join(recipients))
+                delivered = True
+            except Exception as exc:
+                self.last_error = f"SMTP dispatch error: {exc}"
+                logger.error("[email] Failed to send alert email for %s: %s", alert.event_id, exc)
+
+        return delivered
 
 
 class AlertManager:
@@ -868,8 +917,9 @@ class AlertManager:
                     "configured": self.email.is_configured,
                     "enabled": self.channel_enabled.get("email", True),
                     "active": email_active,
-                    "name": "Email (SMTP)",
-                    "host": self.email.host if self.email.is_configured else "",
+                    "name": "Email (Webhook)" if (self.email.webhook_url and not self.email.host) else "Email (SMTP)",
+                    "host": self.email.host or ("Webhook Relay" if self.email.webhook_url else ""),
+                    "webhook_configured": bool(self.email.webhook_url),
                     "to": self.email.to_email if self.email.is_configured else "",
                     "last_error": getattr(self.email, "last_error", None),
                     "recipients": self.email.get_recipients(),
