@@ -1,5 +1,5 @@
 """
-test_alerter.py - Unit and integration tests for CyberShield AI alerting layer.
+test_alerter.py - Unit and integration tests for VALENS.AI alerting layer.
 
 Tests:
 1. Slack payload generation
@@ -113,7 +113,7 @@ def test_slack_payload_generation():
     # Verify blocks content
     header_text = payload["blocks"][0]["text"]["text"]
     assert "CRITICAL" in header_text
-    assert "CyberShield AI" in header_text
+    assert "VALENS" in header_text
 
     # Verify section fields
     fields = payload["blocks"][1]["fields"]
@@ -134,7 +134,7 @@ def test_discord_payload_generation():
 
     assert "embeds" in payload
     embed = payload["embeds"][0]
-    assert "🚨 [CyberShield AI] CRITICAL Incident Detected" in embed["title"]
+    assert "🚨 [VALENS] CRITICAL Incident Detected" in embed["title"]
     assert embed["color"] == 0xDC2626  # Red for critical
 
     field_dict = {f["name"]: f["value"] for f in embed["fields"]}
@@ -155,7 +155,7 @@ def test_email_subject_and_body_generation():
     )
     subject, text_body, html_body = email.build_message(alert)
 
-    assert subject == "[CyberShield][HIGH] Security Incident Detected: MIMIKATZ_DETECTED"
+    assert subject == "[VALENS][HIGH] Security Incident Detected: MIMIKATZ_DETECTED"
     assert "MIMIKATZ_DETECTED" in text_body
     assert "85/100" in text_body
     assert "192.168.1.100" in text_body
@@ -163,7 +163,7 @@ def test_email_subject_and_body_generation():
     assert "Isolate prod-db-01 from the network" in text_body
 
     assert "<html>" in html_body
-    assert "CyberShield AI" in html_body
+    assert "VALENS" in html_body
     assert "HIGH" in html_body
     assert "192.168.1.100" in html_body
 
@@ -330,7 +330,7 @@ def test_canary_trigger_to_alert_flow(tmp_path):
         canary_event = {
             "event_id": "canary-trig-test-abc12345",
             "timestamp": "2026-09-10T22:00:00Z",
-            "host": "cybershield-api",
+            "host": "valens-api",
             "source": "canary_service",
             "event_type": "CANARY_TOKEN_TRIGGERED",
             "severity": "critical",
@@ -339,7 +339,7 @@ def test_canary_trigger_to_alert_flow(tmp_path):
                 "user": None,
             },
             "target": {
-                "host": "cybershield-api",
+                "host": "valens-api",
                 "service": "canary",
                 "port": 80,
             },

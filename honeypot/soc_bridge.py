@@ -1,4 +1,4 @@
-"""Normalize honeypot activity into the existing CyberShield AI SOC analysis layer."""
+"""Normalize honeypot activity into the existing VALENS SOC analysis layer."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class SocBridge:
                         severity=level,
                         risk_score=score,
                         source_ip=str(session.get("source_ip", "unknown")),
-                        host=str(session.get("persona", "cybershield-decoy")),
+                        host=str(session.get("persona", "valens-decoy")),
                         service=str(session.get("service", "honeypot")),
                         event_type=event_type,
                         intent=intent.label,
@@ -118,8 +118,8 @@ class SocBridge:
             {
                 "event_id": telemetry.event_id,
                 "timestamp": telemetry.timestamp,
-                "host": session.get("persona", "cybershield-decoy"),
-                "source": "cybershield_honeypot",
+                "host": session.get("persona", "valens-decoy"),
+                "source": "valens_honeypot",
                 "event_type": event_type,
                 "severity": telemetry.severity or intent.severity,
                 "actor": {
@@ -128,7 +128,7 @@ class SocBridge:
                     "user": username or session.get("username"),
                 },
                 "target": {
-                    "host": "cybershield-decoy",
+                    "host": "valens-decoy",
                     "service": session.get("service"),
                     "port": session.get("destination_port"),
                 },
@@ -198,7 +198,7 @@ class SocBridge:
                 severity=risk.level,
                 risk_score=risk.score,
                 source_ip=str(session.get("source_ip", "unknown")),
-                host=str(session.get("persona", "cybershield-decoy")),
+                host=str(session.get("persona", "valens-decoy")),
                 service=str(session.get("service", "honeypot")),
                 event_type=event_type,
                 intent=intent.label,

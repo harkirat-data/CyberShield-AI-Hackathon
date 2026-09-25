@@ -1,4 +1,4 @@
-"""CyberShield AI sub-agents."""
+"""VALENS sub-agents."""
 from .threat_intel import check as threat_intel_check
 from .correlation import correlate, add_event as add_correlation_event
 from .mitre_mapper import map_event as map_mitre, merge_with_rag as merge_mitre_with_rag

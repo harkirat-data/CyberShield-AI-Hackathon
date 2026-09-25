@@ -700,7 +700,7 @@
           <span class="badge badge-danger">High-Interaction Honeytokens</span>
         </div>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
-          These documents and credentials are planted lures. Any adversary who attempts to exfiltrate or touch these items will trigger immediate triangulation by the CyberShield Autonomous SOC.
+          These documents and credentials are planted lures. Any adversary who attempts to exfiltrate or touch these items will trigger immediate triangulation by the VALENS Autonomous SOC.
         </p>
         <div class="table-wrap">
           <table>
@@ -745,7 +745,7 @@
   <footer class="packet-hud" id="packet-hud">
     <div class="hud-bar" onclick="toggleHud()">
       <div class="hud-title">
-        <span>&#x1F4E6; CYBERSHIELD PACKET &amp; THREAT TELEMETRY INSPECTOR</span>
+        <span>&#x1F4E6; VALENS PACKET &amp; THREAT TELEMETRY INSPECTOR</span>
         <span style="font-size:10px;background:#1e293b;color:#94a3b8;padding:2px 8px;border-radius:4px">LIVE WIRE CAPTURE</span>
       </div>
       <div class="hud-stats">
@@ -897,7 +897,7 @@
       if (el) el.textContent = currentPps.toFixed(1) + ' pps';
     }, 400);
 
-    // Telemetry forwarder to CyberShield SOC Dashboard (Port 8050)
+    // Telemetry forwarder to VALENS SOC Dashboard (Port 8050)
     async function emitSocTelemetry(action, payload) {
       const socEndpoint = "http://" + (window.location.hostname || "127.0.0.1") + ":8050/api/v1/honeypot/telemetry/ingest";
       try {
@@ -1074,7 +1074,7 @@
       handleSqlSubmit(new Event('submit'));
     });
   </script>
-  <!-- Injected CyberShield Sentinel Extension Side Tab -->
+  <!-- Injected VALENS Sentinel Extension Side Tab -->
   <script src="/api/v1/sentinel/agent.js" data-site-id="apex-finance" data-site-name="Apex Global Financial Portal"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# CyberShield AI: Autonomous Cyber-Deception Grid & AI SOC Platform
+# VALENS.AI: Security Operations. Deception. Intelligence
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
@@ -7,15 +7,15 @@
 [![Leaflet.js](https://img.shields.io/badge/Leaflet-1.9.4-199900.svg)](https://leafletjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-CyberShield AI is an autonomous cyber-deception and threat intelligence platform. It integrates a multi-service decoy honeypot grid with an on-premise Retrieval-Augmented Generation (RAG) SOC investigation engine. 
+VALENS.AI is an autonomous cyber-deception and threat intelligence platform. It integrates a multi-service decoy honeypot grid with an on-premise Retrieval-Augmented Generation (RAG) SOC investigation engine. 
 
-Instead of passive network logging or ungrounded blocking, CyberShield AI actively entangles adversaries in high-fidelity decoy services, captures raw session telemetry with cryptographic integrity, correlates actions against MITRE ATT&CK techniques in real time, and provides an interactive operator command console with automated incident alerting.
+Instead of passive network logging or ungrounded blocking, VALENS.AI actively entangles adversaries in high-fidelity decoy services, captures raw session telemetry with cryptographic integrity, correlates actions against MITRE ATT&CK techniques in real time, and provides an interactive operator command console with automated incident alerting.
 
 ---
 
 ## System Architecture
 
-CyberShield AI enforces a closed-loop intelligence cycle: **Deceive &rarr; Capture &rarr; Correlate &rarr; Investigate &rarr; Neutralize**.
+VALENS.AI enforces a closed-loop intelligence cycle: **Deceive &rarr; Capture &rarr; Correlate &rarr; Investigate &rarr; Neutralize**.
 
 ```mermaid
 flowchart TD
@@ -50,7 +50,7 @@ flowchart TD
     end
 
     subgraph CommandCenter ["SOC Operations & Response Layer"]
-        DASH["CyberShield SOC Dashboard<br/>(Real-Time WebSocket Stream)"]
+        DASH["VALENS SOC Dashboard<br/>(Real-Time WebSocket Stream)"]
         INJECT["Operator Terminal Injection<br/>(Live Session Trolling & Interception)"]
         ALERT["Multi-Channel Alert Dispatcher<br/>(SMTP Relay, Discord, Slack)"]
     end
@@ -95,7 +95,7 @@ flowchart LR
     end
 
     subgraph HostSystem ["Protected Host OS"]
-        App["CyberShield AI Backend"]
+        App["VALENS.AI Backend"]
         VectorDB[("ChromaDB Vector Store")]
         HostFirewall["Windows Defender / Linux iptables"]
     end
@@ -216,7 +216,7 @@ flowchart LR
 ## Repository Structure
 
 ```text
-CyberShield_AI/
+valens-ai/
 ├── Ai/
 │   ├── agents/            # Detection, MITRE mapping, and alerting agents
 │   ├── backend/           # FastAPI REST endpoints and WebSocket handlers

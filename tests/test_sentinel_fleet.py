@@ -29,7 +29,7 @@ def test_sentinel_agent_js_route(client):
     response = client.get("/api/v1/sentinel/agent.js")
     assert response.status_code == 200
     assert "application/javascript" in response.headers.get("content-type", "")
-    assert "CyberShield" in response.text
+    assert "VALENS" in response.text
     assert "cs-sentinel-badge" in response.text
 
 

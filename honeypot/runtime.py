@@ -1,4 +1,4 @@
-"""Async network runtime for the five CyberShield AI decoy services."""
+"""Async network runtime for the five VALENS decoy services."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ class HoneypotRuntime:
         import urllib.request
         for endpoint in ("https://api.ipify.org?format=json", "http://ip-api.com/json/?fields=query"):
             try:
-                req = urllib.request.Request(endpoint, headers={"User-Agent": "CyberShield-Real/1.0"})
+                req = urllib.request.Request(endpoint, headers={"User-Agent": "VALENS-Real/1.0"})
                 with urllib.request.urlopen(req, timeout=3.0) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     val = data.get("ip") or data.get("query")
@@ -278,7 +278,7 @@ class HoneypotRuntime:
                 "SOURCE_BLOCKED",
                 "high",
                 "system",
-                "Connection rejected by CyberShield AI runtime blocklist",
+                "Connection rejected by VALENS runtime blocklist",
                 metadata={"source_ip": source_ip},
                 analyze=True,
             )
@@ -713,8 +713,8 @@ class HoneypotRuntime:
                 "routing": "FEDWIRE-021000021-INTERCEPT",
                 "amount": trx_amount,
                 "beneficiary": beneficiary,
-                "audit_status": "FLAGGED_BY_CYBERSHIELD_AI",
-                "message": "Transaction intercepted by CyberShield Sentinel Grid. Ingress coordinates logged.",
+                "audit_status": "FLAGGED_BY_VALENS",
+                "message": "Transaction intercepted by VALENS Sentinel Grid. Ingress coordinates logged.",
             }
             payload = json.dumps(trx_response).encode("utf-8")
             status = "200 OK"
@@ -1088,8 +1088,8 @@ class HoneypotRuntime:
 
     @staticmethod
     def _ensure_certificate(directory: Path) -> Tuple[Path, Path]:
-        cert_path = directory / "cybershield-decoy-cert.pem"
-        key_path = directory / "cybershield-decoy-key.pem"
+        cert_path = directory / "valens-decoy-cert.pem"
+        key_path = directory / "valens-decoy-key.pem"
         if cert_path.exists() and key_path.exists():
             return cert_path, key_path
         directory.mkdir(parents=True, exist_ok=True)

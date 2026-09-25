@@ -19,7 +19,7 @@ except ImportError:
 OUTPUT_DIR = Path(r"C:\soc-logs")
 ALERT_LOG = OUTPUT_DIR / "win.log" / "windows_alerts.jsonl"
 EVENT_LOG = OUTPUT_DIR / "win.log" / "windows_events.jsonl"
-API_URL = os.environ.get("CYBERSHIELD_API_URL", "http://127.0.0.1:8000/api/v1/logs")
+API_URL = os.environ.get("VALENS_API_URL", os.environ.get("CYBERSHIELD_API_URL", "http://127.0.0.1:8000/api/v1/logs"))
 HOSTNAME = socket.gethostname()
 
 IP_PATTERN = r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"

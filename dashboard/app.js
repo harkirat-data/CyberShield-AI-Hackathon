@@ -618,13 +618,13 @@ function explainSessionInPlainEnglish(sess, events = []) {
         : `They scanned for API documentation blueprints (/swagger.json) and tested unauthorized administrative endpoints. `) +
       `In total, the adversary issued ${actions} hostile request${actions !== 1 ? "s" : ""}.`;
 
-    defenderStory = `CyberShield AI immediately entrapped the attacker inside an isolated decoy sandbox mimicking an Nginx operations gateway. Adaptive Gemini AI generated convincing fake responses with realistic micro-delays, keeping the attacker engaged while completely isolating your real servers and cloud infrastructure.`;
+    defenderStory = `VALENS immediately entrapped the attacker inside an isolated decoy sandbox mimicking an Nginx operations gateway. Adaptive Gemini AI generated convincing fake responses with realistic micro-delays, keeping the attacker engaged while completely isolating your real servers and cloud infrastructure.`;
 
   } else if (port === 2323 || proto.includes("TELNET")) {
     title = "Telnet Remote Shell Brute Force & Exploitation";
     attackerStory = `An automated adversary from ${src} connected to your legacy Telnet console (Port 2323). They tried brute-forcing passwords using common combinations like ${user}. After receiving a shell, they attempted system discovery commands${commands.length ? " (" + commands.slice(0, 3).map(c => `'${c}'`).join(", ") + ")" : ""} to find files and download external payloads.`;
 
-    defenderStory = `CyberShield AI lured the attacker into a high-interaction, sandboxed Linux terminal ("legacy backup appliance"). Gemini generative responses simulated real Ubuntu bash output with natural latency, keeping the attacker busy while containing them with zero egress capability.`;
+    defenderStory = `VALENS lured the attacker into a high-interaction, sandboxed Linux terminal ("legacy backup appliance"). Gemini generative responses simulated real Ubuntu bash output with natural latency, keeping the attacker busy while containing them with zero egress capability.`;
 
   } else if (port === 8088 || proto.includes("HTTP")) {
     title = isSQLi ? "Web Application SQL Injection Probe" : isLFI ? "Directory Traversal / File Theft Attempt" : "Web Portal Reconnaissance & Exploitation";
@@ -632,13 +632,13 @@ function explainSessionInPlainEnglish(sess, events = []) {
       (isSQLi ? "SQL database injection (`' OR 1=1`) to bypass logins" : isLFI ? "path traversal (`/../../etc/passwd`) to steal system files" : "sensitive admin panels and code execution endpoints") +
       `, generating ${actions} web requests.`;
 
-    defenderStory = `CyberShield AI intercepted every request at the perimeter. Instead of letting requests reach actual business services, CyberShield AI served deceptive synthetic web responses, logged every header and payload, and flagged the attacker's IP for immediate quarantine.`;
+    defenderStory = `VALENS intercepted every request at the perimeter. Instead of letting requests reach actual business services, VALENS served deceptive synthetic web responses, logged every header and payload, and flagged the attacker's IP for immediate quarantine.`;
 
   } else if (port === 2222 || proto.includes("SSH")) {
     title = "SSH Mass Scanner & Credential Probe";
     attackerStory = `A remote host from ${src} scanned port 2222 looking for an open SSH administration gateway. They sent client identification handshakes and reconnaissance probes to identify the OpenSSH version and check for known remote vulnerabilities.`;
 
-    defenderStory = `The CyberShield AI SSH lure answered with a convincing OpenSSH 8.9 banner, recorded the attacker's scanner fingerprint, and isolated the socket before any unauthorized access could occur.`;
+    defenderStory = `The VALENS SSH lure answered with a convincing OpenSSH 8.9 banner, recorded the attacker's scanner fingerprint, and isolated the socket before any unauthorized access could occur.`;
 
   } else if (port === 33060 || proto.includes("MYSQL")) {
     title = "Database Handshake & Auth Bypass Probe";
@@ -649,7 +649,7 @@ function explainSessionInPlainEnglish(sess, events = []) {
   } else {
     title = `${proto} Decoy Engagement`;
     attackerStory = `An external connection from ${src} engaged your decoy service on port ${port}. They triggered ${actions} interactions, attempting ${sess.intent || "system discovery and unauthorized access"}.`;
-    defenderStory = `CyberShield AI intercepted the session in an isolated lure environment, preventing exposure to your production assets while recording complete forensic telemetry.`;
+    defenderStory = `VALENS intercepted the session in an isolated lure environment, preventing exposure to your production assets while recording complete forensic telemetry.`;
   }
 
   return { title, attackerStory, defenderStory };
@@ -661,7 +661,7 @@ function renderSessionTimelineSimple(events = []) {
       <span class="timeline-step-badge system">SYSTEM</span>
       <div class="timeline-step-content">
         <div class="timeline-step-title">Session initialized</div>
-        <div class="timeline-step-detail">Connection captured and monitored by CyberShield AI.</div>
+        <div class="timeline-step-detail">Connection captured and monitored by VALENS.</div>
       </div>
     </div>`;
   }
@@ -713,7 +713,7 @@ function renderSessionTimelineSimple(events = []) {
       title = "Port scanning detected across multiple decoys";
       detail = `Adversary scanned ports: ${(meta.ports || []).join(", ")}`;
     } else if (type === "SOURCE_BLOCKED") {
-      title = "Attacker address blocked by CyberShield AI runtime firewall";
+      title = "Attacker address blocked by VALENS runtime firewall";
       detail = "Connection terminated and dropped at perimeter";
     } else {
       title = `${type.replace(/_/g, " ")}: ${content.slice(0, 70)}`;
@@ -904,7 +904,7 @@ async function handleUserChatMessage(query) {
   // Append thinking bubble
   const aiDiv = document.createElement("div");
   aiDiv.className = "chat-msg ai";
-  aiDiv.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic">Thinking... Analyzing with CyberShield AI</div>`;
+  aiDiv.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic">Thinking... Analyzing with VALENS</div>`;
   messagesContainer.appendChild(aiDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -1030,7 +1030,7 @@ async function getAiAssistantResponse(query) {
 
   return isHindi
     ? "क्षमा करें, तंत्रिका बैकएंड से संपर्क करने में समस्या आ रही है। कृपया सुनिश्चित करें कि सर्वर चालू है।"
-    : "I'm having trouble communicating with the CyberShield AI neural backend right now. Please ensure the backend server is active and try again.";
+    : "I'm having trouble communicating with the VALENS neural backend right now. Please ensure the backend server is active and try again.";
 }
 
 function formatMarkdownBasic(txt) {
@@ -1090,7 +1090,7 @@ function generateExecutiveBriefHtml(sess, events = []) {
     <div style="border-bottom: 2px solid #2d6a4f; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start;">
       <div>
         <h2 style="margin:0;font-size:20px;font-family:var(--font-head);color:#2d6a4f;font-weight:800">
-          CYBERSHIELD AI &mdash; EXECUTIVE INCIDENT REPORT
+          VALENS &mdash; EXECUTIVE INCIDENT REPORT
         </h2>
         <p style="margin:4px 0 0 0;font-size:12px;color:var(--text-muted)">
           Formal Security Advisory for Executive Leadership &middot; Reference: <strong>${esc(id)}</strong>
@@ -1128,7 +1128,7 @@ function generateExecutiveBriefHtml(sess, events = []) {
 
     <div class="exec-callout-safe">
       <strong>🛡️ CERTIFIED BUSINESS IMPACT: ZERO PRODUCTION RISK</strong><br>
-      The adversary engaged an isolated, air-gapped CyberShield AI synthetic decoy environment. At no point was any production database, corporate network, or customer record accessible to the intruder.
+      The adversary engaged an isolated, air-gapped VALENS synthetic decoy environment. At no point was any production database, corporate network, or customer record accessible to the intruder.
     </div>
 
     <div class="exec-brief-section">
@@ -1169,7 +1169,7 @@ function generateExecutiveBriefHtml(sess, events = []) {
     </div>
 
     <div style="margin-top:24px;padding-top:12px;border-top:1px solid #eef3e7;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted)">
-      <span>Generated by CyberShield AI Autonomous Incident Copilot</span>
+      <span>Generated by VALENS Autonomous Incident Copilot</span>
       <span>Legal Chain of Custody &bull; SHA-256 Anchored</span>
     </div>
   `;
@@ -1229,7 +1229,7 @@ function populateModalCodeFix(sess, events = []) {
     wafCode = `# Nginx WAF Block Rule against SQLi payload\nlocation /api/v1/resource {\n  if ($query_string ~* "(select|union|concat|information_schema|insert|drop|sleep)") {\n    return 403;\n  }\n}`;
   } else if (proto.includes("SSH") || port === 2222 || intent.includes("brute") || intent.includes("credential")) {
     safeCode = `# SAFE: Adaptive Rate Limiting & Account Lockout (CWE-307)\nfrom app.middleware.rate_limiter import apply_rate_limit\n\n# Enforce 5 attempts per 60s window before temporary lockout\nif not apply_rate_limit(request.client.host, max_attempts=5, window_sec=60):\n    raise HTTPException(status_code=429, detail="Too Many Authentication Attempts")`;
-    wafCode = `# Perimeter Firewall & Fail2Ban Drop Rule\nsudo iptables -A INPUT -s ${src} -p tcp --dport 2222 -j DROP\nsudo ufw deny from ${src} to any port 2222 proto tcp comment "CyberShield AI Auto-Quarantine"`;
+    wafCode = `# Perimeter Firewall & Fail2Ban Drop Rule\nsudo iptables -A INPUT -s ${src} -p tcp --dport 2222 -j DROP\nsudo ufw deny from ${src} to any port 2222 proto tcp comment "VALENS Auto-Quarantine"`;
   } else if (proto.includes("TELNET") || port === 2323) {
     safeCode = `# SAFE: Enforce Encrypted SSHv2 Channel & Disable Plaintext Telnet (CWE-319)\nimport ssl\ncontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)\ncontext.load_cert_chain(certfile="/etc/ssl/certs/server.crt", keyfile="/etc/ssl/private/server.key")`;
     wafCode = `# Perimeter Ingress Drop Rule for Telnet\nsudo iptables -A INPUT -s ${src} -p tcp --dport 2323 -j DROP\nsudo ufw deny 2323/tcp comment "Block Plaintext Ingress"`;
@@ -1308,8 +1308,8 @@ function openSessionModal(sess, events = []) {
   if ($("modal-fact-actions")) $("modal-fact-actions").textContent = actions;
   if ($("modal-fact-duration")) $("modal-fact-duration").textContent = dwell;
   if ($("modal-fact-ai")) {
-    const aiProvider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini 3.6 Flash" : "CyberShield AI Sandbox");
-    $("modal-fact-ai").textContent = aiProvider.toLowerCase().includes("gemini") ? "Gemini AI Lure" : "CyberShield AI Sandbox";
+    const aiProvider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini 3.6 Flash" : "VALENS Sandbox");
+    $("modal-fact-ai").textContent = aiProvider.toLowerCase().includes("gemini") ? "Gemini AI Lure" : "VALENS Sandbox";
   }
   if ($("modal-fact-threat")) {
     $("modal-fact-threat").textContent = risk >= 80 ? "Critical" : risk >= 60 ? "High" : "Elevated";
@@ -1384,7 +1384,7 @@ function renderTerminal() {
 
   const termMeta = $("term-meta");
   if (termMeta) {
-    const provider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini Deception Active" : "CyberShield AI Sandbox Active");
+    const provider = sess.gemini_provider || (sess.analyst_report?.llm?.enabled ? "Gemini Deception Active" : "VALENS Sandbox Active");
     termMeta.innerHTML = `
       <div class="gemini-latency-pill">
         <span class="material-symbols-outlined" style="font-size:14px">neurology</span>
@@ -1467,7 +1467,7 @@ function renderTerminalBody() {
   const protoName = sess.service || protoFromPort(state.selectedSession?.destination_port);
   let html = `<div class="term-line" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px">
     <span class="term-ts"></span>
-    <span class="term-note">[CYBERSHIELD KERNEL HOOK] Ingress socket established &lt;=&gt; Honeypot Node (${esc(protoName)})</span>
+    <span class="term-note">[VALENS KERNEL HOOK] Ingress socket established &lt;=&gt; Honeypot Node (${esc(protoName)})</span>
     <span class="term-ts">${timeStr(state.selectedSession?.started_at)}</span>
   </div>`;
 
@@ -1482,7 +1482,7 @@ function renderTerminalBody() {
       const resp = e.content || e.response_preview || e.data || e.banner || "";
       if (resp) html += `<div class="term-line">${ts}<span class="term-out">&gt;&gt; ${esc(resp.substring(0, 300))}</span></div>`;
     } else if (dir === "system" || dir === "annotation") {
-      html += `<div class="term-line">${ts}<span class="term-sys">&gt;&gt; [CYBERSHIELD AI]: ${esc(content)}</span></div>`;
+      html += `<div class="term-line">${ts}<span class="term-sys">&gt;&gt; [VALENS]: ${esc(content)}</span></div>`;
     } else if (dir === "operator" || e.event_type === "operator_injection") {
       html += `<div class="term-line operator-line">${ts}<span class="term-op">&gt;&gt; [OPERATOR INJECTION]: ${esc(content)}</span></div>`;
     } else {
@@ -1613,7 +1613,7 @@ function renderCopilot(sess) {
   }
   if (actions.length === 0) {
     actions.push(
-      { step: "Isolate attacker session in high-interaction sandbox", done: sess.contained ?? true, sub: "Auto-executed by CyberShield AI", type: "green" },
+      { step: "Isolate attacker session in high-interaction sandbox", done: sess.contained ?? true, sub: "Auto-executed by VALENS", type: "green" },
       { step: "Quarantine ingress network segment", done: false, sub: "Isolate perimeter router interface", type: "muted" },
       { step: `Push block rule for ${sess.source_ip || sess.source_address || "threat IP"}`, done: false, sub: "Perimeter firewall rule (TTL 48h)", type: "danger" }
     );
@@ -1805,7 +1805,7 @@ function initLeafletMap() {
 
     // Defense SOC hub marker in center
     const socIcon = L.divIcon({
-      html: `<div style="background:#22c55e;color:#fff;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 0 10px rgba(34,197,94,0.6);white-space:nowrap">🛡️ CYBERSHIELD GRID</div>`,
+      html: `<div style="background:#22c55e;color:#fff;font-family:var(--font-mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1.5px solid #fff;box-shadow:0 0 10px rgba(34,197,94,0.6);white-space:nowrap">🛡️ VALENS GRID</div>`,
       className: "leaflet-custom-marker-wrap",
       iconSize: [110, 20],
       iconAnchor: [55, 10]
@@ -2004,7 +2004,7 @@ async function loadAttackerGeoIntel(cachedAttackers) {
         tbody.querySelectorAll(".btn-block-quick").forEach(el => {
           el.addEventListener("click", async () => {
             const ip = el.dataset.ip;
-            if (!confirm(`Block ${ip} immediately at the CyberShield perimeter firewall?`)) return;
+            if (!confirm(`Block ${ip} immediately at the VALENS perimeter firewall?`)) return;
             try {
               await api("/api/v1/honeypot/block-source", {
                 method: "POST",
@@ -2105,7 +2105,7 @@ async function trackIpAddress(ip, showToast = true, scroll = true, panMap = true
     const blockBtn = $("dossier-btn-block");
     if (blockBtn) {
       blockBtn.onclick = async () => {
-        if (!confirm(`Block ${cleanIp} immediately across CyberShield AI listeners?`)) return;
+        if (!confirm(`Block ${cleanIp} immediately across VALENS listeners?`)) return;
         try {
           await api("/api/v1/honeypot/block-source", {
             method: "POST",
@@ -2480,7 +2480,7 @@ async function createCanaryToken(e) {
   try {
     const result = await api("/api/v1/canary/tokens", {
       method: "POST",
-      body: JSON.stringify({ name, token_type, metadata: { deployed_by: "CyberShield AI Console" } }),
+      body: JSON.stringify({ name, token_type, metadata: { deployed_by: "VALENS Console" } }),
     });
     toast(`✅ Canary tripwire deployed: "${name}" (${token_type})`);
     nameInput.value = "";
@@ -3268,7 +3268,7 @@ function setupButtons() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `cybershield-session-${state.selectedSessionId}.json`;
+      a.download = `valens-session-${state.selectedSessionId}.json`;
       a.click();
       toast("Session exported.");
     } catch (e) {
@@ -3283,7 +3283,7 @@ function setupButtons() {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `cybershield-telemetry-${Date.now()}.json`;
+      a.download = `valens-telemetry-${Date.now()}.json`;
       a.click();
       toast("Telemetry exported.");
     } catch (e) {
@@ -3543,7 +3543,7 @@ function setupButtons() {
         }
         if (sub) {
           sub.className = "ir-item-sub green";
-          sub.innerHTML = `✓ Enforced by CyberShield AI SOC`;
+          sub.innerHTML = `✓ Enforced by VALENS SOC`;
         }
       }
     });
@@ -3998,7 +3998,7 @@ async function simulateWAFAttack() {
       body: JSON.stringify({ vector }),
     });
     if (res.blocked) {
-      toast(`🛡️ CyberShield WAF intercepted ${res.vector.toUpperCase()} attack! Risk score: ${res.risk_score}`);
+      toast(`🛡️ VALENS WAF intercepted ${res.vector.toUpperCase()} attack! Risk score: ${res.risk_score}`);
     } else {
       toast(`⚠️ Simulated ${res.vector.toUpperCase()} attack against Medicare.AI`);
     }
@@ -4065,10 +4065,10 @@ async function exportWAFRules() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = res.filename || "cybershield_waf_rules.conf";
+      a.download = res.filename || "valens_waf_rules.conf";
       a.click();
       URL.revokeObjectURL(url);
-      toast("📥 CyberShield WAF production ruleset downloaded!");
+      toast("📥 VALENS WAF production ruleset downloaded!");
     }
   } catch (err) {
     toast("Failed to export WAF rules: " + err.message, true);

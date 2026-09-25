@@ -1,4 +1,4 @@
-"""Configuration for the CyberShield AI deception grid."""
+"""Configuration for the VALENS deception grid."""
 
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ class HoneypotSettings:
     """
 
     bind_host: str = "127.0.0.1"
-    database_path: Path = Path("logs/cybershield_honeypot.db")
+    database_path: Path = Path("logs/valens_honeypot.db")
     certificate_dir: Path = Path("logs/certs")
     enable_gemini: bool = True
     autostart: bool = False
@@ -144,7 +144,7 @@ class HoneypotSettings:
         return cls(
             bind_host=os.environ.get("HONEYPOT_BIND_HOST", "127.0.0.1"),
             database_path=Path(
-                os.environ.get("HONEYPOT_DB_PATH") or "logs/cybershield_honeypot.db"
+                os.environ.get("HONEYPOT_DB_PATH") or "logs/valens_honeypot.db"
             ),
             certificate_dir=Path(
                 os.environ.get("HONEYPOT_CERT_DIR", "logs/certs")

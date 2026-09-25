@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Medicare.AI — Clinical Intelligence &amp; Healthcare Operations Portal</title>
-  <meta name="description" content="Medicare.AI Clinical Portal protected by CyberShield AI Autonomous WAF and Deception Mesh.">
+  <meta name="description" content="Medicare.AI Clinical Portal protected by VALENS Autonomous WAF and Deception Mesh.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
@@ -353,7 +353,7 @@
 
     <div class="waf-shield-pill">
       <span class="waf-pulse"></span>
-      <span>CYBERSHIELD AI WAF: IN-LINE ACTIVE</span>
+      <span>VALENS WAF: IN-LINE ACTIVE</span>
     </div>
   </header>
 
@@ -373,7 +373,7 @@
       <div class="med-card">
         <div class="med-card-label">HIPAA Security Guard</div>
         <div class="med-card-val" style="color:#0284c7">ENFORCED</div>
-        <div class="med-card-note">CyberShield Deception Mesh v2.5</div>
+        <div class="med-card-note">VALENS Deception Mesh v2.5</div>
       </div>
       <div class="med-card">
         <div class="med-card-label">Threats Intercepted</div>
@@ -389,7 +389,7 @@
           <span class="material-symbols-outlined" style="color:var(--primary); font-size:18px;">person_search</span>
           <span>Patient Electronic Health Record (EHR) Lookup</span>
         </div>
-        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Protected by CyberShield In-Line Inspection</span>
+        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Protected by VALENS In-Line Inspection</span>
       </div>
 
       <div class="search-input-box">
@@ -491,7 +491,7 @@
         alertBox.className = 'med-alert danger';
         alertBox.innerHTML = `
           <span class="material-symbols-outlined" style="font-size:18px">shield</span>
-          <span><strong>403 FORBIDDEN (WAF BLOCK):</strong> Malicious exploit payload intercepted by CyberShield Sentinel. Query contained unauthorized syntax signature.</span>
+          <span><strong>403 FORBIDDEN (WAF BLOCK):</strong> Malicious exploit payload intercepted by VALENS Sentinel. Query contained unauthorized syntax signature.</span>
         `;
         // Trigger simulation in sentinel agent if loaded
         const simBtn = document.getElementById('cs-sim-attack-btn');
@@ -500,13 +500,13 @@
         alertBox.className = 'med-alert success';
         alertBox.innerHTML = `
           <span class="material-symbols-outlined" style="font-size:18px">check_circle</span>
-          <span>Records queried successfully. 1 patient record matching "<strong>${q}</strong>" found. Clean request passed through CyberShield WAF.</span>
+          <span>Records queried successfully. 1 patient record matching "<strong>${q}</strong>" found. Clean request passed through VALENS WAF.</span>
         `;
       }
     });
   </script>
 
-  <!-- Injected CyberShield Sentinel Extension Side Tab -->
+  <!-- Injected VALENS Sentinel Extension Side Tab -->
   <script src="/api/v1/sentinel/agent.js" data-site-id="medicare-ai" data-site-name="Medicare.AI Healthcare Platform"></script>
 </body>
 </html>

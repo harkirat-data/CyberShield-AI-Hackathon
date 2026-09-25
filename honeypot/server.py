@@ -1,5 +1,6 @@
 """
-CyberShield AI — Phase 1 Honeypot & SOC Dashboard Server.
+VALENS — Security Operations. Deception. Intelligence
+Phase 1 Honeypot & SOC Dashboard Server.
 
 Self-contained FastAPI server dedicated to Phase 1:
 - Manages multi-port decoy honeypot runtime (SSH 2222, Telnet 2323, HTTP 8088, HTTPS 8443, MySQL 3307)
@@ -84,17 +85,17 @@ async def lifespan(app: FastAPI):
             canary_mgr.create_token(
                 name="AWS Production Admin Key",
                 token_type="credential",
-                metadata={"location": "/home/backup/.aws/credentials", "deployed_by": "CyberShield AI Sentinel"},
+                metadata={"location": "/home/backup/.aws/credentials", "deployed_by": "VALENS Sentinel"},
             )
             canary_mgr.create_token(
                 name="Internal Engineering Wiki Tripwire",
                 token_type="url",
-                metadata={"location": "/srv/backups/configs/wiki.url", "deployed_by": "CyberShield AI Sentinel"},
+                metadata={"location": "/srv/backups/configs/wiki.url", "deployed_by": "VALENS Sentinel"},
             )
             canary_mgr.create_token(
                 name="Q4 Payroll & Executive Bonus Ledger",
                 token_type="document",
-                metadata={"location": "/srv/backups/finance_2025_12.sql.gz", "deployed_by": "CyberShield AI Sentinel"},
+                metadata={"location": "/srv/backups/finance_2025_12.sql.gz", "deployed_by": "VALENS Sentinel"},
             )
             print("[canary] Initialized 3 default tripwire tokens.")
         except Exception as exc:
@@ -107,7 +108,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CyberShield AI — Phase 1: Honeypot Sentinel Grid",
+    title="VALENS — Security Operations. Deception. Intelligence",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -191,7 +192,7 @@ def ingest_telemetry_beacon(req: TelemetryIngestPayload, request: Request) -> Di
     return {
         "ok": True,
         "signal": "TELEMETRY_DISPATCHED",
-        "destination": "CyberShield SOC Command Center (Port 8050)",
+        "destination": "VALENS SOC Command Center (Port 8050)",
         "target_decoy": f"HTTP Finance Portal (Port {req.target_port or 8088})",
         "threat_detected": "Credential Harvest / Unauthorized Probe",
         "status": "INGESTED_TO_DASHBOARD",
@@ -473,8 +474,8 @@ async def api_finance_transfer(request: Request) -> JSONResponse:
         "routing": "FEDWIRE-021000021-INTERCEPT",
         "amount": trx_amount,
         "beneficiary": beneficiary,
-        "audit_status": "FLAGGED_BY_CYBERSHIELD_AI",
-        "message": "Transaction intercepted by CyberShield Sentinel Grid. Ingress coordinates logged.",
+        "audit_status": "FLAGGED_BY_VALENS",
+        "message": "Transaction intercepted by VALENS Sentinel Grid. Ingress coordinates logged.",
     })
 
 
@@ -546,7 +547,7 @@ def serve_dashboard_static(file_path: str) -> FileResponse:
 def health() -> Dict[str, Any]:
     return {
         "status": "ok",
-        "service": "cybershield-honeypot-grid",
+        "service": "valens-honeypot-grid",
         "phase": "1 - Multi-Port Deception Grid",
         "honeypot": runtime.status(),
     }
@@ -705,7 +706,7 @@ async def inject_into_session(session_id: str, body: Dict[str, Any]) -> Dict[str
                     severity="critical",
                     risk_score=90,
                     source_ip=src_ip,
-                    host=str(sess.get("persona") or "cybershield-decoy"),
+                    host=str(sess.get("persona") or "valens-decoy"),
                     service=str(sess.get("service") or "HTTP"),
                     event_type="ATTACK_PROBE_DETECTED",
                     intent="Live Exploitation Attempt",
@@ -864,14 +865,14 @@ def chat_with_assistant(request: ChatQueryRequest) -> Dict[str, Any]:
             "model": res.get("model", "Gemini-LLM"),
             "type": res.get("type", "llm"),
             "sources": [
-                {"label": "CyberShield AI Cognitive Core", "source": "core/runtime", "score": 0.99}
+                {"label": "VALENS Cognitive Core", "source": "core/runtime", "score": 0.99}
             ]
         }
 
     return {
         "ok": True,
         "query": request.query,
-        "answer": f"CyberShield AI Copilot received: '{request.query}'. Grid is actively monitoring {len(recent_sessions)} decoy sessions.",
+        "answer": f"VALENS Copilot received: '{request.query}'. Grid is actively monitoring {len(recent_sessions)} decoy sessions.",
     }
 
 
@@ -919,7 +920,7 @@ def _process_canary_trigger(
                     destination_port=port or 8050,
                     service="canary",
                     protocol="http",
-                    persona="cybershield-tripwire",
+                    persona="valens-tripwire",
                     started_at=now_str,
                     status="active",
                     risk_score=95,
@@ -993,7 +994,7 @@ def _process_canary_trigger(
                 severity="critical",
                 risk_score=95,
                 source_ip=source_ip,
-                host="cybershield-canary",
+                host="valens-canary",
                 service="canary",
                 event_type="CANARY_TOKEN_TRIGGERED",
                 intent="Canary Tripwire Triggered",
@@ -1024,12 +1025,12 @@ def _process_canary_trigger(
             {
                 "event_id": event_id,
                 "timestamp": now_str,
-                "host": "cybershield-api",
+                "host": "valens-api",
                 "source": "canary_service",
                 "event_type": "CANARY_TOKEN_TRIGGERED",
                 "severity": "critical",
                 "actor": {"source_ip": source_ip, "user": None},
-                "target": {"host": "cybershield-api", "service": "canary", "port": port},
+                "target": {"host": "valens-api", "service": "canary", "port": port},
                 "details": {
                     "token_id": token_id,
                     "token_name": token_name,
@@ -1160,7 +1161,7 @@ def fast_canary_tripwire_url(secret: str, request: Request) -> HTMLResponse:
 <html>
 <head>
   <meta charset="utf-8">
-  <title>CyberShield AI — Tripwire Detected</title>
+  <title>VALENS — Tripwire Detected</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0c120c; color: #d0ddbe; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
     .card { background: #131c13; border: 1px solid #233423; border-radius: 12px; padding: 40px; text-align: center; max-width: 480px; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
@@ -1172,7 +1173,7 @@ def fast_canary_tripwire_url(secret: str, request: Request) -> HTMLResponse:
 <body>
   <div class="card">
     <span class="badge">Decoy Asset Online</span>
-    <h2>CyberShield AI Honeytoken Verified</h2>
+    <h2>VALENS Honeytoken Verified</h2>
     <p>This canary URL tripwire is actively monitored by the Autonomous SOC Grid. Trigger coordinates and source telemetry have been captured and verified.</p>
   </div>
 </body>
@@ -1257,13 +1258,13 @@ def test_alert_dispatch(payload: Optional[Dict[str, Any]] = None) -> Dict[str, A
         severity="critical",
         risk_score=95,
         source_ip="127.0.0.1",
-        host="cybershield-soc",
+        host="valens-soc",
         service="alerts-test",
         event_type="TEST_SECURITY_INCIDENT",
         intent="Operator Diagnostics",
         mitre_techniques=["T1003", "T1078"],
         mitre_tactics=["Execution", "Initial Access"],
-        ai_summary="Diagnostic test alert initiated from CyberShield AI Operator Dashboard.",
+        ai_summary="Diagnostic test alert initiated from VALENS Operator Dashboard.",
         recommended_remediation=[
             "Confirm receipt in configured channels (Slack, Discord, Email)",
             "Verify alert notification delivery and formatting",
@@ -1502,7 +1503,7 @@ async def simulate_protected_app_attack(req: Optional[SimulateWAFRequest] = None
 
 @app.get("/api/v1/protected/config")
 async def get_protected_app_config() -> Dict[str, Any]:
-    """Returns active CyberShield WAF security configuration and rate limits."""
+    """Returns active VALENS WAF security configuration and rate limits."""
     return waf_proxy.get_config()
 
 
@@ -1515,7 +1516,7 @@ class WAFConfigUpdateRequest(BaseModel):
 
 @app.post("/api/v1/protected/config")
 async def update_protected_app_config(req: WAFConfigUpdateRequest) -> Dict[str, Any]:
-    """Updates active CyberShield WAF security rules dynamically."""
+    """Updates active VALENS WAF security rules dynamically."""
     new_cfg = req.model_dump(exclude_none=True) if hasattr(req, "model_dump") else req.dict(exclude_none=True)
     return waf_proxy.update_config(new_cfg)
 
@@ -1557,7 +1558,7 @@ async def run_protected_app_health_audit() -> Dict[str, Any]:
 # ============================================================
 # MEDICARE.AI WAF REVERSE PROXY — CATCH-ALL
 # ============================================================
-# All HTTP methods on /proxy/{path} are inspected by CyberShield
+# All HTTP methods on /proxy/{path} are inspected by VALENS
 # and forwarded clean to Medicare.AI (http://127.0.0.1:5000 by default).
 #
 # Example:  GET  http://localhost:8050/proxy/api/hospitals?lat=22&lon=88
@@ -1568,9 +1569,9 @@ async def run_protected_app_health_audit() -> Dict[str, Any]:
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     include_in_schema=True,
     name="medicare_waf_proxy",
-    summary="CyberShield WAF → Medicare.AI reverse proxy",
+    summary="VALENS WAF → Medicare.AI reverse proxy",
     description=(
-        "Inspects incoming requests through the CyberShield threat-detection pipeline "
+        "Inspects incoming requests through the VALENS threat-detection pipeline "
         "(IntentClassifier + TelemetryStore + runtime blocklist), then forwards clean "
         "requests to Medicare.AI. Blocked requests receive a 403 WAF response."
     ),

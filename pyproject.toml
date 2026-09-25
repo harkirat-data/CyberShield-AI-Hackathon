@@ -1,7 +1,7 @@
 [project]
-name = "cybershield-ai"
+name = "valens-ai"
 version = "0.1.0"
-description = "CyberShield AI — SOC log collection, risk scoring, and alerting system"
+description = "VALENS.AI — Security Operations. Deception. Intelligence"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
