@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VALENS — Prototype Deception Grid</title>
+  <title>VALENS — Security Operations. Deception. Intelligence</title>
   <meta name="description" content="VALENS — Security Operations. Deception. Intelligence. Real-time deception grid, autonomous SOC investigation, and MITRE ATT&CK mapping.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,7 @@
       </a>
       <a href="#decoy-grid" class="nav-item" data-section="decoy-grid">
         <span class="material-symbols-outlined nav-icon">sensors</span>
-        <span class="nav-label">Decoy Sensors</span>
+        <span class="nav-label">5 Decoy Sensors</span>
         <span class="nav-badge" id="nav-badge-sensors">5 ACT</span>
       </a>
       <a href="#session-panel" class="nav-item" data-section="session-panel">
@@ -48,7 +48,7 @@
       </a>
       <a href="#telemetry-drawer" class="nav-item" data-section="telemetry-drawer">
         <span class="material-symbols-outlined nav-icon">public</span>
-        <span class="nav-label">Geo &amp; IP Intel</span>
+        <span class="nav-label">Geo &amp; IP Intel (Map)</span>
         <span class="nav-badge" id="nav-badge-geo">0 IPS</span>
       </a>
       <a href="#canary-panel" class="nav-item" data-section="canary-panel">
@@ -86,7 +86,7 @@
       <div class="topbar-brand">
         <img src="/dashboard/logo.svg" alt="VALENS Logo" class="topbar-brand-logo">
         <span class="topbar-brand-name">VALENS</span>
-        <span class="topbar-brand-badge">Prototype Deception Grid</span>
+        <span class="topbar-brand-badge">Security Operations. Deception. Intelligence</span>
       </div>
     </div>
     <div class="topbar-right">
@@ -98,10 +98,7 @@
         <span class="dot-green"></span>
         <span id="grid-badge-label">Checking...</span>
       </div>
-      <button class="btn-emergency" id="btn-emergency">
-        <span class="material-symbols-outlined" style="font-size:16px">crisis_alert</span>
-        <span>Emergency Containment</span>
-      </button>
+      
     </div>
   </header>
 
@@ -136,7 +133,7 @@
         <div class="stat-card">
           <div class="stat-header">
             <span>Active Decoy Fleet</span>
-            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">sensors</span>
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">sensors</span>
           </div>
           <div class="stat-value">
             <span class="metric" id="stat-decoys">5 / 5</span>
@@ -147,138 +144,38 @@
         <div class="stat-card">
           <div class="stat-header">
             <span>Trapped Adversaries</span>
-            <span class="material-symbols-outlined" style="color:#e11d48;font-size:18px">person_pin</span>
+            <span class="material-symbols-outlined" style="color:var(--rose);font-size:18px">person_pin</span>
           </div>
           <div class="stat-value">
             <span class="metric" id="stat-sessions">0</span>
             <span class="badge-red" id="stat-critical">0 Critical</span>
           </div>
-          <p class="stat-sub" id="stat-sessions-sub">+0 active sessions last 15m</p>
+          <p class="stat-sub" id="stat-sessions-sub">+0 active probes captured</p>
         </div>
         <div class="stat-card">
           <div class="stat-header">
-            <span>Auto-Quarantine</span>
-            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">shield</span>
+            <span>Geo &amp; IP Intel Nodes</span>
+            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">public</span>
           </div>
           <div class="stat-value">
             <span class="metric" id="stat-blocked">0</span>
-            <span class="stat-label">Blocked IPs</span>
+            <span class="stat-label">Tracked Adversaries</span>
           </div>
           <p class="stat-sub emerald">
-            <span class="material-symbols-outlined" style="font-size:13px">check_circle</span>
-            Runtime containment active
+            <span class="material-symbols-outlined" style="font-size:13px">location_on</span>
+            Live Vector Threat Map Active
           </p>
         </div>
         <div class="stat-card">
           <div class="stat-header">
-            <span>AI Believability Index</span>
-            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">neurology</span>
+            <span>Canary Tripwires</span>
+            <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">vpn_key</span>
           </div>
           <div class="stat-value">
-            <span class="metric primary" id="stat-ai">Gemini</span>
-            <span class="badge-mono" id="gemini-model-badge">RAG</span>
+            <span class="metric primary" id="stat-canary-active">Active</span>
+            <span class="badge-mono" id="canary-status-badge">ARMED</span>
           </div>
-          <div class="progress-bar"><div class="progress-fill primary" id="ai-bar" style="width:99%"></div></div>
-        </div>
-      </div>
-      <!-- ===== PROTECTED APPLICATION: MEDICARE.AI ===== -->
-      <div id="protected-app-panel" style="margin-top:20px;background:linear-gradient(135deg,rgba(14,165,233,0.07),rgba(99,102,241,0.07));border:1.5px solid rgba(14,165,233,0.28);border-radius:14px;padding:0;overflow:hidden;">
-        <!-- Header bar -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px;border-bottom:1px solid rgba(14,165,233,0.18);flex-wrap:wrap;gap:10px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(14,165,233,0.35);">
-              <span class="material-symbols-outlined" style="color:#fff;font-size:20px;font-variation-settings:'FILL' 1">health_and_safety</span>
-            </div>
-            <div>
-              <div style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px;">
-                Protected Application
-                <span style="background:linear-gradient(90deg,#0ea5e9,#6366f1);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;font-family:var(--font-mono);">WAF ACTIVE</span>
-              </div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:13px;color:#0ea5e9">link</span>
-                <span id="protected-app-name" style="font-weight:700;color:#0ea5e9">Medicare.AI</span>
-                <span style="color:var(--border-strong)">·</span>
-                <span id="protected-app-url" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">http://127.0.0.1:5000</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span id="protected-app-status-badge" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;background:#FDF5ED;color:#9E5F27;padding:4px 10px;border-radius:6px;font-weight:700;border:1px solid #F0D0B4;">
-              <span style="width:7px;height:7px;background:#DC9657;border-radius:50%;display:inline-block;box-shadow:0 0 6px #DC9657"></span>
-              MONITORING
-            </span>
-            <button id="btn-audit-security" style="font-size:11px;font-family:var(--font-mono);color:#DC9657;background:rgba(220,150,87,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(220,150,87,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
-              <span class="material-symbols-outlined" style="font-size:13px">health_and_safety</span>Audit Security
-            </button>
-            <button id="btn-configure-waf" style="font-size:11px;font-family:var(--font-mono);color:#0ea5e9;background:rgba(14,165,233,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(14,165,233,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
-              <span class="material-symbols-outlined" style="font-size:13px">tune</span>WAF Rules
-            </button>
-            <button id="btn-simulate-waf-attack" style="font-size:11px;font-family:var(--font-mono);color:#ef4444;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
-              <span class="material-symbols-outlined" style="font-size:13px">bolt</span>Simulate Attack
-            </button>
-            <button id="btn-manage-quarantine" style="font-size:11px;font-family:var(--font-mono);color:#ef4444;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:700;">
-              <span class="material-symbols-outlined" style="font-size:13px">gavel</span>Quarantine
-            </button>
-            <a href="http://127.0.0.1:8050/proxy" target="_blank" id="protected-app-link" style="font-size:11px;font-family:var(--font-mono);color:#0ea5e9;background:rgba(14,165,233,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(14,165,233,0.25);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-              <span class="material-symbols-outlined" style="font-size:13px">open_in_new</span>Access via WAF
-            </a>
-
-          </div>
-        </div>
-
-        <!-- Metric tiles row -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;border-bottom:1px solid rgba(14,165,233,0.12);">
-          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
-            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Requests Inspected</div>
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:var(--text-main)" id="prot-total-requests">0</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="prot-forwarded-sub">0 forwarded</div>
-          </div>
-          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;color:#ef4444;">WAF Blocks</div>
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#ef4444" id="prot-blocked-requests">0</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="prot-block-rate">0.0% block rate</div>
-          </div>
-          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);">
-            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Threats Detected</div>
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#f59e0b" id="prot-threats">0</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">High/critical severity</div>
-          </div>
-          <div style="padding:14px 18px;border-right:1px solid rgba(14,165,233,0.12);cursor:pointer;" id="tile-ip-quarantine" title="Click to open WAF Quarantine Manager">
-            <div style="font-size:11px;color:#ef4444;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">IP Quarantine</div>
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:#ef4444" id="prot-banned-count">0</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Auto-banned attackers</div>
-          </div>
-          <div style="padding:14px 18px;">
-            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Architecture</div>
-            <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text-main);line-height:1.7;">
-              <span style="color:#0ea5e9">User</span>
-              <span style="color:var(--text-muted)"> → </span>
-              <span style="color:#DC9657">VALENS</span>
-              <span style="color:var(--text-muted)"> → </span>
-              <span style="color:#6366f1">Medicare.AI</span>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">WAF Reverse Proxy · Port 8050→5000</div>
-          </div>
-
-        </div>
-
-        <!-- Latest security event strip -->
-        <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;min-height:46px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span class="material-symbols-outlined" style="font-size:16px;color:#0ea5e9">security</span>
-            <span style="font-size:12px;font-weight:600;color:var(--text-muted);">Latest Event:</span>
-            <span id="prot-latest-event" style="font-family:var(--font-mono);font-size:12px;color:var(--text-main);font-weight:600;">Awaiting traffic…</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span id="prot-latest-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">--</span>
-            <span id="prot-latest-badge" style="display:none;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;font-family:var(--font-mono);">--</span>
-          </div>
-        </div>
-
-        <!-- Recent requests mini-feed (last 5 events) -->
-        <div id="prot-events-feed" style="display:none;border-top:1px solid rgba(14,165,233,0.12);padding:10px 20px;max-height:160px;overflow-y:auto;">
-          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Live Request Feed → Medicare.AI</div>
-          <div id="prot-events-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+          <div class="progress-bar"><div class="progress-fill primary" id="canary-bar" style="width:100%"></div></div>
         </div>
       </div>
     </section>
@@ -305,7 +202,7 @@
     </section>
 
     <!-- ===== SECTION: SESSIONS ===== -->
-    <section class="section" id="session-panel">
+    <section class="section pb-section" id="session-panel">
       <div class="section-title-row">
         <div class="section-title-group">
           <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">stream</span>
@@ -335,163 +232,6 @@
           <span id="expand-btn-text">View More Sessions</span>
           <span class="material-symbols-outlined" id="expand-btn-icon">keyboard_arrow_down</span>
         </button>
-      </div>
-    </section>
-
-    <!-- ===== SECTION: TERMINAL ===== -->
-    <section class="section" id="terminal-stream">
-      <div class="section-title-row">
-        <div class="section-title-group">
-          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">terminal</span>
-          <div>
-            <h2 class="section-title">Deep Session Inspector &amp; Interactive Telemetry</h2>
-            <p class="section-caption" id="terminal-caption">Select a session to inspect its deception transcript</p>
-          </div>
-        </div>
-        <div class="terminal-actions">
-          <button class="btn-kill" id="btn-kill" disabled>
-            <span class="material-symbols-outlined" style="font-size:15px">close</span>
-            Kill Session
-          </button>
-          <button class="btn-outline sm" id="btn-block" disabled>
-            <span class="material-symbols-outlined" style="font-size:15px;color:#7d9cb7">block</span>
-            Block Source IP
-          </button>
-          <button class="btn-outline sm" id="btn-export-session" disabled>
-            <span class="material-symbols-outlined" style="font-size:15px;color:#7d9cb7">download</span>
-            Export JSON
-          </button>
-        </div>
-      </div>
-
-      <div class="terminal-card">
-        <div class="term-header">
-          <div class="term-dots">
-            <span class="term-dot red"></span>
-            <span class="term-dot amber"></span>
-            <span class="term-dot green"></span>
-            <span class="term-label" id="term-target-label">No session selected</span>
-          </div>
-          <div class="term-meta" id="term-meta"></div>
-        </div>
-        <div class="term-tabs">
-          <div class="tab-group">
-            <button class="tab-btn active" data-tab="transcript" id="tab-transcript">Live Transcript</button>
-            <button class="tab-btn" data-tab="telemetry" id="tab-telemetry">Normalized Telemetry</button>
-            <button class="tab-btn" data-tab="raw" id="tab-raw">Raw Payloads</button>
-          </div>
-          <span class="term-duration" id="term-duration">--</span>
-        </div>
-        <div class="term-body" id="term-body">
-          <div class="term-placeholder">
-            <span class="material-symbols-outlined" style="font-size:36px;opacity:0.25">terminal</span>
-            <p>Select an attacker session from the Sessions panel above to view the live deception transcript.</p>
-          </div>
-        </div>
-        <div class="inject-bar">
-          <span class="inject-label">Terminal / Probe:</span>
-          <div class="inject-input-wrap">
-            <span class="inject-prompt">#</span>
-            <input type="text" id="inject-input" placeholder="Type attack command (e.g. curl http://127.0.0.1:8088/admin) or operator deception response..." autocomplete="off">
-          </div>
-          <button class="btn-primary" id="btn-inject">Execute</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== SECTION: AI COPILOT ===== -->
-    <section class="section" id="copilot-panel">
-      <div class="section-title-row">
-        <div class="section-title-group">
-          <span class="material-symbols-outlined" style="color:var(--primary);font-size:22px">psychology</span>
-          <div>
-            <h2 class="section-title">Gemini AI Threat Analysis &amp; Incident Playbook</h2>
-            <p class="section-caption">Enterprise RAG + MITRE ATT&amp;CK matrix correlation</p>
-          </div>
-        </div>
-        <button class="btn-outline" id="btn-analyze">
-          <span class="material-symbols-outlined" style="font-size:16px">autorenew</span>
-          Analyze Selected Session
-        </button>
-      </div>
-
-      <div style="background:linear-gradient(135deg, rgba(70,95,44,0.06), rgba(99,102,241,0.06));border:1px solid rgba(70,95,44,0.25);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="material-symbols-outlined" style="color:var(--primary);font-size:24px">auto_awesome</span>
-          <div>
-            <div style="font-weight:700;color:var(--text-main);font-size:13px">Gemini 2.5 + ChromaDB Vector RAG Copilot Active</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Enterprise RAG Knowledge Base indexed: 700+ MITRE ATT&amp;CK techniques, Sigma detection rules &amp; autonomous incident playbooks.</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;background:var(--primary-light);color:var(--primary);padding:4px 10px;border-radius:4px;font-weight:700">
-            <span style="width:7px;height:7px;background:var(--emerald);border-radius:50%;display:inline-block"></span>
-            RAG ACTIVE
-          </span>
-          <span style="font-family:var(--font-mono);font-size:11px;background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:4px;font-weight:700">GEMINI 2.5 FLASH</span>
-        </div>
-      </div>
-
-      <div class="copilot-grid">
-        <div class="copilot-card wide">
-          <div class="copilot-card-header">
-            <div class="copilot-card-title">
-              <span class="material-symbols-outlined" style="color:var(--primary);font-size:20px">insights</span>
-              <h3>Threat Assessment</h3>
-            </div>
-            <span class="confidence-badge" id="confidence-badge">--</span>
-          </div>
-          <div class="actor-pill" id="actor-pill" style="display:none">
-            <span class="actor-label">Actor Signature:</span>
-            <span class="actor-value" id="actor-value">--</span>
-          </div>
-          <p class="assessment-text" id="assessment-text">Select a session and click <strong>Analyze Selected Session</strong> to generate a Gemini + RAG SOC report.</p>
-          <div class="rag-section" id="rag-section" style="display:none">
-            <div class="rag-title">
-              <span class="material-symbols-outlined" style="color:var(--primary);font-size:16px">menu_book</span>
-              RAG Knowledge Base Citations
-            </div>
-            <div class="rag-list" id="rag-list"></div>
-          </div>
-        </div>
-
-        <div class="copilot-card">
-          <div class="mitre-section">
-            <div class="mitre-header">
-              <h3 class="copilot-sub-title">
-                <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px">grid_view</span>
-                MITRE ATT&amp;CK Mapping
-              </h3>
-              <span class="ttp-count" id="ttp-count">--</span>
-            </div>
-            <div class="mitre-grid" id="mitre-grid">
-              <div class="mitre-empty">Run analysis to map TTPs</div>
-            </div>
-          </div>
-          <div class="ir-section">
-            <div class="ir-header">
-              <h3 class="copilot-sub-title">
-                <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">checklist</span>
-                Automated IR Actions
-              </h3>
-              <span class="ir-pending" id="ir-pending">--</span>
-            </div>
-            <div class="ir-list" id="ir-list">
-              <div class="ir-empty">No IR actions until session is analyzed</div>
-            </div>
-            <button class="btn-primary full-width" id="btn-commit-ir" disabled>Commit Selected Actions</button>
-            <div class="ir-audit-terminal" id="ir-audit-terminal" style="display:none; margin-top:12px; padding:12px 14px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; font-family:var(--font-mono); font-size:11.5px; color:#94a3b8; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #1e293b; padding-bottom:6px;">
-                <div style="color:#DC9657; font-weight:700; display:flex; align-items:center; gap:6px;">
-                  <span class="material-symbols-outlined" style="font-size:15px; color:#DC9657;">terminal</span>
-                  <span>Autonomous SOC Enforcement Terminal</span>
-                </div>
-                <span style="font-size:10px; color:#DC9657; background:rgba(220,150,87,0.15); padding:2px 6px; border-radius:4px; font-weight:600;">ACTIVE IN PERIMETER</span>
-              </div>
-              <div id="ir-audit-log-lines" style="line-height:1.6; color:#cbd5e1;"></div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -871,231 +611,9 @@
       </div>
     </section>
 
-    <!-- ===== SECTION: PROTECTED APPLICATIONS FLEET ===== -->
-    <section class="section pb-section" id="protected-apps-section">
-      <div class="section-title-row">
-        <div class="section-title-group">
-          <span class="section-eyebrow">Enterprise Fleet &amp; Customer Web Assets</span>
-          <h2 class="section-title">Protected Applications &amp; Deception Service Mesh</h2>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="badge-green" id="fleet-active-badge">3 Applications Active</span>
-          <button class="btn-primary" id="btn-show-embed-modal" onclick="document.getElementById('embed-snippet-modal').style.display='flex'" style="height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:6px">
-            <span class="material-symbols-outlined" style="font-size:16px">add_link</span>
-            <span>Register New Web Asset</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Fleet Overview Stats Grid -->
-      <div class="stat-grid" style="margin-bottom:24px;">
-        <div class="stat-card">
-          <div class="stat-header">
-            <span>Protected Web Assets</span>
-            <span class="material-symbols-outlined" style="color:#0284c7;font-size:18px">domain</span>
-          </div>
-          <div class="stat-value">
-            <span class="metric" style="color:#0284c7">3</span>
-            <span class="badge-green">3 / 3 Online</span>
-          </div>
-          <p class="stat-sub">1 Healthcare · 1 FinTech · 1 IAM</p>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span>Deception Agents Active</span>
-            <span class="material-symbols-outlined" style="color:var(--emerald);font-size:18px">smart_toy</span>
-          </div>
-          <div class="stat-value">
-            <span class="metric" style="color:var(--emerald)">12</span>
-            <span class="badge-mono">12 Hooks</span>
-          </div>
-          <p class="stat-sub">Canaries &amp; WAF Reverse Proxy</p>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span>Threats Neutralized</span>
-            <span class="material-symbols-outlined" style="color:var(--rose);font-size:18px">security</span>
-          </div>
-          <div class="stat-value">
-            <span class="metric" id="fleet-threats-count" style="color:var(--rose)">14</span>
-            <span class="badge-red">100% Intercepted</span>
-          </div>
-          <p class="stat-sub">0 Data Breaches · 14 Neutralized</p>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span>Mesh Fleet Health</span>
-            <span class="material-symbols-outlined" style="color:#7c3aed;font-size:18px">verified_user</span>
-          </div>
-          <div class="stat-value">
-            <span class="metric" style="color:#7c3aed">99.8%</span>
-            <span class="badge-green">Optimal</span>
-          </div>
-          <p class="stat-sub emerald">
-            <span class="material-symbols-outlined" style="font-size:13px">check_circle</span>
-            Avg WAF latency 2.8ms
-          </p>
-        </div>
-      </div>
-
-      <!-- Fleet Asset Cards -->
-      <div class="fleet-grid">
-        
-        <!-- ASSET CARD 1: MEDICARE.AI -->
-        <div class="fleet-card">
-          <div class="fleet-accent-bar fleet-accent-medicare"></div>
-          
-          <div class="fleet-header-row">
-            <div class="fleet-brand-wrap">
-              <div class="fleet-brand-icon fleet-icon-medicare">
-                <span class="material-symbols-outlined" style="font-size:24px">health_and_safety</span>
-              </div>
-              <div class="fleet-title-group">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <h3>Medicare.AI</h3>
-                  <span class="badge-mono" style="background:#e0f2fe;color:#0284c7;font-size:10px;font-weight:700;">AI WAF + SENTINEL</span>
-                </div>
-                <div class="fleet-sub">Clinical Intelligence &amp; Electronic Health Records Portal</div>
-              </div>
-            </div>
-            <span class="badge-green" style="font-family:var(--font-mono);font-size:11px;font-weight:700;">
-              PROTECTED
-            </span>
-          </div>
-
-          <div class="fleet-stats-strip">
-            <div class="fleet-stat-col">
-              <div class="stat-k">Service Mode</div>
-              <div class="stat-v" style="color:#0ea5e9">AI Reverse Proxy</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Injected Layers</div>
-              <div class="stat-v">Sentinel Side Tab</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Interceptions</div>
-              <div class="stat-v" style="color:var(--rose)" id="fleet-medicare-blocked">14 Blocked</div>
-            </div>
-          </div>
-
-          <div class="fleet-footer-row">
-            <div class="fleet-url-text">
-              <span class="material-symbols-outlined" style="font-size:14px;color:#0ea5e9">link</span>
-              <span>http://127.0.0.1:8050/apps/medicare</span>
-            </div>
-            <a href="/apps/medicare" target="_blank" class="fleet-launch-btn fleet-btn-blue">
-              <span>Launch Website (with Sentinel Tab)</span>
-              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- ASSET CARD 2: APEX GLOBAL FINANCIAL -->
-        <div class="fleet-card">
-          <div class="fleet-accent-bar fleet-accent-finance"></div>
-
-          <div class="fleet-header-row">
-            <div class="fleet-brand-wrap">
-              <div class="fleet-brand-icon fleet-icon-finance">
-                <span class="material-symbols-outlined" style="font-size:24px">account_balance</span>
-              </div>
-              <div class="fleet-title-group">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <h3>Apex Global Treasury</h3>
-                  <span class="badge-mono" style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;">DECOY MESH + EXTENSION</span>
-                </div>
-                <div class="fleet-sub">Institutional Liquidity &amp; FedWire / SWIFT Treasury Grid</div>
-              </div>
-            </div>
-            <span class="badge-amber" style="font-family:var(--font-mono);font-size:11px;font-weight:700;">
-              DECOY ARMED
-            </span>
-          </div>
-
-          <div class="fleet-stats-strip">
-            <div class="fleet-stat-col">
-              <div class="stat-k">Service Mode</div>
-              <div class="stat-v" style="color:#d97706">Decoy Mesh (:8088)</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Injected Layers</div>
-              <div class="stat-v">Mock SQL Ledger</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Threat Traps</div>
-              <div class="stat-v" style="color:var(--rose)" id="fleet-finance-traps">Active Lure</div>
-            </div>
-          </div>
-
-          <div class="fleet-footer-row">
-            <div class="fleet-url-text">
-              <span class="material-symbols-outlined" style="font-size:14px;color:#d97706">link</span>
-              <span>http://127.0.0.1:8088/ · :8050/finance-portal</span>
-            </div>
-            <a href="http://127.0.0.1:8088/" target="_blank" class="fleet-launch-btn fleet-btn-amber">
-              <span>Launch Website (with Sentinel Tab)</span>
-              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- ASSET CARD 3: OMNICLOUD ENTERPRISE IAM & SSO -->
-        <div class="fleet-card">
-          <div class="fleet-accent-bar fleet-accent-iam"></div>
-
-          <div class="fleet-header-row">
-            <div class="fleet-brand-wrap">
-              <div class="fleet-brand-icon fleet-icon-iam">
-                <span class="material-symbols-outlined" style="font-size:24px">vpn_key</span>
-              </div>
-              <div class="fleet-title-group">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <h3>OmniCloud Enterprise IAM</h3>
-                  <span class="badge-mono" style="background:#ede9fe;color:#6d28d9;font-size:10px;font-weight:700;">CANARY GATEWAY</span>
-                </div>
-                <div class="fleet-sub">Zero-Trust Okta &amp; Azure AD Identity Federation Gateway</div>
-              </div>
-            </div>
-            <span class="badge-mono" style="background:#ede9fe;color:#5b21b6;border-color:#ddd6fe;font-family:var(--font-mono);font-size:11px;font-weight:700;">
-              TRIPWIRE ARMED
-            </span>
-          </div>
-
-          <div class="fleet-stats-strip">
-            <div class="fleet-stat-col">
-              <div class="stat-k">Service Mode</div>
-              <div class="stat-v" style="color:#7c3aed">Canary Gateway (:8050)</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Injected Layers</div>
-              <div class="stat-v">Decoy JWTs + Tokens</div>
-            </div>
-            <div class="fleet-stat-col">
-              <div class="stat-k">Threat Traps</div>
-              <div class="stat-v" style="color:var(--emerald)" id="fleet-omnicloud-traps">Armed &amp; Silent</div>
-            </div>
-          </div>
-
-          <div class="fleet-footer-row">
-            <div class="fleet-url-text">
-              <span class="material-symbols-outlined" style="font-size:14px;color:#7c3aed">link</span>
-              <span>http://127.0.0.1:8050/canary/tokens</span>
-            </div>
-            <a href="/canary/tokens" target="_blank" class="fleet-launch-btn fleet-btn-purple">
-              <span>Inspect Canary Tokens</span>
-              <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
-            </a>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
   </div><!-- end scroll-canvas -->
 </div><!-- end main-canvas -->
+
 
 <!-- PLAIN-ENGLISH SESSION DETAIL POPUP MODAL -->
 <div id="session-modal-overlay" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -1423,221 +941,6 @@ location /api/v1/resource {
           <span>Print / Save as PDF</span>
         </button>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- FLOATING NLP CHATBOT WIDGET (VOICE & TEXT CHAT) -->
-<button class="chat-fab" id="chat-fab" title="Ask VALENS (Voice & Text Chat)">
-  <span class="material-symbols-outlined chat-fab-icon">smart_toy</span>
-  <span class="chat-fab-label">Ask VALENS</span>
-  <span class="chat-fab-badge">NLP</span>
-</button>
-
-<div class="chat-drawer" id="chat-drawer" style="display:none">
-  <div class="chat-header">
-    <div class="chat-header-info">
-      <div class="chat-avatar">
-        <span class="material-symbols-outlined">smart_toy</span>
-      </div>
-      <div>
-        <div class="chat-title">VALENS Security Assistant</div>
-        <div class="chat-status"><span class="status-dot-green"></span> Gemini NLP &bull; Voice Enabled</div>
-      </div>
-    </div>
-    <div class="chat-header-actions">
-      <button type="button" class="chat-icon-btn" id="chat-sound-toggle" title="Toggle Voice Readout (Audio Muted by Default)">
-        <span class="material-symbols-outlined" id="chat-sound-icon">volume_off</span>
-      </button>
-      <button type="button" class="chat-icon-btn" id="chat-close-btn" title="Close chat">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="chat-body" id="chat-messages">
-    <div class="chat-msg ai">
-      <div class="msg-bubble">
-        👋 Hello! I'm your <strong>VALENS Security Assistant</strong>. 
-        You can ask me anything about active threats, honeypot decoys, cyber defense, or tap the microphone to speak with me!
-      </div>
-    </div>
-    <div class="chat-quick-prompts" id="chat-quick-prompts">
-      <button type="button" class="prompt-chip" data-prompt="Are our systems safe right now?">🛡️ Are we safe right now?</button>
-      <button type="button" class="prompt-chip" data-prompt="Explain how the honeypot protects us in simple terms.">🍯 How does the honeypot work?</button>
-      <button type="button" class="prompt-chip" data-prompt="What attacks happened today?">⚠️ What attacks happened today?</button>
-      <button type="button" class="prompt-chip" data-prompt="What is SQL injection and how does virtual patching fix it?">💉 Explain SQLi & Virtual Patch</button>
-    </div>
-  </div>
-
-  <div class="chat-footer">
-    <div class="chat-voice-indicator" id="chat-voice-indicator" style="display:none">
-      <span class="pulse-mic"></span>
-      <span>Listening to your voice... Speak now</span>
-    </div>
-    <form id="chat-form" class="chat-input-bar">
-      <button type="button" class="chat-mic-btn" id="chat-mic-btn" title="Click to speak (Voice Chat)">
-        <span class="material-symbols-outlined" id="mic-icon">mic</span>
-      </button>
-      <input type="text" id="chat-text-input" placeholder="Ask in plain English or tap mic..." autocomplete="off" />
-      <button type="submit" class="chat-send-btn" id="chat-send-btn" title="Send question">
-        <span class="material-symbols-outlined">send</span>
-      </button>
-    </form>
-  </div>
-</div>
-
-<!-- ===== MODAL: WAF SECURITY RULES CONFIGURATION ===== -->
-<div id="waf-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--bg-card,#1e293b);border:1px solid rgba(14,165,233,0.3);border-radius:16px;width:100%;max-width:520px;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);color:var(--text-main,#f8fafc);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="material-symbols-outlined" style="color:#0ea5e9;font-size:24px">tune</span>
-        <div>
-          <h3 style="margin:0;font-family:var(--font-head);font-size:16px;font-weight:700;">Medicare.AI WAF Security Policy</h3>
-          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">Live Rule Parameters & Rate Limiter</span>
-        </div>
-      </div>
-      <button id="btn-close-waf-modal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <form id="waf-config-form" style="display:flex;flex-direction:column;gap:16px;">
-      <div>
-        <label style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:6px;">
-          <span>Risk Score Block Threshold</span>
-          <span id="waf-threshold-val" style="font-family:var(--font-mono);color:#0ea5e9;font-weight:700;">75</span>
-        </label>
-        <input type="range" id="waf-input-threshold" min="30" max="95" value="75" step="5" style="width:100%;accent-color:#0ea5e9;cursor:pointer;">
-        <span style="font-size:10px;color:var(--text-muted);">Requests with intent risk score at or above this value will be hard-blocked (403).</span>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
-        <div>
-          <div style="font-size:12px;font-weight:700;">Sliding-Window Rate Limiting</div>
-          <div style="font-size:10px;color:var(--text-muted);">Enforce maximum requests per minute per IP address</div>
-        </div>
-        <input type="checkbox" id="waf-input-ratelimit-toggle" checked style="width:18px;height:18px;accent-color:#0ea5e9;cursor:pointer;">
-      </div>
-
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Max Requests Per Minute (Per IP)</label>
-        <input type="number" id="waf-input-max-reqs" min="10" max="500" value="60" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;color:var(--text-main);font-family:var(--font-mono);font-size:13px;">
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
-        <div>
-          <div style="font-size:12px;font-weight:700;">Strict Header Inspection</div>
-          <div style="font-size:10px;color:var(--text-muted);">Inspect User-Agent, Referer & Authorization headers</div>
-        </div>
-        <input type="checkbox" id="waf-input-strict-headers" checked style="width:18px;height:18px;accent-color:#0ea5e9;cursor:pointer;">
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
-        <button type="button" id="btn-export-waf-rules" style="background:rgba(14,165,233,0.15);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;padding:8px 14px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);">
-          <span class="material-symbols-outlined" style="font-size:14px">download</span>Export WAF Rules (.conf)
-        </button>
-        <div style="display:flex;gap:10px;">
-          <button type="button" id="btn-cancel-waf-modal" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--text-main);padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">Cancel</button>
-          <button type="submit" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;color:#fff;padding:8px 20px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;box-shadow:0 2px 10px rgba(14,165,233,0.3);">Save Policy Changes</button>
-        </div>
-      </div>
-
-    </form>
-  </div>
-</div>
-
-<!-- ===== MODAL: MEDICARE.AI SECURITY HEALTH AUDIT ===== -->
-<div id="audit-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--bg-card,#1e293b);border:1px solid rgba(220,150,87,0.3);border-radius:16px;width:100%;max-width:580px;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);color:var(--text-main,#f8fafc);max-height:90vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="material-symbols-outlined" style="color:#DC9657;font-size:26px">verified_user</span>
-        <div>
-          <h3 style="margin:0;font-family:var(--font-head);font-size:16px;font-weight:700;">Medicare.AI Security Health Audit</h3>
-          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">AI OWASP Top 10 Vulnerability & Defense Assessment</span>
-        </div>
-      </div>
-      <button id="btn-close-audit-modal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <!-- Health Score Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(220,150,87,0.1),rgba(14,165,233,0.1));border:1px solid rgba(220,150,87,0.25);padding:16px;border-radius:12px;margin-bottom:18px;">
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Overall Health Score</div>
-        <div style="font-family:var(--font-mono);font-size:32px;font-weight:900;color:#DC9657" id="audit-score-val">100%</div>
-        <div style="font-size:11px;color:#DC9657;font-weight:600" id="audit-status-badge">STATUS: EXCELLENT</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:11px;color:var(--text-muted)">Virtual Patches: <strong style="color:var(--text-main)">4 Active</strong></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Quarantined Attackers: <strong style="color:#ef4444" id="audit-quarantine-count">0</strong></div>
-      </div>
-    </div>
-
-    <!-- OWASP Breakdown -->
-    <div style="margin-bottom:18px;">
-      <h4 style="margin:0 0 10px;font-size:13px;font-family:var(--font-head);color:var(--text-main);">OWASP Top 10 Security Assessment</h4>
-      <div id="audit-owasp-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-    </div>
-
-    <!-- Active Virtual Patches -->
-    <div style="margin-bottom:18px;">
-      <h4 style="margin:0 0 10px;font-size:13px;font-family:var(--font-head);color:var(--text-main);">Applied Virtual Patches</h4>
-      <div id="audit-patches-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    </div>
-
-    <div style="display:flex;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
-      <button type="button" id="btn-done-audit-modal" style="background:linear-gradient(135deg,#DC9657,#0ea5e9);border:none;color:#fff;padding:8px 22px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;">Close Audit Report</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL: MEDICARE.AI WAF QUARANTINE MANAGER ===== -->
-<div id="quarantine-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--bg-card,#1e293b);border:1px solid rgba(239,68,68,0.35);border-radius:16px;width:100%;max-width:600px;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);color:var(--text-main,#f8fafc);max-height:90vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="material-symbols-outlined" style="color:#ef4444;font-size:26px">gavel</span>
-        <div>
-          <h3 style="margin:0;font-family:var(--font-head);font-size:16px;font-weight:700;">WAF IP Quarantine Manager</h3>
-          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">Medicare.AI Real-Time Perimeter Isolation Controls</span>
-        </div>
-      </div>
-      <button id="btn-close-quarantine-modal" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <!-- Overview Banner -->
-    <div style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(245,158,11,0.08));border:1px solid rgba(239,68,68,0.25);padding:14px 16px;border-radius:12px;margin-bottom:18px;">
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Quarantined Attackers</div>
-        <div style="font-family:var(--font-mono);font-size:28px;font-weight:900;color:#ef4444" id="modal-quarantine-count">0</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:11px;color:var(--text-muted)">Enforcement: <strong style="color:#ef4444">403 Forbidden Gate</strong></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Rule: <strong style="color:var(--text-main)">Repeated Attack Auto-Ban</strong></div>
-      </div>
-    </div>
-
-    <!-- Quarantined IPs List Container -->
-    <div style="margin-bottom:18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <h4 style="margin:0;font-size:13px;font-family:var(--font-head);color:var(--text-main);">Quarantined IP Addresses</h4>
-        <button id="btn-refresh-quarantine" style="font-size:11px;font-family:var(--font-mono);background:none;border:none;color:#0ea5e9;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">
-          <span class="material-symbols-outlined" style="font-size:13px">refresh</span>Refresh
-        </button>
-      </div>
-      <div id="quarantine-ip-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px;">
-        <!-- Populated via JavaScript -->
-      </div>
-    </div>
-
-    <div style="display:flex;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
-      <button type="button" id="btn-done-quarantine-modal" style="background:linear-gradient(135deg,#ef4444,#f59e0b);border:none;color:#fff;padding:8px 22px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:700;">Done</button>
     </div>
   </div>
 </div>
