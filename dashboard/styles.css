@@ -483,34 +483,396 @@ a {
   justify-content: center;
 }
 
+.hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+}
+
 .hero-circle-backdrop {
-  width: 520px;
-  height: 520px;
+  width: 530px;
+  height: 530px;
   border-radius: 50%;
   background-color: var(--bg-hero-circle);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 20px 48px rgba(30, 41, 59, 0.08), inset 0 2px 24px rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(220, 150, 87, 0.18);
+  overflow: visible;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hero-main-illustration {
-  width: 440px;
-  height: 440px;
-  object-fit: contain;
-  z-index: 2;
-  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.06));
-  animation: gentle-float 6s ease-in-out infinite alternate;
+/* Radar Sonar Pulse Rings */
+.sonar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(59, 130, 246, 0.2);
+  pointer-events: none;
+  animation: sonar-pulse 4s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+.sonar-ring-1 { width: 100%; height: 100%; animation-delay: 0s; }
+.sonar-ring-2 { width: 100%; height: 100%; animation-delay: 1.3s; }
+.sonar-ring-3 { width: 100%; height: 100%; animation-delay: 2.6s; }
+
+@keyframes sonar-pulse {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  50% { opacity: 0.25; }
+  100% { transform: scale(1.35); opacity: 0; }
 }
 
-@keyframes gentle-float {
+/* Stage & Whole Entrance Animation */
+.hero-scene-stage {
+  position: relative;
+  width: 470px;
+  height: 470px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hero-whole-pop-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease-out;
+}
+
+@keyframes hero-whole-pop-in {
   0% {
-    transform: translateY(0);
+    opacity: 0;
+    transform: scale(0.78) translateY(35px);
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-6px);
+    filter: blur(0px);
   }
   100% {
-    transform: translateY(-10px);
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
   }
+}
+
+/* Base Central Cloud & Analyst */
+.hero-base-illustration {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 2;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.07));
+  animation: hero-cloud-breathe 6s ease-in-out infinite alternate;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes hero-cloud-breathe {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-8px); }
+}
+
+/* SVG Laser Beams */
+.hero-network-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.laser-beam {
+  stroke: rgba(59, 130, 246, 0.45);
+  stroke-width: 2.2;
+  stroke-dasharray: 6 6;
+  animation: beam-flow 1.6s linear infinite, beam-fade-in 1.2s ease 0.6s backwards;
+  stroke-linecap: round;
+}
+
+@keyframes beam-flow {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes beam-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Floating Node Cards */
+.hero-node {
+  position: absolute;
+  z-index: 10;
+  cursor: pointer;
+  transform-origin: center center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+.hero-node img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 18px rgba(37, 99, 235, 0.14));
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.hero-node:hover {
+  z-index: 25;
+}
+
+.hero-node:hover img {
+  filter: drop-shadow(0 16px 30px rgba(37, 99, 235, 0.32)) drop-shadow(0 0 14px rgba(59, 130, 246, 0.5));
+  transform: scale(1.08) translateY(-4px);
+}
+
+/* Pulse indicator dots on active decoys */
+.node-pulse-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+/* 1. TOP-LEFT WORKSTATION (POP UP FROM LEFT) */
+.node-tl-workstation {
+  left: 21.3%;
+  top: 22.8%;
+  width: 21.6%;
+  animation: pop-from-left-1 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s backwards, float-left 5.2s ease-in-out 1.4s infinite alternate;
+}
+
+@keyframes pop-from-left-1 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-110px, 30px, 0) scale(0.35) rotate(-16deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(8px, -4px, 0) scale(1.08) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* 2. MID-LEFT MONITOR (POP UP FROM LEFT) */
+.node-ml-monitor {
+  left: 15.1%;
+  top: 43.9%;
+  width: 14.1%;
+  animation: pop-from-left-2 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.42s backwards, float-left 6.1s ease-in-out 1.5s infinite alternate-reverse;
+}
+
+@keyframes pop-from-left-2 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-120px, 10px, 0) scale(0.35) rotate(-22deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(8px, -3px, 0) scale(1.1) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* 3. TOP-RIGHT LAPTOP (POP UP FROM RIGHT) */
+.node-tr-laptop {
+  left: 59.8%;
+  top: 25.2%;
+  width: 19.2%;
+  animation: pop-from-right-1 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.36s backwards, float-right 5.5s ease-in-out 1.4s infinite alternate;
+}
+
+@keyframes pop-from-right-1 {
+  0% {
+    opacity: 0;
+    transform: translate3d(110px, 30px, 0) scale(0.35) rotate(16deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(-8px, -4px, 0) scale(1.08) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* 4. MID-RIGHT SERVER (POP UP FROM RIGHT) */
+.node-mr-server {
+  left: 71.1%;
+  top: 46.3%;
+  width: 13.9%;
+  animation: pop-from-right-2 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.48s backwards, float-right 6.3s ease-in-out 1.5s infinite alternate-reverse;
+}
+
+@keyframes pop-from-right-2 {
+  0% {
+    opacity: 0;
+    transform: translate3d(120px, 10px, 0) scale(0.35) rotate(22deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(-8px, -3px, 0) scale(1.1) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* Server Rack blinking LEDs */
+.server-led-cluster {
+  position: absolute;
+  top: 14%;
+  left: 18%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.led-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+  animation: led-blink 1.2s infinite ease-in-out;
+}
+.led-1 { animation-delay: 0.1s; }
+.led-2 { animation-delay: 0.5s; background: #34d399; box-shadow: 0 0 6px #34d399; }
+.led-3 { animation-delay: 0.9s; }
+
+@keyframes led-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* 5. TOP-CENTER SMARTPHONE (POP DOWN FROM TOP) */
+.node-tc-phone {
+  left: 43.2%;
+  top: 17.8%;
+  width: 13.9%;
+  animation: pop-from-top 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.25s backwards, float-vert 4.9s ease-in-out 1.3s infinite alternate;
+}
+
+@keyframes pop-from-top {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -90px, 0) scale(0.3);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(0, 8px, 0) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 6. ZERO-TRUST BUG BADGE (POP OUT WITH SHOCKWAVE) */
+.node-zero-trust {
+  left: 51.6%;
+  top: 37.8%;
+  width: 7.1%;
+  animation: pop-out-badge 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s backwards, badge-beacon 2.6s ease-in-out 1.5s infinite;
+  z-index: 15;
+}
+
+@keyframes pop-out-badge {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-45deg);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1.3) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes badge-beacon {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 2px 6px rgba(220, 38, 38, 0.3));
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 16px rgba(220, 38, 38, 0.7));
+  }
+}
+
+.badge-shockwave-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+  animation: badge-shockwave 2.6s cubic-bezier(0.1, 0.8, 0.3, 1) infinite 1.5s;
+}
+
+@keyframes badge-shockwave {
+  0% { width: 100%; height: 100%; opacity: 0.8; }
+  100% { width: 220%; height: 220%; opacity: 0; }
+}
+
+/* Floating Physics */
+@keyframes float-left {
+  0% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(-7px) rotate(-1.5deg); }
+}
+
+@keyframes float-right {
+  0% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(-8px) rotate(1.5deg); }
+}
+
+@keyframes float-vert {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-6px); }
+}
+
+/* Micro Security Badges (Shield, Key, Wifi, Padlock) */
+.micro-badge {
+  position: absolute;
+  color: rgba(148, 163, 184, 0.35);
+  pointer-events: none;
+  z-index: 1;
+  animation: micro-float 4s ease-in-out infinite alternate;
+}
+.badge-shield { left: 20%; bottom: 25%; animation-delay: 0.2s; }
+.badge-key { right: 21%; bottom: 24%; animation-delay: 0.7s; color: rgba(220, 150, 87, 0.35); }
+.badge-wifi { left: 18%; top: 19%; animation-delay: 1.1s; }
+.badge-lock { right: 18%; top: 19%; animation-delay: 1.6s; }
+
+@keyframes micro-float {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+  100% { transform: translateY(-6px) rotate(4deg); opacity: 0.75; }
 }
 
 /* ==========================================================================

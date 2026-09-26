@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VALENS — Animated Hero Vector Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="/dashboard/styles.css">
+  <style>
+    body {
+      background-color: #FAF7F2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .demo-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .demo-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    .demo-sub {
+      color: #64748b;
+      font-size: 14px;
+      max-width: 500px;
+    }
+    .demo-replay-btn {
+      margin-top: 16px;
+      padding: 10px 22px;
+      border-radius: 24px;
+      background: #DC9657;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(220, 150, 87, 0.35);
+      transition: all 0.2s ease;
+    }
+    .demo-replay-btn:hover {
+      background: #c88346;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-header">
+    <h1 class="demo-title">VALENS Autonomous SOC Defender</h1>
+    <p class="demo-sub">Interactive Decomposed Vector Mesh &mdash; Pop-in animations from left &amp; right with continuous levitation &amp; laser telemetry.</p>
+    <button class="demo-replay-btn" onclick="replayAnimation()">
+      <span class="material-symbols-outlined" style="font-size:18px">replay</span>
+      Replay Pop-In Entrance
+    </button>
+  </div>
+
+  <!-- Hero Circular Vector Illustration Container -->
+  <div class="hero-visual" id="hero-interactive-scene">
+    <div class="hero-circle-backdrop">
+      <!-- Radar Sonar Pulse Rings -->
+      <div class="sonar-ring sonar-ring-1"></div>
+      <div class="sonar-ring sonar-ring-2"></div>
+      <div class="sonar-ring sonar-ring-3"></div>
+
+      <!-- Base Canvas Container -->
+      <div class="hero-scene-stage" id="hero-stage">
+        
+        <!-- SVG Animated Network Laser Lines -->
+        <svg class="hero-network-svg" viewBox="0 0 662 665" preserveAspectRatio="xMidYMid meet">
+          <line class="laser-beam beam-tl" x1="331" y1="365" x2="212" y2="216" />
+          <line class="laser-beam beam-ml" x1="331" y1="385" x2="146" y2="338" />
+          <line class="laser-beam beam-tc" x1="331" y1="340" x2="332" y2="165" />
+          <line class="laser-beam beam-tr" x1="331" y1="365" x2="459" y2="231" />
+          <line class="laser-beam beam-mr" x1="331" y1="385" x2="517" y2="354" />
+        </svg>
+
+        <!-- Center Base: Cloud, Analyst, Globe & Shadow -->
+        <img src="/dashboard/images/vector_soc_base.png" alt="VALENS SOC Cloud Defender" class="hero-base-illustration">
+
+        <!-- LEFT NODES: Fly & Pop in from the LEFT -->
+        <div class="hero-node node-left node-tl-workstation" title="Synthetic Workstation Decoy">
+          <img src="/dashboard/images/node_top_left_workstation.png" alt="Workstation Decoy">
+          <span class="node-pulse-indicator"></span>
+        </div>
+
+        <div class="hero-node node-left node-ml-monitor" title="Virtual Sandbox Decoy Node">
+          <img src="/dashboard/images/node_mid_left_monitor.png" alt="Monitor Decoy">
+          <span class="node-pulse-indicator"></span>
+        </div>
+
+        <!-- RIGHT NODES: Fly & Pop in from the RIGHT -->
+        <div class="hero-node node-right node-tr-laptop" title="SOC Responder Deception Console">
+          <img src="/dashboard/images/node_top_right_laptop.png" alt="Laptop Operator">
+          <span class="node-pulse-indicator"></span>
+        </div>
+
+        <div class="hero-node node-right node-mr-server" title="High-Interaction Server Decoy Mesh">
+          <img src="/dashboard/images/node_mid_right_server.png" alt="Server Decoy Mesh">
+          <span class="node-pulse-indicator"></span>
+          <span class="server-led-cluster">
+            <i class="led-dot led-1"></i>
+            <i class="led-dot led-2"></i>
+            <i class="led-dot led-3"></i>
+          </span>
+        </div>
+
+        <!-- TOP & CENTER NODES -->
+        <div class="hero-node node-top node-tc-phone" title="Zero-Trust Mobile MFA Honeytoken">
+          <img src="/dashboard/images/node_top_center_phone.png" alt="Phone MFA Tripwire">
+          <span class="node-pulse-indicator"></span>
+        </div>
+
+        <div class="hero-node node-center node-zero-trust" title="Autonomous Breach Containment Active">
+          <img src="/dashboard/images/node_zero_trust_badge.png" alt="Zero-Trust Containment">
+          <span class="badge-shockwave-ring"></span>
+        </div>
+
+        <!-- Floating Micro Security Badges -->
+        <div class="micro-badge badge-shield">
+          <span class="material-symbols-outlined">shield</span>
+        </div>
+        <div class="micro-badge badge-key">
+          <span class="material-symbols-outlined">key</span>
+        </div>
+        <div class="micro-badge badge-wifi">
+          <span class="material-symbols-outlined">wifi</span>
+        </div>
+        <div class="micro-badge badge-lock">
+          <span class="material-symbols-outlined">lock</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function replayAnimation() {
+      const stage = document.getElementById('hero-stage');
+      const clone = stage.cloneNode(true);
+      stage.parentNode.replaceChild(clone, stage);
+      setupInteractiveParallax();
+    }
+
+    function setupInteractiveParallax() {
+      const scene = document.getElementById('hero-interactive-scene');
+      const stage = document.getElementById('hero-stage');
+      if (!scene || !stage) return;
+
+      scene.addEventListener('mousemove', (e) => {
+        const rect = scene.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+        // Subtle 3D tilt
+        stage.style.transform = `perspective(800px) rotateY(${x * 14}deg) rotateX(${-y * 14}deg)`;
+
+        // Parallax offset for nodes
+        const nodesLeft = stage.querySelectorAll('.node-left');
+        const nodesRight = stage.querySelectorAll('.node-right');
+        nodesLeft.forEach(n => {
+          n.style.transform = `translate3d(${x * -16}px, ${y * -16}px, 20px)`;
+        });
+        nodesRight.forEach(n => {
+          n.style.transform = `translate3d(${x * 16}px, ${y * 16}px, 20px)`;
+        });
+      });
+
+      scene.addEventListener('mouseleave', () => {
+        stage.style.transform = 'perspective(800px) rotateY(0deg) rotateX(0deg)';
+        const allNodes = stage.querySelectorAll('.hero-node');
+        allNodes.forEach(n => {
+          n.style.transform = '';
+        });
+      });
+    }
+
+    setupInteractiveParallax();
+  </script>
+</body>
+</html>

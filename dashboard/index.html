@@ -93,10 +93,82 @@
           </div>
         </div>
 
-        <!-- Hero Circular Vector Illustration -->
-        <div class="hero-visual">
+        <!-- Hero Circular Vector Illustration (Animated Decomposed Mesh) -->
+        <div class="hero-visual" id="hero-interactive-scene">
           <div class="hero-circle-backdrop">
-            <img src="/dashboard/images/vector_soc_analyst.png" alt="VALENS Autonomous SOC Defender" class="hero-main-illustration">
+            <!-- Radar Sonar Pulse Rings -->
+            <div class="sonar-ring sonar-ring-1"></div>
+            <div class="sonar-ring sonar-ring-2"></div>
+            <div class="sonar-ring sonar-ring-3"></div>
+
+            <!-- Base Canvas Stage Container -->
+            <div class="hero-scene-stage" id="hero-stage">
+              
+              <!-- SVG Animated Network Laser Lines -->
+              <svg class="hero-network-svg" viewBox="0 0 662 665" preserveAspectRatio="xMidYMid meet">
+                <line class="laser-beam beam-tl" x1="331" y1="365" x2="212" y2="216" />
+                <line class="laser-beam beam-ml" x1="331" y1="385" x2="146" y2="338" />
+                <line class="laser-beam beam-tc" x1="331" y1="340" x2="332" y2="165" />
+                <line class="laser-beam beam-tr" x1="331" y1="365" x2="459" y2="231" />
+                <line class="laser-beam beam-mr" x1="331" y1="385" x2="517" y2="354" />
+              </svg>
+
+              <!-- Center Base: Cloud, Analyst, Globe & Shadow -->
+              <img src="/dashboard/images/vector_soc_base.png" alt="VALENS SOC Cloud Defender" class="hero-base-illustration">
+
+              <!-- LEFT NODES: Fly & Pop in from the LEFT -->
+              <div class="hero-node node-left node-tl-workstation" title="Synthetic Workstation Decoy">
+                <img src="/dashboard/images/node_top_left_workstation.png" alt="Workstation Decoy">
+                <span class="node-pulse-indicator"></span>
+              </div>
+
+              <div class="hero-node node-left node-ml-monitor" title="Virtual Sandbox Decoy Node">
+                <img src="/dashboard/images/node_mid_left_monitor.png" alt="Monitor Decoy">
+                <span class="node-pulse-indicator"></span>
+              </div>
+
+              <!-- RIGHT NODES: Fly & Pop in from the RIGHT -->
+              <div class="hero-node node-right node-tr-laptop" title="SOC Responder Deception Console">
+                <img src="/dashboard/images/node_top_right_laptop.png" alt="Laptop Operator">
+                <span class="node-pulse-indicator"></span>
+              </div>
+
+              <div class="hero-node node-right node-mr-server" title="High-Interaction Server Decoy Mesh">
+                <img src="/dashboard/images/node_mid_right_server.png" alt="Server Decoy Mesh">
+                <span class="node-pulse-indicator"></span>
+                <span class="server-led-cluster">
+                  <i class="led-dot led-1"></i>
+                  <i class="led-dot led-2"></i>
+                  <i class="led-dot led-3"></i>
+                </span>
+              </div>
+
+              <!-- TOP & CENTER NODES -->
+              <div class="hero-node node-top node-tc-phone" title="Zero-Trust Mobile MFA Honeytoken">
+                <img src="/dashboard/images/node_top_center_phone.png" alt="Phone MFA Tripwire">
+                <span class="node-pulse-indicator"></span>
+              </div>
+
+              <div class="hero-node node-center node-zero-trust" title="Autonomous Breach Containment Active">
+                <img src="/dashboard/images/node_zero_trust_badge.png" alt="Zero-Trust Containment">
+                <span class="badge-shockwave-ring"></span>
+              </div>
+
+              <!-- Floating Micro Security Badges -->
+              <div class="micro-badge badge-shield">
+                <span class="material-symbols-outlined">shield</span>
+              </div>
+              <div class="micro-badge badge-key">
+                <span class="material-symbols-outlined">key</span>
+              </div>
+              <div class="micro-badge badge-wifi">
+                <span class="material-symbols-outlined">wifi</span>
+              </div>
+              <div class="micro-badge badge-lock">
+                <span class="material-symbols-outlined">lock</span>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>
@@ -861,6 +933,48 @@
 
     updateLiveMetrics();
     setInterval(updateLiveMetrics, 15000);
+
+    // Interactive 3D Parallax & Ripple for Animated Hero Vector Scene
+    (function setupHeroSceneParallax() {
+      const scene = document.getElementById('hero-interactive-scene');
+      const stage = document.getElementById('hero-stage');
+      if (!scene || !stage) return;
+
+      scene.addEventListener('mousemove', (e) => {
+        const rect = scene.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+        // Subtle 3D tilt on the stage
+        stage.style.transform = `perspective(900px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg)`;
+
+        // Differential Parallax depth for Left vs Right nodes
+        const nodesLeft = stage.querySelectorAll('.node-left');
+        const nodesRight = stage.querySelectorAll('.node-right');
+        nodesLeft.forEach(n => {
+          n.style.transform = `translate3d(${x * -18}px, ${y * -18}px, 25px)`;
+        });
+        nodesRight.forEach(n => {
+          n.style.transform = `translate3d(${x * 18}px, ${y * 18}px, 25px)`;
+        });
+      });
+
+      scene.addEventListener('mouseleave', () => {
+        stage.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
+        const allNodes = stage.querySelectorAll('.hero-node');
+        allNodes.forEach(n => {
+          n.style.transform = '';
+        });
+      });
+
+      // Click to trigger ripple shockwave pulse across the mesh
+      scene.addEventListener('click', () => {
+        triggerToast('Decoy Sensor Mesh Synchronized: All 5 Nodes Active');
+        stage.classList.remove('hero-scene-pulse-active');
+        void stage.offsetWidth;
+        stage.classList.add('hero-scene-pulse-active');
+      });
+    })();
   </script>
 </body>
 </html>
