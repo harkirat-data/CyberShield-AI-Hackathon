@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/dashboard/logo.svg">
-  <link rel="stylesheet" href="/dashboard/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="/dashboard/styles.css?v=3.1.0">
 </head>
 <body>
 
@@ -178,7 +178,7 @@
   <!-- ======================================================================
        SECTION: WE MAKE CYBER DECEPTION UNDERSTANDABLE (SCREENSHOT 1)
        ====================================================================== -->
-  <section class="section-intro text-center" id="features">
+  <section class="section-intro text-center reveal-init" id="features">
     <div class="container">
       <h2 class="section-heading-lg">We make Cyber Deception understandable (finally!)</h2>
       <p class="section-subhead">
@@ -193,9 +193,9 @@
   <section class="features-grid-section">
     <div class="container">
       <!-- ROW 1 (Screenshot 1 Bottom) -->
-      <div class="features-grid-2col">
+      <div class="features-grid-2col reveal-stagger">
         <!-- Card 1: Intuitive Dashboard -->
-        <div class="feature-card">
+        <div class="feature-card reveal-init">
           <div class="card-preview-dashboard">
             <img src="/dashboard/images/vector_hacker_hoodie.png" alt="Intrusion Deception Monitoring">
             <div class="preview-badge-status">
@@ -212,7 +212,7 @@
         </div>
 
         <!-- Card 2: Smart Tasks Tailored -->
-        <div class="feature-card">
+        <div class="feature-card reveal-init">
           <div class="smart-tasks-preview-wrap">
             <div>
               <h3 class="feature-card-title">Smart tasks tailored to your infrastructure</h3>
@@ -257,9 +257,9 @@
       </div>
 
       <!-- ROW 2 (Screenshot 2 Top) -->
-      <div class="features-grid-2col">
+      <div class="features-grid-2col reveal-stagger">
         <!-- Card 3: Defense Posture Score -->
-        <div class="feature-card">
+        <div class="feature-card reveal-init">
           <div class="card-score-layout">
             <div>
               <h3 class="feature-card-title">Infrastructure defense score</h3>
@@ -272,10 +272,10 @@
               <div class="score-donut-wrap">
                 <svg viewBox="0 0 36 36" style="width:90px;height:90px;transform:rotate(-90deg)">
                   <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#F1ECE2" stroke-width="4"/>
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10B981" stroke-dasharray="94, 100" stroke-width="4" stroke-linecap="round"/>
+                  <path class="gauge-donut-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10B981" stroke-dasharray="100, 100" stroke-width="4" stroke-linecap="round"/>
                 </svg>
                 <div style="position:absolute;display:flex;flex-direction:column;align-items:center">
-                  <span class="score-donut-val">94</span>
+                  <span class="score-donut-val" id="score-counter-feat">94</span>
                   <span style="font-size:8px;font-weight:700;color:#059669">FORTIFIED</span>
                 </div>
               </div>
@@ -285,7 +285,7 @@
         </div>
 
         <!-- Card 4: Millions of Signatures -->
-        <div class="feature-card">
+        <div class="feature-card reveal-init">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
             <div>
               <h3 class="feature-card-title">Millions of attack signatures</h3>
@@ -338,38 +338,38 @@
        SECTION: STRESS-FREE DASHBOARD (SCREENSHOT 2)
        ====================================================================== -->
   <section class="stress-free-section" id="dashboard-preview">
-    <div class="container text-center">
+    <div class="container text-center reveal-init">
       <h2 class="section-heading-lg">Stress-free dashboard</h2>
       <p class="section-subhead">
         No more getting overwhelmed with indecipherable log streams, obscure to-do's, and endless false-positive alert fatigue.
       </p>
 
       <!-- Embedded Dashboard Container (Exact Match to Screenshot 2) -->
-      <div class="dashboard-showcase-container text-left" style="text-align:left">
+      <div class="dashboard-showcase-container text-left reveal-init" style="text-align:left">
         <!-- Slim Left Sidebar -->
-        <aside class="dash-mock-sidebar">
+        <aside class="dash-mock-sidebar" id="mock-sidebar">
           <div class="dash-mock-brand-icon">
             <img src="/dashboard/logo.svg" alt="VALENS">
           </div>
-          <div class="dash-mock-nav-item active" title="Overview">
+          <div class="dash-mock-nav-item active" data-view="Overview" title="Overview">
             <span class="material-symbols-outlined" style="font-size:20px">speed</span>
           </div>
-          <div class="dash-mock-nav-item" title="Decoy Grid">
+          <div class="dash-mock-nav-item" data-view="Decoy Grid" title="Decoy Grid">
             <span class="material-symbols-outlined" style="font-size:20px">sensors</span>
           </div>
-          <div class="dash-mock-nav-item" title="Sessions">
+          <div class="dash-mock-nav-item" data-view="Sessions" title="Sessions">
             <span class="material-symbols-outlined" style="font-size:20px">person_pin</span>
           </div>
-          <div class="dash-mock-nav-item" title="Terminal Console">
+          <div class="dash-mock-nav-item" data-view="Terminal Console" title="Terminal Console">
             <span class="material-symbols-outlined" style="font-size:20px">terminal</span>
           </div>
-          <div class="dash-mock-nav-item" title="Geo Telemetry">
+          <div class="dash-mock-nav-item" data-view="Geo Telemetry" title="Geo Telemetry">
             <span class="material-symbols-outlined" style="font-size:20px">public</span>
           </div>
-          <div class="dash-mock-nav-item" title="Canary Tokens">
+          <div class="dash-mock-nav-item" data-view="Canary Tokens" title="Canary Tokens">
             <span class="material-symbols-outlined" style="font-size:20px">vpn_key</span>
           </div>
-          <div class="dash-mock-nav-item" title="Alerts">
+          <div class="dash-mock-nav-item" data-view="Alerts" title="Alerts">
             <span class="material-symbols-outlined" style="font-size:20px">notifications</span>
           </div>
         </aside>
@@ -435,9 +435,9 @@
                 <div class="gauge-donut" style="margin-left:auto">
                   <svg viewBox="0 0 36 36" style="width:78px;height:78px;transform:rotate(-90deg)">
                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#F1ECE2" stroke-width="4"/>
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#F59E0B" stroke-dasharray="78, 100" stroke-width="4" stroke-linecap="round"/>
+                    <path class="gauge-donut-circle-mock" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#F59E0B" stroke-dasharray="100, 100" stroke-width="4" stroke-linecap="round"/>
                   </svg>
-                  <div class="gauge-number">78</div>
+                  <div class="gauge-number" id="score-counter-mock">78</div>
                 </div>
               </div>
             </div>
@@ -517,9 +517,9 @@
        ====================================================================== -->
   <section class="features-3col-section">
     <div class="container">
-      <div class="features-3col-grid">
+      <div class="features-3col-grid reveal-stagger">
         <!-- Col 1: Instant Security Audit -->
-        <div class="feature-col-card">
+        <div class="feature-col-card reveal-init">
           <div class="feature-col-icon">
             <span class="material-symbols-outlined">search</span>
           </div>
@@ -530,7 +530,7 @@
         </div>
 
         <!-- Col 2: Easy to use Deception tools -->
-        <div class="feature-col-card">
+        <div class="feature-col-card reveal-init">
           <div class="feature-col-icon">
             <span class="material-symbols-outlined">key</span>
           </div>
@@ -541,7 +541,7 @@
         </div>
 
         <!-- Col 3: Autonomous SOC Playbooks -->
-        <div class="feature-col-card">
+        <div class="feature-col-card reveal-init">
           <div class="feature-col-icon">
             <span class="material-symbols-outlined">lightbulb</span>
           </div>
@@ -559,8 +559,8 @@
        ====================================================================== -->
   <section class="testimonials-row-section">
     <div class="container">
-      <div class="testimonials-grid">
-        <div class="testimonial-card">
+      <div class="testimonials-grid reveal-stagger">
+        <div class="testimonial-card reveal-init">
           <div class="stars-rating">★★★★★</div>
           <p class="testimonial-quote">
             "I'm very impressed with how quickly the honeypots trapped the reconnaissance scanners. Cleanest SOC interface I've ever experienced."
@@ -571,7 +571,7 @@
           </div>
         </div>
 
-        <div class="testimonial-card">
+        <div class="testimonial-card reveal-init">
           <div class="stars-rating">★★★★★</div>
           <p class="testimonial-quote">
             "Easy to use and remarkably effective. It gives our engineering team immediate clarity on adversarial campaigns without the noise."
@@ -590,9 +590,9 @@
        ====================================================================== -->
   <section class="features-grid-section" style="padding-top:20px;padding-bottom:60px">
     <div class="container">
-      <div class="features-grid-2col">
+      <div class="features-grid-2col reveal-stagger">
         <!-- Showcase 1: Canary Tokens with vector_phishing_trap.png -->
-        <div class="feature-card" style="padding:36px">
+        <div class="feature-card reveal-init" style="padding:36px">
           <div style="background:#F7F5EE;border-radius:var(--radius-lg);padding:24px;display:flex;align-items:center;justify-content:center;height:240px;overflow:hidden">
             <img src="/dashboard/images/vector_phishing_trap.png" alt="Canary Deception Traps" style="max-height:220px;object-fit:contain;transition:var(--transition)">
           </div>
@@ -609,7 +609,7 @@
         </div>
 
         <!-- Showcase 2: Server Defense with vector_server_defense.png -->
-        <div class="feature-card" style="padding:36px">
+        <div class="feature-card reveal-init" style="padding:36px">
           <div style="background:#F7F5EE;border-radius:var(--radius-lg);padding:24px;display:flex;align-items:center;justify-content:center;height:240px;overflow:hidden">
             <img src="/dashboard/images/vector_server_defense.png" alt="Hardened Server Defense" style="max-height:220px;object-fit:contain;transition:var(--transition)">
           </div>
@@ -632,14 +632,14 @@
        SECTION: HOW DOES IT WORK? (SCREENSHOT 2 & 3)
        ====================================================================== -->
   <section class="how-it-works-section" id="how-it-works">
-    <div class="container text-center">
+    <div class="container text-center reveal-init">
       <h2 class="section-heading-lg">How does it work?</h2>
       <p class="section-subhead">
         A seamless 4-step autonomous deception loop protecting your systems around the clock.
       </p>
 
-      <div class="steps-grid text-left" style="text-align:left">
-        <div class="step-card">
+      <div class="steps-grid text-left reveal-stagger" style="text-align:left">
+        <div class="step-card reveal-init">
           <div class="step-num">1</div>
           <h4 class="step-title">Deploy Decoys</h4>
           <p class="step-desc">
@@ -647,7 +647,7 @@
           </p>
         </div>
 
-        <div class="step-card">
+        <div class="step-card reveal-init">
           <div class="step-num">2</div>
           <h4 class="step-title">Lure Adversaries</h4>
           <p class="step-desc">
@@ -655,7 +655,7 @@
           </p>
         </div>
 
-        <div class="step-card">
+        <div class="step-card reveal-init">
           <div class="step-num">3</div>
           <h4 class="step-title">AI Deep Attribution</h4>
           <p class="step-desc">
@@ -663,7 +663,7 @@
           </p>
         </div>
 
-        <div class="step-card">
+        <div class="step-card reveal-init">
           <div class="step-num">4</div>
           <h4 class="step-title">Auto-Quarantine</h4>
           <p class="step-desc">
@@ -679,7 +679,7 @@
        ====================================================================== -->
   <section class="playbooks-section" id="playbooks">
     <div class="container">
-      <div class="playbooks-header">
+      <div class="playbooks-header reveal-init">
         <span class="pill-badge pill-yellow" style="margin-bottom:14px">Active Playbooks</span>
         <h2 class="section-heading-lg">Powerful Defense Playbooks</h2>
         <p class="section-subhead">
@@ -688,9 +688,9 @@
       </div>
 
       <!-- 6 Playbook Cards in a 3x2 Grid (Exact Match to Screenshot 3) -->
-      <div class="playbooks-grid">
+      <div class="playbooks-grid reveal-stagger">
         <!-- Playbook 1 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">code</span>
           </div>
@@ -701,7 +701,7 @@
         </div>
 
         <!-- Playbook 2 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">terminal</span>
           </div>
@@ -712,7 +712,7 @@
         </div>
 
         <!-- Playbook 3 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">rocket_launch</span>
           </div>
@@ -723,7 +723,7 @@
         </div>
 
         <!-- Playbook 4 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">api</span>
           </div>
@@ -734,7 +734,7 @@
         </div>
 
         <!-- Playbook 5 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">bookmark</span>
           </div>
@@ -745,7 +745,7 @@
         </div>
 
         <!-- Playbook 6 -->
-        <div class="playbook-card">
+        <div class="playbook-card reveal-init">
           <div class="playbook-icon-wrap orange">
             <span class="material-symbols-outlined">travel_explore</span>
           </div>
@@ -763,8 +763,8 @@
        ====================================================================== -->
   <section class="testimonials-row-section">
     <div class="container">
-      <div class="testimonials-grid">
-        <div class="testimonial-card">
+      <div class="testimonials-grid reveal-stagger">
+        <div class="testimonial-card reveal-init">
           <div class="stars-rating">★★★★★</div>
           <p class="testimonial-quote">
             "VALENS does a really great job at presenting threat telemetry, keeping our security team informed without causing alert fatigue."
@@ -775,7 +775,7 @@
           </div>
         </div>
 
-        <div class="testimonial-card">
+        <div class="testimonial-card reveal-init">
           <div class="stars-rating">★★★★★</div>
           <p class="testimonial-quote">
             "VALENS helped us neutralize automated credential stuffing attacks within minutes of going live. It makes deception security so simple."
@@ -794,7 +794,7 @@
        ====================================================================== -->
   <section class="cta-banner-section">
     <div class="container">
-      <div class="cta-banner-card">
+      <div class="cta-banner-card reveal-init">
         <!-- Subtle Topographic Wavy Vector Lines -->
         <svg class="cta-banner-bg-lines" viewBox="0 0 1000 300" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M-50 120 C180 80 320 220 540 160 C760 100 890 240 1050 180" stroke="#FFFFFF" stroke-width="2"/>
@@ -973,6 +973,87 @@
         stage.classList.remove('hero-scene-pulse-active');
         void stage.offsetWidth;
         stage.classList.add('hero-scene-pulse-active');
+      });
+    })();
+
+    // Scroll reveal observer
+    (function setupScrollReveal() {
+      const revealElements = document.querySelectorAll('.reveal-init');
+      if (!('IntersectionObserver' in window)) {
+        revealElements.forEach(el => el.classList.add('revealed'));
+        return;
+      }
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            
+            // Trigger health gauges if inside revealed element
+            const circleFeat = entry.target.querySelector('.gauge-donut-circle');
+            if (circleFeat && !circleFeat.classList.contains('animated')) {
+              circleFeat.classList.add('animated');
+              animateCounter('score-counter-feat', 94, 1400);
+            }
+            const circleMock = entry.target.querySelector('.gauge-donut-circle-mock');
+            if (circleMock && !circleMock.classList.contains('animated')) {
+              circleMock.classList.add('animated');
+              animateCounter('score-counter-mock', 78, 1400);
+            }
+
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+      revealElements.forEach(el => observer.observe(el));
+    })();
+
+    function animateCounter(id, targetVal, duration) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = 0;
+      const startTime = performance.now();
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const currentVal = Math.round(start + (targetVal - start) * easeProgress);
+        el.textContent = currentVal;
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          el.textContent = targetVal;
+        }
+      }
+      requestAnimationFrame(update);
+    }
+
+    // Frosted glass navbar on scroll
+    (function setupNavbarScroll() {
+      const nav = document.querySelector('.site-nav');
+      if (!nav) return;
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 25) {
+          nav.classList.add('scrolled');
+        } else {
+          nav.classList.remove('scrolled');
+        }
+      }, { passive: true });
+      if (window.scrollY > 25) nav.classList.add('scrolled');
+    })();
+
+    // Interactive mock dashboard navigation
+    (function setupMockDashboardSwitcher() {
+      const sidebar = document.getElementById('mock-sidebar');
+      if (!sidebar) return;
+      const items = sidebar.querySelectorAll('.dash-mock-nav-item');
+      items.forEach(item => {
+        item.addEventListener('click', () => {
+          items.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          const viewName = item.getAttribute('data-view') || 'Dashboard';
+          triggerToast(`Switching View: ${viewName} telemetry active`);
+        });
       });
     })();
   </script>
